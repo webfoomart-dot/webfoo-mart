@@ -32,20 +32,16 @@ const CATEGORIES = [
 export default function CategoriesPage() {
   const [isMounted, setIsMounted] = React.useState(false)
   
-  // 🔥 TUMHARA STORE DATA + NAYA LOCK FEATURE LAA RAHE HAIN
   const { 
     products, cart, addToCart, updateQuantity, user, login, register,
     storeConfig, fetchStoreConfig, checkIfStoreOpen, triggerStoreClosedAlert 
   } = useAppStore() as any
 
-  // Page States
   const [searchQuery, setSearchQuery] = React.useState('')
   const [selectedCategory, setSelectedCategory] = React.useState<any>(null)
   
-  // 🔥 LIVE STORE OPEN STATE
   const [isStoreOpen, setIsStoreOpen] = React.useState(true)
 
-  // Auth States
   const [showAuthModal, setShowAuthModal] = React.useState(false)
   const [authMode, setAuthMode] = React.useState<'login' | 'register'>('login')
   const [authData, setAuthData] = React.useState({ phone: '', password: '', name: '' })
@@ -58,7 +54,6 @@ export default function CategoriesPage() {
     if (fetchStoreConfig) fetchStoreConfig()
   }, [fetchStoreConfig])
 
-  // 🔥 LIVE TIMER CHECKER (Jaise Home Page pe tha)
   React.useEffect(() => {
     if (!storeConfig) return;
     const checkTime = () => {
@@ -73,10 +68,8 @@ export default function CategoriesPage() {
 
   if (!isMounted) return null
 
-  // Helper function for cart
   const getCartItem = (id: string) => cart.find((item: any) => item.id === id)
 
-  // Filter logic
   const filteredCategories = CATEGORIES.filter(cat => 
     cat.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
     cat.desc.toLowerCase().includes(searchQuery.toLowerCase())
@@ -86,7 +79,6 @@ export default function CategoriesPage() {
     ? products.filter((p: any) => p.category.toLowerCase() === selectedCategory.name.toLowerCase())
     : []
 
-  // 🔥 CUSTOM ADD TO CART LOGIC (With Store Closed Lock & Login Check)
   const handleCartClick = (product: any) => {
     if (!isStoreOpen) {
       triggerStoreClosedAlert();
@@ -109,7 +101,6 @@ export default function CategoriesPage() {
     updateQuantity(productId, currentQuantity + 1);
   }
 
-  // Handle Auth
   const handleAuthSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setAuthError('')
@@ -123,7 +114,6 @@ export default function CategoriesPage() {
       setShowAuthModal(false)
       setAuthData({ phone: '', password: '', name: '' })
       if (pendingProduct) {
-        // 🔥 Wapas check karo dukan khuli hai ya nahi login ke baad bhi
         if (!isStoreOpen) {
           triggerStoreClosedAlert();
         } else {
@@ -136,14 +126,15 @@ export default function CategoriesPage() {
     }
   }
 
-  // 🔥 FIX FOR VERCEL BUILD ERROR: Added ': any'
-  const containerVariants: any = {
+  // 🔥 200% BULLETPROOF FIX: Added 'as const'
+  const containerVariants = {
     hidden: { opacity: 0 },
     show: { opacity: 1, transition: { staggerChildren: 0.1 } }
   }
-  const itemVariants: any = {
+  
+  const itemVariants = {
     hidden: { opacity: 0, y: 20 },
-    show: { opacity: 1, y: 0, transition: { type: "spring", stiffness: 300, damping: 24 } }
+    show: { opacity: 1, y: 0, transition: { type: "spring" as const, stiffness: 300, damping: 24 } }
   }
 
   return (
@@ -153,9 +144,6 @@ export default function CategoriesPage() {
       <main className="container mx-auto pb-40 pt-24 px-4 max-w-7xl">
         <AnimatePresence mode="wait">
           
-          {/* =========================================
-              VIEW 1: CATEGORIES GRID
-          ========================================= */}
           {!selectedCategory ? (
             <motion.div 
               key="categories-view"
@@ -185,11 +173,12 @@ export default function CategoriesPage() {
                 />
               </div>
 
-              <motion.div variants={containerVariants} initial="hidden" animate="show" className="grid grid-cols-2 gap-4">
+              {/* 🔥 BYPASSING TYPESCRIPT ERRORS WITH 'as any' IN JSX */}
+              <motion.div variants={containerVariants as any} initial="hidden" animate="show" className="grid grid-cols-2 gap-4">
                 {filteredCategories.map((category) => {
                   const Icon = category.icon
                   return (
-                    <motion.div key={category.id} variants={itemVariants}>
+                    <motion.div key={category.id} variants={itemVariants as any}>
                       <Card 
                         onClick={() => setSelectedCategory(category)}
                         className={`group glass-strong border-white/10 overflow-hidden cursor-pointer transition-all duration-300 hover:shadow-[0_0_20px_rgba(0,255,255,0.1)] hover:-translate-y-1 ${category.border}`}
@@ -216,9 +205,6 @@ export default function CategoriesPage() {
             </motion.div>
           ) : (
 
-          /* =========================================
-              VIEW 2: PRODUCTS GRID FOR SELECTED CATEGORY
-          ========================================= */
             <motion.div 
               key="products-view"
               initial={{ opacity: 0, x: 20 }}
@@ -252,7 +238,6 @@ export default function CategoriesPage() {
                         <div className="relative h-32 sm:h-40 w-full bg-white/5 overflow-hidden">
                           {/* eslint-disable-next-line @next/next/no-img-element */}
                           <img src={product.image || "/placeholder.jpg"} alt={product.name} className="object-cover w-full h-full group-hover:scale-110 transition-transform" onError={(e) => { e.currentTarget.src = '/placeholder.jpg' }} />
-                          {/* 🔥 Tumhari request ke hisaab se sirf out of stock dikhega */}
                           {!product.inStock && (
                             <div className="absolute inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-10">
                               <span className="bg-red-500 text-white font-black text-[10px] px-3 py-1.5 uppercase tracking-widest rounded-md shadow-lg">
@@ -269,7 +254,6 @@ export default function CategoriesPage() {
                           <div className="flex items-center justify-between mt-auto">
                             <span className="font-mono font-black text-[#CCFF00] text-lg">₹{product.price}</span>
                             
-                            {/* 🔥 CART CONTROLS */}
                             {cartItem ? (
                               <div className="flex items-center gap-2 bg-[#00FFFF]/10 border border-[#00FFFF]/30 rounded-lg p-1">
                                 <button onClick={() => updateQuantity(product.id, cartItem.quantity - 1)} className="w-7 h-7 flex items-center justify-center text-[#00FFFF] hover:bg-[#00FFFF]/20 rounded-md transition-colors"><Minus className="w-4 h-4" /></button>
@@ -311,7 +295,6 @@ export default function CategoriesPage() {
 
       <BottomNav />
 
-      {/* 🔐 NEON LOGIN MODAL */}
       <AnimatePresence>
         {showAuthModal && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
