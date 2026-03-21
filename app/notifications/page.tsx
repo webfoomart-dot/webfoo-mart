@@ -159,7 +159,7 @@ export default function NotificationsPage() {
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, scale: 0.95 }}
-                  transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                  transition={{ type: "spring" as const, stiffness: 300, damping: 30 }}
                 >
                   <Card 
                     onClick={() => { if (note.isAdminNote && note.unread) markNotificationRead(note.id) }}

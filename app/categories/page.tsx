@@ -171,7 +171,7 @@ export default function CategoriesPage() {
                       key={category.id}
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
-                      transition={{ type: "spring", stiffness: 300, damping: 24, delay: index * 0.05 }}
+                      transition={{ type: "spring" as const, stiffness: 300, damping: 24, delay: index * 0.05 }}
                     >
                       <Card 
                         onClick={() => setSelectedCategory(category)}
