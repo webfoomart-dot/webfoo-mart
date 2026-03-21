@@ -136,11 +136,12 @@ export default function CategoriesPage() {
     }
   }
 
-  const containerVariants = {
+  // 🔥 FIX FOR VERCEL BUILD ERROR: Added ': any'
+  const containerVariants: any = {
     hidden: { opacity: 0 },
     show: { opacity: 1, transition: { staggerChildren: 0.1 } }
   }
-  const itemVariants = {
+  const itemVariants: any = {
     hidden: { opacity: 0, y: 20 },
     show: { opacity: 1, y: 0, transition: { type: "spring", stiffness: 300, damping: 24 } }
   }
@@ -251,7 +252,7 @@ export default function CategoriesPage() {
                         <div className="relative h-32 sm:h-40 w-full bg-white/5 overflow-hidden">
                           {/* eslint-disable-next-line @next/next/no-img-element */}
                           <img src={product.image || "/placeholder.jpg"} alt={product.name} className="object-cover w-full h-full group-hover:scale-110 transition-transform" onError={(e) => { e.currentTarget.src = '/placeholder.jpg' }} />
-                          {/* 🔥 Tumhari request ke hisaab se sirf out of stock dikhega, closed nahi, aur styling same rahegi */}
+                          {/* 🔥 Tumhari request ke hisaab se sirf out of stock dikhega */}
                           {!product.inStock && (
                             <div className="absolute inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-10">
                               <span className="bg-red-500 text-white font-black text-[10px] px-3 py-1.5 uppercase tracking-widest rounded-md shadow-lg">
@@ -268,7 +269,7 @@ export default function CategoriesPage() {
                           <div className="flex items-center justify-between mt-auto">
                             <span className="font-mono font-black text-[#CCFF00] text-lg">₹{product.price}</span>
                             
-                            {/* 🔥 CART CONTROLS (Updated logic) */}
+                            {/* 🔥 CART CONTROLS */}
                             {cartItem ? (
                               <div className="flex items-center gap-2 bg-[#00FFFF]/10 border border-[#00FFFF]/30 rounded-lg p-1">
                                 <button onClick={() => updateQuantity(product.id, cartItem.quantity - 1)} className="w-7 h-7 flex items-center justify-center text-[#00FFFF] hover:bg-[#00FFFF]/20 rounded-md transition-colors"><Minus className="w-4 h-4" /></button>
@@ -277,8 +278,8 @@ export default function CategoriesPage() {
                               </div>
                             ) : (
                               <Button 
-                                disabled={!product.inStock} // Only disabled visually if out of stock
-                                onClick={() => handleCartClick(product)} // Store closed alert triggers here
+                                disabled={!product.inStock} 
+                                onClick={() => handleCartClick(product)} 
                                 size="icon" 
                                 className="h-9 w-9 rounded-xl bg-white/10 text-white border border-white/20 hover:bg-[#00FFFF] hover:text-black active:scale-90 transition-all disabled:opacity-50 disabled:hover:bg-white/10 disabled:hover:text-white"
                               >
