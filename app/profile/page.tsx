@@ -119,7 +119,7 @@ export default function ProfilePage() {
                  <Input required type="password" placeholder="Password" value={authData.password} onChange={(e) => setAuthData({...authData, password: e.target.value})} className="pl-12 h-14 bg-white/5 border-white/10 text-white rounded-xl font-bold" />
                </div>
                <Button type="submit" disabled={isLoading} className={`w-full h-14 font-black text-lg mt-4 shadow-lg ${authMode === 'login' ? 'bg-[#CCFF00] text-black' : 'bg-[#00FFFF] text-black'}`}>
-                 {isLoading ? 'PROCESSING...' : (authMode === 'login' ? 'ENTER MATRIX' : 'CREATE ACCOUNT')}
+                 {isLoading ? 'PROCESSING...' : (authMode === 'login' ? 'Login' : 'CREATE ACCOUNT')}
                </Button>
              </form>
              <div className="mt-8 text-center border-t border-white/10 pt-6">
