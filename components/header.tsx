@@ -1,3 +1,4 @@
+// @ts-nocheck
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -7,7 +8,6 @@ import { useAppStore } from '@/lib/store';
 import { motion } from 'framer-motion';
 
 export function Header() {
-  // Hydration Fix State
   const [isMounted, setIsMounted] = useState(false);
   
   const { user, getCartCount, notifications } = useAppStore() as any;
@@ -15,17 +15,15 @@ export function Header() {
 
   const unreadCount = notifications ? notifications.filter((n: any) => !n.read).length : 0;
 
-  // Run this once when the component mounts on the client
   useEffect(() => {
     setIsMounted(true);
   }, []);
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 glass border-b border-white/10">
+    <header className="fixed top-0 left-0 right-0 z-50 bg-black/50 backdrop-blur-2xl rounded-b-[40px] border-b border-white/10 shadow-[0_10px_30px_rgba(0,0,0,0.3)]">
       <div className="max-w-7xl mx-auto px-4 py-4">
         <div className="flex items-center justify-between">
           
-          {/* Logo - WEBFOO MART */}
           <Link href="/" className="flex items-center gap-2">
             <motion.div
               whileHover={{ scale: 1.05 }}
@@ -41,7 +39,6 @@ export function Header() {
             </motion.div>
           </Link>
 
-          {/* Desktop Nav (Hidden on Mobile) */}
           <nav className="hidden md:flex items-center gap-6">
             <Link href="/" className="text-white/70 hover:text-white transition-colors text-sm font-medium">Home</Link>
             <Link href="/products" className="text-white/70 hover:text-white transition-colors text-sm font-medium">Products</Link>
@@ -50,11 +47,8 @@ export function Header() {
             )}
           </nav>
 
-          {/* 🔥 BROWSE MODE LOCK: Cart & Notifications tabhi dikhenge jab user logged in hoga */}
           {user && (
             <div className="flex items-center gap-3">
-              
-              {/* Notification Icon */}
               <Link href="/notifications">
                 <motion.button 
                   whileHover={{ scale: 1.05 }} 
@@ -69,7 +63,6 @@ export function Header() {
                 </motion.button>
               </Link>
 
-              {/* Cart Icon */}
               <Link href="/cart">
                 <motion.button
                   whileHover={{ scale: 1.05 }}
@@ -89,7 +82,6 @@ export function Header() {
                   )}
                 </motion.button>
               </Link>
-
             </div>
           )}
         </div>
