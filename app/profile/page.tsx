@@ -97,7 +97,7 @@ export default function ProfilePage() {
                   {authMode === 'login' ? <Lock className="w-8 h-8 text-[#CCFF00]" /> : <Zap className="w-8 h-8 text-[#00FFFF]" />}
                 </div>
                 <h2 className="text-3xl font-black uppercase text-white tracking-tighter">
-                  {authMode === 'login' ? 'Welcome Back' : 'Be a part of us'}
+                  {authMode === 'login' ? 'Welcome Back' : 'NEW USER'}
                 </h2>
              </div>
 
