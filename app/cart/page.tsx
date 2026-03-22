@@ -88,7 +88,7 @@ export default function CartPage() {
       <main className="container mx-auto pb-40 pt-24 px-4 max-w-3xl">
         <div className="flex items-center gap-4 mb-8">
           <Link href="/"><Button variant="ghost" size="icon" className="rounded-full hover:bg-white/10 text-[#00FFFF]"><ArrowLeft className="h-6 w-6" /></Button></Link>
-          <h1 className="text-3xl font-black italic tracking-tighter flex items-center gap-2 uppercase">Your <span className="text-[#00FFFF]">Cart</span></h1>
+          <h1 className="text-3xl font-black tracking-tighter flex items-center gap-2 uppercase">Your <span className="text-[#00FFFF]">Cart</span></h1>
         </div>
 
         <AnimatePresence mode="popLayout">
@@ -97,7 +97,7 @@ export default function CartPage() {
               <Empty className="glass-strong border-[#00FFFF]/20 py-16 w-full max-w-md">
                 <EmptyContent>
                   <div className="bg-[#00FFFF]/10 p-4 rounded-full mb-4"><ShoppingBag className="w-12 h-12 text-[#00FFFF]" /></div>
-                  <EmptyTitle className="text-2xl font-black italic uppercase tracking-tighter">Cart is empty</EmptyTitle>
+                  <EmptyTitle className="text-2xl font-black uppercase tracking-tighter">Cart is empty</EmptyTitle>
                   <EmptyDescription className="text-muted-foreground mb-6">Looks like you haven't teleported anything yet!</EmptyDescription>
                   <Button asChild className="bg-[#CCFF00] text-black font-black hover:bg-[#CCFF00]/90 shadow-[0_0_20px_rgba(204,255,0,0.4)] px-8 py-6 h-auto text-lg rounded-xl transition-all hover:scale-105 active:scale-95"><Link href="/">CONTINUE SHOPPING</Link></Button>
                 </EmptyContent>
