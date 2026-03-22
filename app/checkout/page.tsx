@@ -16,7 +16,8 @@ import { Card, CardContent } from "@/components/ui/card"
 
 export default function CheckoutPage() {
   const router = useRouter()
-  const { cart, getCartTotal, addOrder, removeFromCart, user, orders } = useAppStore() as any
+  // 🔥 BUG FIX: Yahan maine customerMeta import kiya hai taaki DB ka asli address mile
+  const { cart, getCartTotal, addOrder, removeFromCart, user, orders, customerMeta } = useAppStore() as any
   const totalAmount = getCartTotal()
   const [isMounted, setIsMounted] = React.useState(false)
 
@@ -34,41 +35,48 @@ export default function CheckoutPage() {
   const [discountAmt, setDiscountAmt] = React.useState(0)
   const [finalTotal, setFinalTotal] = React.useState(totalAmount)
 
-  // 🔥 AGGRESSIVE ADDRESS CATCHER
+  // 🔥 100% SECURE ADDRESS CATCHER (Privacy Fixed)
   React.useEffect(() => {
     setIsMounted(true)
-    
+    if (!user || !user.phone) return; // Agar user nahi hai toh kuch mat kar
+
     let foundAddr = ""
 
-    // 1. Supabase User Data check
-    if (user?.address) {
-      foundAddr = user.address
+    // Step 1: Sabse pehle Database (customerMeta) se strictly us user ka address nikal
+    if (customerMeta && customerMeta[user.phone] && customerMeta[user.phone].address) {
+      foundAddr = customerMeta[user.phone].address
     }
     
-    // 2. Profile Page (Local Storage) check (Ye main pichli baar bhool gaya tha)
+    // Step 2: Agar DB mein nahi mila, toh usi user ke pichle orders check kar
+    if (!foundAddr && orders) {
+      // Sirf usi user ke orders filter karo
+      const userOrders = orders.filter((o: any) => o.phone === user.phone)
+      if (userOrders.length > 0) {
+        // Sabse aakhri order uthao
+        const lastOrder = userOrders[userOrders.length - 1]
+        if (lastOrder && lastOrder.landmark) {
+          foundAddr = lastOrder.landmark.split(' | Note:')[0]
+        }
+      }
+    }
+
+    // Step 3: Agar dono jagah nahi mila, tab local storage check kar, par STRICT PHONE CHECK ke sath
     if (!foundAddr) {
       try {
         const localProfile = JSON.parse(localStorage.getItem('webfoo_profile') || '{}')
-        if (localProfile.address) {
+        // Check kar ki local storage wala profile usi bande ka hai jo login hai
+        if (localProfile.phone === user.phone && localProfile.address) {
           foundAddr = localProfile.address
         }
       } catch (e) {}
     }
 
-    // 3. Purani Order History check
-    if (!foundAddr && orders) {
-      const last = [...orders].reverse().find((o: any) => o.phone === user?.phone)
-      if (last?.landmark) {
-        foundAddr = last.landmark.split(' | Note:')[0]
-      }
-    }
-
-    // Agar koi address mila, toh auto-select 'saved' option
+    // Agar address mil gaya, toh auto-select 'saved' option
     if (foundAddr && savedAddressState === '') {
       setSavedAddressState(foundAddr)
       setAddressMode('saved')
     }
-  }, [user, orders, savedAddressState])
+  }, [user, orders, customerMeta, savedAddressState])
 
   // Promo Code Logic
   React.useEffect(() => {
