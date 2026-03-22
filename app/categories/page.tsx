@@ -147,7 +147,7 @@ export default function CategoriesPage() {
                     <ArrowLeft className="h-6 w-6" />
                   </Button>
                 </Link>
-                <h1 className="text-3xl font-black italic tracking-tighter uppercase text-[#00FFFF]">
+                <h1 className="text-3xl font-black tracking-tighter uppercase text-[#00FFFF]">
                   Categories
                 </h1>
               </div>
@@ -215,7 +215,7 @@ export default function CategoriesPage() {
                   <ArrowLeft className="h-6 w-6" />
                 </Button>
                 <div>
-                  <h1 className="text-3xl font-black italic tracking-tighter uppercase text-white">
+                  <h1 className="text-3xl font-black tracking-tighter uppercase text-white">
                     {selectedCategory.name}
                   </h1>
                   <p className="text-[10px] font-bold uppercase tracking-widest text-[#00FFFF]">{categoryProducts.length} Items Found</p>
