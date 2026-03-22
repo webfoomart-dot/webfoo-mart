@@ -96,8 +96,8 @@ export default function ProfilePage() {
                 <div className="w-16 h-16 bg-[#CCFF00]/10 border border-[#CCFF00]/30 rounded-2xl flex items-center justify-center mx-auto mb-4">
                   {authMode === 'login' ? <Lock className="w-8 h-8 text-[#CCFF00]" /> : <Zap className="w-8 h-8 text-[#00FFFF]" />}
                 </div>
-                <h2 className="text-3xl font-black italic uppercase text-white tracking-tighter">
-                  {authMode === 'login' ? 'Welcome Back' : 'Join Squad'}
+                <h2 className="text-3xl font-black uppercase text-white tracking-tighter">
+                  {authMode === 'login' ? 'Welcome Back' : 'Be a part of us'}
                 </h2>
              </div>
 
@@ -142,7 +142,7 @@ export default function ProfilePage() {
       <main className="container mx-auto pb-40 pt-24 px-4 max-w-2xl">
         <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} className="flex items-center gap-4 mb-8">
           <Link href="/"><Button variant="ghost" size="icon" className="rounded-full hover:bg-white/10 text-[#00FFFF]"><ArrowLeft className="h-6 w-6" /></Button></Link>
-          <h1 className="text-3xl font-black italic tracking-tighter flex items-center gap-2 uppercase">Your <span className="text-[#00FFFF]">Profile</span></h1>
+          <h1 className="text-3xl font-black tracking-tighter flex items-center gap-2 uppercase">Your <span className="text-[#00FFFF]">Profile</span></h1>
         </motion.div>
 
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
@@ -153,7 +153,7 @@ export default function ProfilePage() {
                   <User className="w-12 h-12 text-[#00FFFF]" />
                 </div>
                 <div>
-                  <h2 className="text-2xl font-black text-white italic">{profile.name || "Cyber Shopper"}</h2>
+                  <h2 className="text-2xl font-black text-white ">{profile.name || "Cyber Shopper"}</h2>
                   <p className="text-[#CCFF00] font-mono text-sm mt-1 uppercase">WebFoo Member</p>
                 </div>
               </div>
