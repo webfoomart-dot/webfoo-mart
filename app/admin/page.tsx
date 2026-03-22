@@ -8,7 +8,7 @@ import {
   MessageSquare, Users, IndianRupee, Clock, CheckCircle2, ArrowLeft,
   MapPin, Phone, Truck, XCircle, Plus, UploadCloud, Trash2, Edit, PowerOff, Power,
   Star, Ban, MessageCircle, FileText, Send, CheckSquare, Square, Smartphone,
-  TrendingUp, Target, BarChart, ShieldAlert, LockKeyhole, Calendar, Settings, AlertTriangle, MoonStar, Type, LayoutGrid
+  TrendingUp, Target, BarChart, ShieldAlert, LockKeyhole, Calendar, Settings, AlertTriangle, MoonStar, LayoutGrid
 } from "lucide-react"
 
 import { useAppStore } from "@/lib/store"
@@ -28,18 +28,22 @@ const MENU_ITEMS = [
   { id: 'customers', label: 'Customers', icon: Users },
   { id: 'messages', label: 'Messages', icon: MessageSquare },
   { id: 'offers', label: 'Offers', icon: Tag },
-  { id: 'categories', label: 'Categories', icon: LayoutGrid }, // 🔥 NAYA TAB
-  { id: 'cms', label: 'App Text', icon: Type }, // 🔥 NAYA TAB
+  { id: 'categories', label: 'Categories', icon: LayoutGrid }, // 🔥 CATEGORY TAB
   { id: 'settings', label: 'Settings', icon: Settings }, 
 ]
 
-// 🔐 TUMHARA SECRET ADMIN PASSWORD
+// PURANI SAFE CATEGORIES LIST (Fallback ke liye)
+const ADMIN_CATEGORIES = [
+  "Groceries & Staples", "Fast Food", "Snacks & Namkeen", "Cold Drinks", 
+  "Dairy & Milk", "Chocolates & Cakes", "Stationery", "Party & Birthdays", 
+  "Fashion & Clothes", "Electronics"
+]
+
 const ADMIN_SECRET_PASSCODE = "WEBFOO99"
 
 export default function AdminDashboard() {
   const [isMounted, setIsMounted] = React.useState(false)
   
-  // 🛡️ SECURITY STATES
   const [isAuthorized, setIsAuthorized] = React.useState(false)
   const [passcode, setPasscode] = React.useState('')
   const [authError, setAuthError] = React.useState('')
@@ -52,31 +56,25 @@ export default function AdminDashboard() {
     promoCodes, addPromoCode, togglePromoStatus, deletePromo,
     storeConfig, fetchStoreConfig, updateStoreConfig, 
     fetchData,
-    categories, addCategory, deleteCategory, // 🔥 CMS FETCH
-    appTexts, updateAppText // 🔥 CMS FETCH
+    categories, addCategory, deleteCategory // 🔥 CATEGORIES FETCH
   } = useAppStore() as any
   
   const [activeTab, setActiveTab] = React.useState('live_orders')
   const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false)
 
-  // 📊 ANALYTICS FILTER STATES
   const [analyticsFilter, setAnalyticsFilter] = React.useState('all')
   const [customDate, setCustomDate] = React.useState('')
 
-  // Product Form State
   const [isProductSheetOpen, setIsProductSheetOpen] = React.useState(false)
   const [editingId, setEditingId] = React.useState<string | null>(null)
   const [formData, setFormData] = React.useState({
     name: '', price: '', mrp: '', category: '', image: '', inStock: true
   })
 
-  // Messages State
   const [selectedCustomers, setSelectedCustomers] = React.useState<string[]>([])
   const [messageText, setMessageText] = React.useState('')
 
-  // CMS States
   const [newCategoryName, setNewCategoryName] = React.useState('')
-  const [cmsTextState, setCmsTextState] = React.useState<Record<string, string>>({})
 
   const [settingsFormData, setSettingsFormData] = React.useState({
     storeMode: 'manual', openTime: '08:00', closeTime: '22:00',
@@ -110,20 +108,16 @@ export default function AdminDashboard() {
     }
   }, [storeConfig])
 
-  // Sync appTexts with local state for editing
-  React.useEffect(() => {
-    if (appTexts) {
-      setCmsTextState(appTexts)
-    }
-  }, [appTexts])
+  // 🔥 Smart Fallback: Agar DB khali hai, toh default purani list layega
+  const displayCategories = categories && categories.length > 0 
+    ? categories.map((c: any) => c.name) 
+    : ADMIN_CATEGORIES;
 
-  // Set default category when modal opens
   React.useEffect(() => {
-    if (categories && categories.length > 0 && !formData.category && !editingId) {
-      setFormData(prev => ({ ...prev, category: categories[0].name }))
+    if (!formData.category && !editingId) {
+      setFormData(prev => ({ ...prev, category: displayCategories[0] }))
     }
-  }, [categories, formData.category, editingId])
-
+  }, [displayCategories, formData.category, editingId])
 
   const filteredAnalyticsOrders = React.useMemo(() => {
     if (analyticsFilter === 'all') return orders;
@@ -188,7 +182,6 @@ export default function AdminDashboard() {
     setIsSettingsSaving(false);
   }
 
-  // CMS Handlers
   const handleAddCategory = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!newCategoryName.trim()) return;
@@ -196,22 +189,8 @@ export default function AdminDashboard() {
     setNewCategoryName('');
   }
 
-  const handleSaveAppTexts = async (e: React.FormEvent) => {
-    e.preventDefault();
-    try {
-      for (const [key, value] of Object.entries(cmsTextState)) {
-        await updateAppText(key, value);
-      }
-      alert("✅ Text updated successfully! It is now live on the app.");
-    } catch (e) {
-      alert("Failed to save text.");
-    }
-  }
-
-
   if (!isMounted) return null
 
-  // 🛑 SECURITY WALL
   if (!isAuthorized) {
     return (
       <div className="min-h-screen bg-[#050505] flex flex-col items-center justify-center p-4 selection:bg-[#FF0055]/30">
@@ -237,11 +216,9 @@ export default function AdminDashboard() {
     )
   }
 
-  // --- GENERAL DATA DERIVATIONS ---
   const liveOrders = orders.filter((o: any) => o.status === 'Pending' || o.status === 'In Transit').reverse()
   const orderHistory = orders.filter((o: any) => o.status === 'Delivered' || o.status === 'Cancelled').reverse()
   
-  // 📊 --- FILTERED ANALYTICS CALCULATIONS ---
   const analyticsDelivered = filteredAnalyticsOrders.filter((o: any) => o.status === 'Delivered')
   const analyticsCancelled = filteredAnalyticsOrders.filter((o: any) => o.status === 'Cancelled')
   const analyticsPending = filteredAnalyticsOrders.filter((o: any) => o.status === 'Pending' || o.status === 'In Transit')
@@ -261,7 +238,6 @@ export default function AdminDashboard() {
   })
   const topProducts = Array.from(productSales.entries()).map(([name, data]) => ({ name, ...data as {qty: number, revenue: number} })).sort((a, b) => b.qty - a.qty).slice(0, 5)
 
-  // --- CUSTOMER MAPPING ---
   const customersMap = new Map()
   Object.keys(customerMeta).forEach(phone => {
     const meta = customerMeta[phone]
@@ -297,7 +273,6 @@ export default function AdminDashboard() {
     }
   }
 
-  // --- ACTIONS ---
   const handleSelectCustomer = (phone: string) => { setSelectedCustomers(prev => prev.includes(phone) ? prev.filter(p => p !== phone) : [...prev, phone]) }
   const handleSelectAll = () => { if (selectedCustomers.length === customersList.length) setSelectedCustomers([]); else setSelectedCustomers(customersList.map(c => c.phone)) }
   const handleSendToApp = () => {
@@ -324,7 +299,7 @@ export default function AdminDashboard() {
     setIsProductSheetOpen(false); resetForm()
   }
   const openEdit = (product: any) => { setEditingId(product.id); setFormData({ name: product.name, price: product.price.toString(), mrp: product.mrp.toString(), category: product.category, image: product.image, inStock: product.inStock }); setIsProductSheetOpen(true) }
-  const resetForm = () => { setEditingId(null); setFormData({ name: '', price: '', mrp: '', category: categories.length > 0 ? categories[0].name : '', image: '', inStock: true }) }
+  const resetForm = () => { setEditingId(null); setFormData({ name: '', price: '', mrp: '', category: displayCategories[0], image: '', inStock: true }) }
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (file) { const reader = new FileReader(); reader.onloadend = () => setFormData({ ...formData, image: reader.result as string }); reader.readAsDataURL(file) }
@@ -339,7 +314,6 @@ export default function AdminDashboard() {
     } catch(e) { alert("Groq API error. Check backend!") }
   };
 
-  // --- SIDEBAR ---
   const SidebarNav = () => (
     <div className="flex flex-col h-full bg-black">
       <div className="p-6 border-b border-white/10 flex items-center gap-3">
@@ -408,65 +382,19 @@ export default function AdminDashboard() {
                     </form>
 
                     <div className="mt-6 space-y-3">
-                      <h4 className="text-xs font-black text-muted-foreground uppercase tracking-widest mb-3 border-b border-white/10 pb-2">Active Categories ({categories?.length || 0})</h4>
-                      {categories?.map((cat: any) => (
-                        <div key={cat.id} className="flex justify-between items-center p-4 bg-white/5 border border-white/10 rounded-xl">
-                          <span className="font-bold text-white uppercase tracking-wider">{cat.name}</span>
-                          <Button variant="ghost" size="icon" onClick={() => { if(confirm("Delete this category? Products in this category might break filters!")) deleteCategory(cat.id) }} className="text-red-500 hover:text-white hover:bg-red-500"><Trash2 className="w-4 h-4" /></Button>
-                        </div>
-                      ))}
+                      <h4 className="text-xs font-black text-muted-foreground uppercase tracking-widest mb-3 border-b border-white/10 pb-2">Categories List</h4>
+                      {displayCategories.map((catName: string, idx: number) => {
+                        const dbCat = categories?.find((c: any) => c.name === catName);
+                        return (
+                          <div key={dbCat ? dbCat.id : idx} className="flex justify-between items-center p-4 bg-white/5 border border-white/10 rounded-xl">
+                            <span className="font-bold text-white uppercase tracking-wider">{catName}</span>
+                            {dbCat && (
+                              <Button variant="ghost" size="icon" onClick={() => { if(confirm("Delete this category?")) deleteCategory(dbCat.id) }} className="text-red-500 hover:text-white hover:bg-red-500"><Trash2 className="w-4 h-4" /></Button>
+                            )}
+                          </div>
+                        )
+                      })}
                     </div>
-                  </CardContent>
-                </Card>
-             </motion.div>
-          )}
-
-          {/* 🔥 🔠 APP TEXT (CMS) TAB */}
-          {activeTab === 'cms' && (
-             <motion.div key="cms" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="space-y-6 max-w-3xl">
-                <Card className="glass-strong border-white/10">
-                  <CardContent className="p-6 sm:p-8 space-y-6">
-                    <div className="flex items-center gap-3 border-b border-white/10 pb-4">
-                      <Type className="w-6 h-6 text-[#00FFFF]" />
-                      <h3 className="text-xl font-black uppercase text-white">Website Text Control</h3>
-                    </div>
-                    <p className="text-xs text-muted-foreground uppercase tracking-widest mb-6">Change the core text of your website directly from here.</p>
-                    
-                    <form onSubmit={handleSaveAppTexts} className="space-y-6">
-                      
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div className="space-y-2">
-                          <Label className="text-[#00FFFF] text-xs font-black uppercase tracking-widest">Logo Text (Header)</Label>
-                          <Input value={cmsTextState.logo_text || ''} onChange={e => setCmsTextState({...cmsTextState, logo_text: e.target.value})} className="bg-black/50 border-white/20 h-12 font-bold" />
-                          <p className="text-[10px] text-muted-foreground">e.g. WEBFOO MART</p>
-                        </div>
-                        
-                        <div className="space-y-2">
-                          <Label className="text-[#00FFFF] text-xs font-black uppercase tracking-widest">Register Heading</Label>
-                          <Input value={cmsTextState.register_heading || ''} onChange={e => setCmsTextState({...cmsTextState, register_heading: e.target.value})} className="bg-black/50 border-white/20 h-12 font-bold" />
-                          <p className="text-[10px] text-muted-foreground">e.g. Join Squad / Create Account</p>
-                        </div>
-
-                        <div className="space-y-2">
-                          <Label className="text-[#00FFFF] text-xs font-black uppercase tracking-widest">Login Heading</Label>
-                          <Input value={cmsTextState.login_heading || ''} onChange={e => setCmsTextState({...cmsTextState, login_heading: e.target.value})} className="bg-black/50 border-white/20 h-12 font-bold" />
-                          <p className="text-[10px] text-muted-foreground">e.g. Welcome Back / Sign In</p>
-                        </div>
-
-                        <div className="space-y-2">
-                          <Label className="text-[#00FFFF] text-xs font-black uppercase tracking-widest">Orders Page Title</Label>
-                          <Input value={cmsTextState.orders_title || ''} onChange={e => setCmsTextState({...cmsTextState, orders_title: e.target.value})} className="bg-black/50 border-white/20 h-12 font-bold" />
-                          <p className="text-[10px] text-muted-foreground">e.g. Teleportations / My Orders</p>
-                        </div>
-                      </div>
-
-                      <div className="pt-6 border-t border-white/10 flex justify-end">
-                        <Button type="submit" className="h-14 bg-[#00FFFF] text-black font-black uppercase tracking-widest px-10 rounded-full hover:bg-[#00FFFF]/80">
-                          Deploy Text Live
-                        </Button>
-                      </div>
-                    </form>
-
                   </CardContent>
                 </Card>
              </motion.div>
@@ -977,8 +905,8 @@ export default function AdminDashboard() {
                          <div className="space-y-2">
                            <Label>Category</Label>
                            <select required value={formData.category} onChange={e => setFormData({...formData, category: e.target.value})} className="w-full h-10 bg-white/5 border border-white/10 rounded-md px-3 text-sm text-white focus:outline-none focus:border-[#00FFFF]">
-                             {categories?.map((cat: any) => (
-                               <option key={cat.id} value={cat.name} className="bg-black text-white">{cat.name}</option>
+                             {displayCategories.map((catName: string, idx: number) => (
+                               <option key={idx} value={catName} className="bg-black text-white">{catName}</option>
                              ))}
                            </select>
                          </div>
