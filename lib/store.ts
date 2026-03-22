@@ -64,13 +64,10 @@ interface AppState {
   register: (phone: string, name: string, password: string) => Promise<{ success: boolean; message: string }>
   logout: () => void
 
-  // 🔥 CMS (ADMIN) ENGINE ADDITIONS
+  // 🔥 CATEGORY ENGINE ONLY
   categories: { id: string, name: string }[]
   addCategory: (name: string) => Promise<void>
   deleteCategory: (id: string) => Promise<void>
-  
-  appTexts: Record<string, string>
-  updateAppText: (key: string, value: string) => Promise<void>
 }
 
 const defaultProducts: Product[] = [
@@ -175,18 +172,10 @@ export const useAppStore = create<AppState>()(
           set({ customerMeta: metaMap })
         }
 
-        // 🔥 FETCH CATEGORIES
+        // 🔥 FETCH CATEGORIES ONLY
         const { data: cats } = await supabase.from('webfoo_categories').select('*').order('created_at', { ascending: true })
         if (cats) {
           set({ categories: cats.map(c => ({ id: c.id, name: c.name })) })
-        }
-
-        // 🔥 FETCH APP TEXTS
-        const { data: texts } = await supabase.from('webfoo_texts').select('*')
-        if (texts) {
-          const textMap: Record<string, string> = {}
-          texts.forEach(t => textMap[t.key] = t.value)
-          set({ appTexts: { ...get().appTexts, ...textMap } })
         }
       },
 
@@ -305,14 +294,8 @@ export const useAppStore = create<AppState>()(
       },
       logout: () => set({ user: null, cart: [] }),
 
-      // 🔥 CMS ENGINE LOGIC
+      // 🔥 CATEGORY LOGIC ONLY
       categories: [],
-      appTexts: {
-        logo_text: 'WEBFOO MART',
-        register_heading: 'Join Squad',
-        login_heading: 'Welcome Back',
-        orders_title: 'Teleportations'
-      },
       addCategory: async (name) => {
         const tempId = Date.now().toString()
         set((state) => ({ categories: [...state.categories, { id: tempId, name }] }))
@@ -322,10 +305,6 @@ export const useAppStore = create<AppState>()(
       deleteCategory: async (id) => {
         set((state) => ({ categories: state.categories.filter(c => c.id !== id) }))
         await supabase.from('webfoo_categories').delete().eq('id', id)
-      },
-      updateAppText: async (key, value) => {
-        set((state) => ({ appTexts: { ...state.appTexts, [key]: value } }))
-        await supabase.from('webfoo_texts').upsert({ key, value }, { onConflict: 'key' })
       }
     }),
     { name: 'webfoo-storage' }
