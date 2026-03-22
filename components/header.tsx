@@ -30,10 +30,10 @@ export function Header() {
               whileTap={{ scale: 0.95 }}
               className="flex items-center"
             >
-              <span className="text-xl md:text-2xl font-black italic tracking-tighter text-white">
+              <span className="text-xl md:text-2xl font-black tracking-tighter text-white">
                 WEBFOO
               </span>
-              <span className="text-xl md:text-2xl font-black italic tracking-tighter text-[#00FFFF]">
+              <span className="text-xl md:text-2xl font-black tracking-tighter text-[#00FFFF]">
                 MART
               </span>
             </motion.div>
