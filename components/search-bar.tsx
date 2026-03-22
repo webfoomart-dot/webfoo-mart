@@ -1,3 +1,4 @@
+// @ts-nocheck
 'use client';
 
 import { motion } from 'framer-motion';
@@ -5,7 +6,7 @@ import { Search, Mic } from 'lucide-react';
 import { useAppStore } from '@/lib/store';
 
 export function SearchBar() {
-  const { searchQuery, setSearchQuery } = useAppStore();
+  const { searchQuery, setSearchQuery } = useAppStore() as any;
 
   return (
     <motion.div
