@@ -112,7 +112,7 @@ export default function NotificationsPage() {
             </Button>
           </Link>
           {/* 🔥 NAYA TITLE: "UPDATES" */}
-          <h1 className="text-3xl font-black italic tracking-tighter flex items-center gap-2 uppercase text-[#00FFFF]">
+          <h1 className="text-3xl font-black tracking-tighter flex items-center gap-2 uppercase text-[#00FFFF]">
             Updates
           </h1>
         </motion.div>
@@ -135,7 +135,7 @@ export default function NotificationsPage() {
                     <BellOff className="w-12 h-12 text-[#00FFFF]" />
                   </div>
                   {/* 🔥 UPDATED EMPTY TEXT */}
-                  <EmptyTitle className="text-2xl font-black italic uppercase tracking-tighter">
+                  <EmptyTitle className="text-2xl font-black uppercase tracking-tighter">
                     No Updates
                   </EmptyTitle>
                   <EmptyDescription className="text-muted-foreground mb-4">
