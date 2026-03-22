@@ -26,7 +26,6 @@ interface AppState {
   updateStoreConfig: (config: Partial<Omit<StoreConfig, 'id'>>) => Promise<void>
   checkIfStoreOpen: () => boolean
 
-  // 🔥 NAYA FEATURE: Capsule Pop-up Alert State
   storeClosedAlert: boolean;
   triggerStoreClosedAlert: () => void;
 
@@ -64,6 +63,14 @@ interface AppState {
   login: (phone: string, password: string) => Promise<{ success: boolean; message: string }>
   register: (phone: string, name: string, password: string) => Promise<{ success: boolean; message: string }>
   logout: () => void
+
+  // 🔥 CMS (ADMIN) ENGINE ADDITIONS
+  categories: { id: string, name: string }[]
+  addCategory: (name: string) => Promise<void>
+  deleteCategory: (id: string) => Promise<void>
+  
+  appTexts: Record<string, string>
+  updateAppText: (key: string, value: string) => Promise<void>
 }
 
 const defaultProducts: Product[] = [
@@ -75,13 +82,12 @@ export const useAppStore = create<AppState>()(
     (set, get) => ({
       storeConfig: null,
       
-      // 🔥 ALERT TRIGGER LOGIC (3 seconds ke liye capsule dikhayega)
       storeClosedAlert: false,
       triggerStoreClosedAlert: () => {
         set({ storeClosedAlert: true })
         setTimeout(() => {
           set({ storeClosedAlert: false })
-        }, 3000) // 3 seconds baad gayab
+        }, 3000)
       },
 
       fetchStoreConfig: async () => {
@@ -167,6 +173,20 @@ export const useAppStore = create<AppState>()(
           const metaMap: Record<string, any> = {}
           custs.forEach(c => { metaMap[c.phone] = { isVip: c.is_vip, isBlocked: c.is_blocked, name: c.name, phone: c.phone, address: c.address } })
           set({ customerMeta: metaMap })
+        }
+
+        // 🔥 FETCH CATEGORIES
+        const { data: cats } = await supabase.from('webfoo_categories').select('*').order('created_at', { ascending: true })
+        if (cats) {
+          set({ categories: cats.map(c => ({ id: c.id, name: c.name })) })
+        }
+
+        // 🔥 FETCH APP TEXTS
+        const { data: texts } = await supabase.from('webfoo_texts').select('*')
+        if (texts) {
+          const textMap: Record<string, string> = {}
+          texts.forEach(t => textMap[t.key] = t.value)
+          set({ appTexts: { ...get().appTexts, ...textMap } })
         }
       },
 
@@ -284,6 +304,29 @@ export const useAppStore = create<AppState>()(
         return { success: true, message: 'Account created!' }
       },
       logout: () => set({ user: null, cart: [] }),
+
+      // 🔥 CMS ENGINE LOGIC
+      categories: [],
+      appTexts: {
+        logo_text: 'WEBFOO MART',
+        register_heading: 'Join Squad',
+        login_heading: 'Welcome Back',
+        orders_title: 'Teleportations'
+      },
+      addCategory: async (name) => {
+        const tempId = Date.now().toString()
+        set((state) => ({ categories: [...state.categories, { id: tempId, name }] }))
+        const { data } = await supabase.from('webfoo_categories').insert({ name }).select().single()
+        if (data) set((state) => ({ categories: state.categories.map(c => c.id === tempId ? { ...c, id: data.id } : c) }))
+      },
+      deleteCategory: async (id) => {
+        set((state) => ({ categories: state.categories.filter(c => c.id !== id) }))
+        await supabase.from('webfoo_categories').delete().eq('id', id)
+      },
+      updateAppText: async (key, value) => {
+        set((state) => ({ appTexts: { ...state.appTexts, [key]: value } }))
+        await supabase.from('webfoo_texts').upsert({ key, value }, { onConflict: 'key' })
+      }
     }),
     { name: 'webfoo-storage' }
   )
