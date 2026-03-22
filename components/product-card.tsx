@@ -43,6 +43,8 @@ export function ProductCard({ item }: ProductCardProps) {
       animate={{ opacity: 1, scale: 1 }}
       exit={{ opacity: 0, scale: 0.9 }}
       whileHover={{ y: -5 }}
+      // 🔥 THE FIX: Ye line phone (touch) ke liye add ki hai
+      whileTap={{ scale: 0.96, y: -2 }}
       className="glass rounded-3xl overflow-hidden group"
     >
       {/* Image Container */}
