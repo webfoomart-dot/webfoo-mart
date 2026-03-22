@@ -20,6 +20,7 @@ export function BottomNav() {
     setIsMounted(true)
   }, [])
 
+  // 🔥 THE FIX: Categories ko non-logged in users (doosre array) ke liye bhi add kar diya
   const navItems = user 
     ? [
         { name: 'Home', href: '/', icon: Home },
@@ -29,6 +30,7 @@ export function BottomNav() {
       ]
     : [
         { name: 'Home', href: '/', icon: Home },
+        { name: 'Categories', href: '/categories', icon: LayoutGrid }, // <-- Yahan add kiya!
         { name: 'Login', href: '/profile', icon: LogIn }, 
       ]
 
