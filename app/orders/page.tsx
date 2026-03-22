@@ -70,7 +70,7 @@ export default function OrdersPage() {
         <div className="flex items-center justify-between mb-8 relative z-20">
           <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} className="flex items-center gap-3">
             <Link href="/"><Button variant="ghost" size="icon" className="rounded-full text-[#00FFFF]"><ArrowLeft className="h-6 w-6" /></Button></Link>
-            <h1 className="text-2xl sm:text-3xl font-black italic uppercase tracking-tighter">Your <span className="text-[#00FFFF]">Orders</span></h1>
+            <h1 className="text-2xl sm:text-3xl font-black uppercase tracking-tighter">Your <span className="text-[#00FFFF]">Orders</span></h1>
           </motion.div>
 
           {myPersonalOrders.length > 0 && (
@@ -99,7 +99,7 @@ export default function OrdersPage() {
               <Empty className="glass-strong border-[#00FFFF]/20 py-16 w-full max-w-md text-center">
                 <EmptyContent>
                   <Package className="w-12 h-12 text-[#00FFFF] mx-auto mb-4" />
-                  <EmptyTitle className="text-2xl font-black italic uppercase">No Orders</EmptyTitle>
+                  <EmptyTitle className="text-2xl font-black uppercase">No Orders</EmptyTitle>
                   <EmptyDescription className="text-muted-foreground mb-6">Start exploring our grid!</EmptyDescription>
                   <Button asChild className="bg-[#CCFF00] text-black font-black rounded-xl px-8 h-12"><Link href="/">SHOP NOW</Link></Button>
                 </EmptyContent>
