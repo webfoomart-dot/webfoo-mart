@@ -19,7 +19,8 @@ const FILTERS = ['All', 'Pending', 'In Transit', 'Delivered', 'Cancelled']
 
 export default function OrdersPage() {
   const [isMounted, setIsMounted] = React.useState(false)
-  // 🚀 FIX 1: user ko yahan import kiya
+  
+  // User aur orders dono yahan nikal liye
   const { user, orders } = useAppStore() as any
   
   // Filter States
@@ -32,10 +33,15 @@ export default function OrdersPage() {
 
   if (!isMounted) return null
 
-  // 🚀 FIX 2: Pehle sirf login user ke orders filter kiye
-  const myPersonalOrders = orders?.filter((o: any) => o.userId === user?.id) || []
+  // SUPER SMART FILTER: Ye automatically ID aur Email dono check karke sirf login user ke orders nikalega
+  const myPersonalOrders = orders?.filter((o: any) => {
+    if (!user) return false;
+    const isIdMatch = o.userId === user.id || o.user_id === user.id;
+    const isEmailMatch = (o.email && o.email === user.email) || (o.userEmail && o.userEmail === user.email);
+    return isIdMatch || isEmailMatch;
+  }) || [];
 
-  // 🔄 Filter logic + Reverse (Latest hamesha top pe)
+  // 🔄 Filter logic + Reverse (Latest hamesha top pe) - Ab ye 'myPersonalOrders' pe chalega
   const filteredOrders = [...myPersonalOrders]
     .filter(order => activeFilter === 'All' ? true : order.status === activeFilter)
     .reverse()
