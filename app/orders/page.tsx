@@ -33,13 +33,25 @@ export default function OrdersPage() {
 
   if (!isMounted) return null
 
-  // SUPER SMART FILTER: Ye automatically ID aur Email dono check karke sirf login user ke orders nikalega
-  const myPersonalOrders = orders?.filter((o: any) => {
-    if (!user) return false;
-    const isIdMatch = o.userId === user.id || o.user_id === user.id;
-    const isEmailMatch = (o.email && o.email === user.email) || (o.userEmail && o.userEmail === user.email);
-    return isIdMatch || isEmailMatch;
-  }) || [];
+  // 🚀 FIXED LOGIC: Match based on PHONE number from your Supabase screenshot
+  const myPersonalOrders = React.useMemo(() => {
+    if (!user || !orders) return [];
+
+    return orders.filter((order: any) => {
+      // Login user ka phone
+      const userPhone = user.phone;
+      
+      // Order table mein phone number match kar rahe hain
+      // matchesId covers userId, user_id
+      // matchesPhone covers direct phone matches
+      return (
+        order.phone === userPhone || 
+        order.customer_phone === userPhone || 
+        order.userId === user.id ||
+        order.user_id === user.id
+      );
+    });
+  }, [user, orders]);
 
   // 🔄 Filter logic + Reverse (Latest hamesha top pe) - Ab ye 'myPersonalOrders' pe chalega
   const filteredOrders = [...myPersonalOrders]
@@ -109,7 +121,7 @@ export default function OrdersPage() {
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     exit={{ opacity: 0, y: 10, scale: 0.95 }}
                     transition={{ duration: 0.2 }}
-                    className="absolute right-0 top-12 w-40 glass-strong bg-black/90 border border-[#00FFFF]/30 rounded-xl shadow-[0_0_20px_rgba(0,255,255,0.15)] overflow-hidden flex flex-col"
+                    className="absolute right-0 top-12 w-40 glass-strong bg-black/90 border border-[#00FFFF]/30 rounded-xl shadow-[0_0_20px_rgba(0,255,255,0.15)] overflow-hidden flex flex-col z-50"
                   >
                     {FILTERS.map(f => (
                       <button
@@ -139,14 +151,16 @@ export default function OrdersPage() {
             <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="flex justify-center mt-10">
               <Empty className="glass-strong border-[#00FFFF]/20 py-16 w-full max-w-md">
                 <EmptyContent>
-                  <div className="bg-[#00FFFF]/10 p-4 rounded-full mb-4 shadow-[0_0_20px_rgba(0,255,255,0.2)]">
+                  <div className="bg-[#00FFFF]/10 p-4 rounded-full mb-4 shadow-[0_0_20px_rgba(0,255,255,0.2)] flex justify-center">
                     <Package className="w-12 h-12 text-[#00FFFF]" />
                   </div>
-                  <EmptyTitle className="text-2xl font-black italic uppercase tracking-tighter">No Orders Yet</EmptyTitle>
-                  <EmptyDescription className="text-muted-foreground mb-6">You haven't initiated any teleportations. Start exploring our grid!</EmptyDescription>
-                  <Button asChild className="bg-[#CCFF00] text-black font-black hover:bg-[#CCFF00]/90 h-12 px-8 rounded-xl shadow-[0_0_15px_rgba(204,255,0,0.3)]">
-                    <Link href="/">SHOP NOW</Link>
-                  </Button>
+                  <EmptyTitle className="text-2xl font-black italic uppercase tracking-tighter text-center">No Orders Yet</EmptyTitle>
+                  <EmptyDescription className="text-muted-foreground mb-6 text-center">You haven't initiated any teleportations. Start exploring our grid!</EmptyDescription>
+                  <div className="flex justify-center">
+                    <Button asChild className="bg-[#CCFF00] text-black font-black hover:bg-[#CCFF00]/90 h-12 px-8 rounded-xl shadow-[0_0_15px_rgba(204,255,0,0.3)]">
+                      <Link href="/">SHOP NOW</Link>
+                    </Button>
+                  </div>
                 </EmptyContent>
               </Empty>
             </motion.div>
@@ -154,9 +168,9 @@ export default function OrdersPage() {
              <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="flex justify-center mt-10">
               <Empty className="glass-strong border-white/10 py-16 w-full max-w-md">
                 <EmptyContent>
-                  <Filter className="w-12 h-12 text-muted-foreground mb-4 opacity-50" />
-                  <EmptyTitle className="text-xl font-black uppercase">No {activeFilter} Orders</EmptyTitle>
-                  <EmptyDescription className="text-muted-foreground">You don't have any orders currently in this state.</EmptyDescription>
+                  <div className="flex justify-center mb-4"><Filter className="w-12 h-12 text-muted-foreground opacity-50" /></div>
+                  <EmptyTitle className="text-xl font-black uppercase text-center">No {activeFilter} Orders</EmptyTitle>
+                  <EmptyDescription className="text-muted-foreground text-center">You don't have any orders currently in this state.</EmptyDescription>
                 </EmptyContent>
               </Empty>
             </motion.div>
@@ -190,7 +204,7 @@ export default function OrdersPage() {
                       <CardContent className="p-0">
                         {/* Items List */}
                         <div className="divide-y divide-white/5">
-                          {order.items.map((item: any, i: number) => (
+                          {order.items?.map((item: any, i: number) => (
                             <div key={i} className="p-4 sm:px-6 flex items-center justify-between">
                               <div className="flex items-center gap-4">
                                 <div className="relative w-16 h-16 rounded-lg overflow-hidden bg-white/5 border border-white/10">
