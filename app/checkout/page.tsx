@@ -16,8 +16,7 @@ import { Card, CardContent } from "@/components/ui/card"
 
 export default function CheckoutPage() {
   const router = useRouter()
-  // 🔥 BUG FIX: Yahan maine customerMeta import kiya hai taaki DB ka asli address mile
-  const { cart, getCartTotal, addOrder, removeFromCart, user, orders, customerMeta } = useAppStore() as any
+  const { cart, getCartTotal, addOrder, removeFromCart, user, customerMeta } = useAppStore() as any
   const totalAmount = getCartTotal()
   const [isMounted, setIsMounted] = React.useState(false)
 
@@ -35,48 +34,22 @@ export default function CheckoutPage() {
   const [discountAmt, setDiscountAmt] = React.useState(0)
   const [finalTotal, setFinalTotal] = React.useState(totalAmount)
 
-  // 🔥 100% SECURE ADDRESS CATCHER (Privacy Fixed)
+  // 🔥 STRICT PROFILE ADDRESS MATCHER (NO ORDER HISTORY FALLBACK)
   React.useEffect(() => {
     setIsMounted(true)
-    if (!user || !user.phone) return; // Agar user nahi hai toh kuch mat kar
+    if (!user || !user.phone) return;
 
-    let foundAddr = ""
+    // Sirf aur sirf Database / Profile ka address check karega
+    const profileAddress = customerMeta?.[user.phone]?.address;
 
-    // Step 1: Sabse pehle Database (customerMeta) se strictly us user ka address nikal
-    if (customerMeta && customerMeta[user.phone] && customerMeta[user.phone].address) {
-      foundAddr = customerMeta[user.phone].address
-    }
-    
-    // Step 2: Agar DB mein nahi mila, toh usi user ke pichle orders check kar
-    if (!foundAddr && orders) {
-      // Sirf usi user ke orders filter karo
-      const userOrders = orders.filter((o: any) => o.phone === user.phone)
-      if (userOrders.length > 0) {
-        // Sabse aakhri order uthao
-        const lastOrder = userOrders[userOrders.length - 1]
-        if (lastOrder && lastOrder.landmark) {
-          foundAddr = lastOrder.landmark.split(' | Note:')[0]
-        }
-      }
-    }
-
-    // Step 3: Agar dono jagah nahi mila, tab local storage check kar, par STRICT PHONE CHECK ke sath
-    if (!foundAddr) {
-      try {
-        const localProfile = JSON.parse(localStorage.getItem('webfoo_profile') || '{}')
-        // Check kar ki local storage wala profile usi bande ka hai jo login hai
-        if (localProfile.phone === user.phone && localProfile.address) {
-          foundAddr = localProfile.address
-        }
-      } catch (e) {}
-    }
-
-    // Agar address mil gaya, toh auto-select 'saved' option
-    if (foundAddr && savedAddressState === '') {
-      setSavedAddressState(foundAddr)
+    if (profileAddress && profileAddress.trim() !== '') {
+      setSavedAddressState(profileAddress)
       setAddressMode('saved')
+    } else {
+      setSavedAddressState('')
+      setAddressMode('new')
     }
-  }, [user, orders, customerMeta, savedAddressState])
+  }, [user, customerMeta])
 
   // Promo Code Logic
   React.useEffect(() => {
