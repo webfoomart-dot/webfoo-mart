@@ -3,6 +3,7 @@
 
 import * as React from "react"
 import Link from "next/link"
+import Image from "next/image"
 import { useRouter } from "next/navigation"
 import { motion, AnimatePresence } from "framer-motion"
 import { ArrowLeft, User, Phone, MapPin, Save, Camera, CheckCircle2, LogOut, Headphones, Lock, Zap } from "lucide-react"
@@ -92,9 +93,11 @@ export default function ProfilePage() {
         <Header />
         <main className="container mx-auto pb-40 pt-24 px-4 flex items-center justify-center min-h-[70vh]">
           <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="w-full max-w-md bg-[#050505] border border-white/10 rounded-[2rem] p-8 relative overflow-hidden">
+             
              <div className="text-center mb-8">
-                <div className="w-16 h-16 bg-[#CCFF00]/10 border border-[#CCFF00]/30 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                  {authMode === 'login' ? <Lock className="w-8 h-8 text-[#CCFF00]" /> : <Zap className="w-8 h-8 text-[#00FFFF]" />}
+                {/* 🚀 LOGO ADDED HERE IN CIRCLE SHAPE */}
+                <div className="w-24 h-24 mx-auto mb-4 relative rounded-full overflow-hidden border-2 border-[#00FFFF] shadow-[0_0_20px_rgba(0,255,255,0.3)]">
+                  <Image src="/logo.png" alt="WebFoo Mart" fill className="object-cover" />
                 </div>
                 <h2 className="text-3xl font-black uppercase text-white tracking-tighter">
                   {authMode === 'login' ? 'Welcome Back' : 'NEW USER'}
