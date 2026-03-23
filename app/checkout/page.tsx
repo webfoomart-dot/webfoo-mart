@@ -2,10 +2,9 @@
 
 import * as React from "react"
 import Link from "next/link"
-import Image from "next/image"
 import { useRouter } from "next/navigation"
 import { motion, AnimatePresence } from "framer-motion"
-import { ArrowLeft, User, Phone, MapPin, Banknote, CheckCircle, Package, FileText, Plus } from "lucide-react"
+import { ArrowLeft, User, MapPin, Banknote, CheckCircle, Package, FileText, Plus } from "lucide-react"
 
 import { useAppStore } from "@/lib/store"
 import { Header } from "@/components/header"
@@ -16,7 +15,7 @@ import { Card, CardContent } from "@/components/ui/card"
 
 export default function CheckoutPage() {
   const router = useRouter()
-  const { cart, getCartTotal, addOrder, removeFromCart, user, customerMeta } = useAppStore() as any
+  const { cart, getCartTotal, addOrder, removeFromCart, user, orders, customerMeta } = useAppStore() as any
   const totalAmount = getCartTotal()
   const [isMounted, setIsMounted] = React.useState(false)
 
@@ -34,22 +33,52 @@ export default function CheckoutPage() {
   const [discountAmt, setDiscountAmt] = React.useState(0)
   const [finalTotal, setFinalTotal] = React.useState(totalAmount)
 
-  // 🔥 STRICT PROFILE ADDRESS MATCHER (NO ORDER HISTORY FALLBACK)
+  // 🔥 TITANIUM STRICT ADDRESS CATCHER (String Matching Fix)
   React.useEffect(() => {
     setIsMounted(true)
     if (!user || !user.phone) return;
 
-    // Sirf aur sirf Database / Profile ka address check karega
-    const profileAddress = customerMeta?.[user.phone]?.address;
+    let foundAddr = ""
+    // ZABARDASTI STRING MEIN CONVERT KAR RAHE HAIN TAARI MATCH FAIL NA HO
+    const myPhoneStr = String(user.phone).trim()
 
-    if (profileAddress && profileAddress.trim() !== '') {
-      setSavedAddressState(profileAddress)
+    // Step 1: Sabse pehle customerMeta (Database Profile) check karo
+    if (customerMeta && customerMeta[myPhoneStr] && customerMeta[myPhoneStr].address) {
+      foundAddr = customerMeta[myPhoneStr].address
+    }
+    
+    // Step 2: Agar Profile mein nahi hai, toh SIRF USI CUSTOMER ke orders check karo
+    if (!foundAddr && orders && Array.isArray(orders)) {
+      // DHYAN DE: Yahan dono side String convert karke match kar rahe hain
+      const myOrders = orders.filter((o: any) => String(o.phone).trim() === myPhoneStr)
+      
+      if (myOrders.length > 0) {
+        // Sirf is bande ka sabse aakhri order lo
+        const myLastOrder = myOrders[myOrders.length - 1]
+        if (myLastOrder && myLastOrder.landmark) {
+          foundAddr = myLastOrder.landmark.split(' | Note:')[0]
+        }
+      }
+    }
+
+    // Step 3: Local Storage (Browser memory) ka ultimate fallback, sirf uske number par
+    if (!foundAddr) {
+      try {
+        const localProfile = JSON.parse(localStorage.getItem('webfoo_profile') || '{}')
+        if (String(localProfile.phone).trim() === myPhoneStr && localProfile.address) {
+          foundAddr = localProfile.address
+        }
+      } catch (e) {}
+    }
+
+    // Address Set karna
+    if (foundAddr && savedAddressState === '') {
+      setSavedAddressState(foundAddr)
       setAddressMode('saved')
-    } else {
-      setSavedAddressState('')
+    } else if (!foundAddr && savedAddressState === '') {
       setAddressMode('new')
     }
-  }, [user, customerMeta])
+  }, [user, orders, customerMeta, savedAddressState])
 
   // Promo Code Logic
   React.useEffect(() => {
