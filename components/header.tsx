@@ -4,6 +4,7 @@
 import { useState, useEffect } from 'react';
 import { ShoppingCart, Bell } from 'lucide-react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useAppStore } from '@/lib/store';
 import { motion } from 'framer-motion';
 
@@ -30,12 +31,13 @@ export function Header() {
               whileTap={{ scale: 0.95 }}
               className="flex items-center"
             >
-              <span className="text-xl md:text-2xl font-black tracking-tighter text-white">
-                WEBFOO
-              </span>
-              <span className="text-xl md:text-2xl font-black tracking-tighter text-[#00FFFF]">
-                MART
-              </span>
+              <Image 
+                src="/logo.png" 
+                alt="WebFoo Mart" 
+                width={44} 
+                height={44} 
+                className="rounded-full object-cover shadow-[0_0_15px_rgba(0,255,255,0.3)]" 
+              />
             </motion.div>
           </Link>
 
