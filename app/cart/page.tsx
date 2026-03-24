@@ -17,7 +17,7 @@ import { Input } from "@/components/ui/input"
 export default function CartPage() {
   const [isMounted, setIsMounted] = React.useState(false)
   
-  const { cart, removeFromCart, updateQuantity, getCartTotal, promoCodes } = useAppStore() as any
+  const { cart, removeFromCart, updateQuantity, getCartTotal, promoCodes, storeConfig } = useAppStore() as any
   const totalAmount = getCartTotal()
 
   const [promoInput, setPromoInput] = React.useState("")
@@ -26,7 +26,6 @@ export default function CartPage() {
 
   React.useEffect(() => {
     setIsMounted(true)
-    // 🔥 NAYA: Page load hote hi check karega agar koi code pehle se applied tha
     const savedPromo = localStorage.getItem('webfoo_applied_promo')
     if(savedPromo) {
       try { setAppliedPromo(JSON.parse(savedPromo)) } catch(e){}
@@ -47,7 +46,7 @@ export default function CartPage() {
     if (!code) {
       setPromoError("Invalid or Expired Code!");
       setAppliedPromo(null);
-      localStorage.removeItem('webfoo_applied_promo'); // Remove if invalid
+      localStorage.removeItem('webfoo_applied_promo');
       return;
     }
     if (totalAmount < code.minOrder) {
@@ -59,7 +58,6 @@ export default function CartPage() {
     
     setAppliedPromo(code);
     setPromoInput("");
-    // 🔥 NAYA: Apply hote hi local memory me save kar liya taaki Checkout padh sake
     localStorage.setItem('webfoo_applied_promo', JSON.stringify(code));
   }
 
@@ -73,6 +71,9 @@ export default function CartPage() {
     : 0;
 
   const finalAmount = totalAmount - discountAmount;
+  
+  // 🔥 MINIMUM ORDER LOGIC
+  const minOrderLimit = storeConfig?.minOrderAmount || 0;
 
   if (!isMounted) {
     return (
@@ -145,7 +146,19 @@ export default function CartPage() {
                   {appliedPromo && <div className="flex justify-between items-center text-xs text-[#CCFF00] uppercase tracking-widest font-bold"><span>Discount</span><span>-₹{discountAmount}</span></div>}
                   <div className="flex justify-between items-center pt-4 border-t border-white/5"><span className="text-muted-foreground font-black text-xs uppercase tracking-[0.2em]">Final Total</span><span className="text-3xl font-black text-[#00FFFF] drop-shadow-[0_0_15px_rgba(0,255,255,0.4)] font-mono">₹{finalAmount}</span></div>
                 </div>
-                <Button asChild className="w-full h-12 rounded-xl bg-[#CCFF00] text-black font-black text-lg hover:bg-[#CCFF00]/90 transition-all shadow-[0_0_15px_rgba(204,255,0,0.3)] hover:scale-[1.02] active:scale-95"><Link href="/checkout">PROCEED TO CHECKOUT</Link></Button>
+                
+                {/* 🔥 CHECKOUT BUTTON BLOCK WITH MINIMUM LIMIT LOCK */}
+                {totalAmount > 0 && finalAmount < minOrderLimit ? (
+                  <div className="space-y-3">
+                    <div className="bg-red-500/10 border border-red-500/30 p-3 rounded-xl text-center">
+                      <p className="text-red-500 text-sm font-black uppercase tracking-widest flex items-center justify-center gap-2"><XCircle className="w-5 h-5" /> Minimum Order is ₹{minOrderLimit}</p>
+                      <p className="text-white text-[10px] mt-1 opacity-80 uppercase font-bold tracking-widest">Add items worth ₹{minOrderLimit - finalAmount} more to checkout</p>
+                    </div>
+                    <Button disabled className="w-full h-12 rounded-xl bg-white/5 text-white/30 font-black text-lg cursor-not-allowed border border-white/10 uppercase transition-all shadow-none">CHECKOUT LOCKED</Button>
+                  </div>
+                ) : (
+                  <Button asChild className="w-full h-12 rounded-xl bg-[#CCFF00] text-black font-black text-lg hover:bg-[#CCFF00]/90 transition-all shadow-[0_0_15px_rgba(204,255,0,0.3)] hover:scale-[1.02] active:scale-95"><Link href="/checkout">PROCEED TO CHECKOUT</Link></Button>
+                )}
               </motion.div>
             </div>
           )}
