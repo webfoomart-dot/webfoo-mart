@@ -65,8 +65,9 @@ interface AppState {
   register: (phone: string, name: string, password: string) => Promise<{ success: boolean; message: string }>
   logout: () => void
 
-  categories: { id: string, name: string, sortOrder?: number }[]
-  addCategory: (name: string) => Promise<void>
+  // 🔥 TITANIUM UPDATE: Image added to Category
+  categories: { id: string, name: string, sortOrder?: number, image?: string }[]
+  addCategory: (catData: {name: string, image: string}) => Promise<void>
   deleteCategory: (id: string) => Promise<void>
   reorderCategory: (id: string, direction: 'up' | 'down') => Promise<void>
 }
@@ -175,10 +176,10 @@ export const useAppStore = create<AppState>()(
           set({ customerMeta: metaMap })
         }
 
-        // 🔥 SORT ORDER KE SATH FETCH HO RAHI HAI
+        // 🔥 SORT ORDER + IMAGE KE SATH FETCH HO RAHI HAI
         const { data: cats } = await supabase.from('webfoo_categories').select('*').order('sort_order', { ascending: true }).order('created_at', { ascending: true })
         if (cats) {
-          set({ categories: cats.map(c => ({ id: c.id, name: c.name, sortOrder: c.sort_order || 0 })) })
+          set({ categories: cats.map(c => ({ id: c.id, name: c.name, sortOrder: c.sort_order || 0, image: c.image })) })
         }
       },
 
@@ -311,13 +312,14 @@ export const useAppStore = create<AppState>()(
       logout: () => set({ user: null, cart: [] }),
 
       categories: [],
-      addCategory: async (name) => {
+      // 🔥 Image bhi save hogi ab DB mein
+      addCategory: async (catData) => {
         const tempId = Date.now().toString()
         const currentCats = get().categories;
         const nextSortOrder = currentCats.length > 0 ? Math.max(...currentCats.map(c => c.sortOrder || 0)) + 1 : 0;
         
-        set((state) => ({ categories: [...state.categories, { id: tempId, name, sortOrder: nextSortOrder }] }))
-        const { data } = await supabase.from('webfoo_categories').insert({ name, sort_order: nextSortOrder }).select().single()
+        set((state) => ({ categories: [...state.categories, { id: tempId, name: catData.name, image: catData.image, sortOrder: nextSortOrder }] }))
+        const { data } = await supabase.from('webfoo_categories').insert({ name: catData.name, image: catData.image, sort_order: nextSortOrder }).select().single()
         if (data) set((state) => ({ categories: state.categories.map(c => c.id === tempId ? { ...c, id: data.id } : c) }))
       },
       deleteCategory: async (id) => {
@@ -325,7 +327,6 @@ export const useAppStore = create<AppState>()(
         await supabase.from('webfoo_categories').delete().eq('id', id)
       },
       
-      // 🔥 NAYA ENGINE: Upar-Neeche Reorder karne wala
       reorderCategory: async (id, direction) => {
         const cats = [...get().categories];
         const index = cats.findIndex((c) => c.id === id);
