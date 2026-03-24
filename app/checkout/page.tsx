@@ -33,7 +33,12 @@ export default function CheckoutPage() {
   const [discountAmt, setDiscountAmt] = React.useState(0)
   const [finalTotal, setFinalTotal] = React.useState(totalAmount)
 
-  // 🔥 AUTO SCROLL TO TOP LOGIC (Yahan add kiya hai)
+  // 🔥 1. CART SE AANE PE PAGE UPAR KHULNE WALA FIX (Naya Engine)
+  React.useEffect(() => {
+    window.scrollTo(0, 0)
+  }, [])
+
+  // 🔥 2. ORDER CONFIRM HONE KE BAAD UPAR JANE WALA FIX (Jo pehle lagaya tha)
   React.useEffect(() => {
     if (isSuccess) {
       window.scrollTo({ top: 0, behavior: 'smooth' })
