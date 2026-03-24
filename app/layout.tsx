@@ -2,7 +2,7 @@ import type { Metadata, Viewport } from "next"
 import { Inter } from "next/font/google"
 import "./globals.css"
 import FloatingCart from "@/components/FloatingCart"
-import { Analytics } from "@vercel/analytics/react" // 🔥 VERCEL ANALYTICS IMPORT
+import { Analytics } from "@vercel/analytics/next" // 🔥 VERCEL ANALYTICS IMPORT
 
 const inter = Inter({ subsets: ["latin"] })
 
