@@ -28,11 +28,10 @@ const MENU_ITEMS = [
   { id: 'customers', label: 'Customers', icon: Users },
   { id: 'messages', label: 'Messages', icon: MessageSquare },
   { id: 'offers', label: 'Offers', icon: Tag },
-  { id: 'categories', label: 'Categories', icon: LayoutGrid }, // 🔥 CATEGORY TAB
+  { id: 'categories', label: 'Categories', icon: LayoutGrid }, 
   { id: 'settings', label: 'Settings', icon: Settings }, 
 ]
 
-// PURANI SAFE CATEGORIES LIST (Fallback ke liye)
 const ADMIN_CATEGORIES = [
   "Groceries & Staples", "Fast Food", "Snacks & Namkeen", "Cold Drinks", 
   "Dairy & Milk", "Chocolates & Cakes", "Stationery", "Party & Birthdays", 
@@ -56,7 +55,7 @@ export default function AdminDashboard() {
     promoCodes, addPromoCode, togglePromoStatus, deletePromo,
     storeConfig, fetchStoreConfig, updateStoreConfig, 
     fetchData,
-    categories, addCategory, deleteCategory // 🔥 CATEGORIES FETCH
+    categories, addCategory, deleteCategory 
   } = useAppStore() as any
   
   const [activeTab, setActiveTab] = React.useState('live_orders')
@@ -82,6 +81,9 @@ export default function AdminDashboard() {
   })
   const [isSettingsSaving, setIsSettingsSaving] = React.useState(false)
 
+  // 🔥 MINIMUM ORDER STATE
+  const [globalMinOrder, setGlobalMinOrder] = React.useState(0)
+
   React.useEffect(() => { 
     setIsMounted(true) 
     if (fetchData) fetchData()
@@ -105,10 +107,10 @@ export default function AdminDashboard() {
         bannerTextClosed: storeConfig.bannerTextClosed || '',
         bannerImageUrlClosed: storeConfig.bannerImageUrlClosed || ''
       })
+      setGlobalMinOrder(storeConfig.minOrderAmount || 0) // 🔥 SYNC STATE
     }
   }, [storeConfig])
 
-  // 🔥 Smart Fallback: Agar DB khali hai, toh default purani list layega
   const displayCategories = categories && categories.length > 0 
     ? categories.map((c: any) => c.name) 
     : ADMIN_CATEGORIES;
@@ -180,6 +182,18 @@ export default function AdminDashboard() {
       alert("ERROR saving settings!") 
     }
     setIsSettingsSaving(false);
+  }
+
+  // 🔥 SAVE GLOBAL MINIMUM ORDER
+  const handleSaveGlobalMinOrder = async () => {
+    if (!updateStoreConfig) return;
+    try {
+      await updateStoreConfig({ minOrderAmount: globalMinOrder });
+      alert("✅ Global Minimum Order Limit Updated!");
+      if (fetchStoreConfig) fetchStoreConfig();
+    } catch(e) {
+      alert("ERROR: Make sure min_order_amount column exists in your Supabase table!");
+    }
   }
 
   const handleAddCategory = async (e: React.FormEvent) => {
@@ -711,11 +725,26 @@ export default function AdminDashboard() {
           {/* 🏷️ OFFERS & PROMO CODES VIEW */}
           {activeTab === 'offers' && (
             <motion.div key="offers" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="space-y-6">
-              <div className="flex justify-between items-center gap-4">
+              
+              {/* 🔥 GLOBAL MINIMUM ORDER SECTION */}
+              <Card className="glass-strong border-[#CCFF00]/30 hover:border-[#CCFF00]/50 transition-all mb-6">
+                <CardContent className="p-6 flex flex-col sm:flex-row items-center gap-4 justify-between">
+                  <div>
+                    <h3 className="text-lg font-black text-[#CCFF00] uppercase flex items-center gap-2"><LockKeyhole className="w-5 h-5"/> Global Minimum Order</h3>
+                    <p className="text-xs text-muted-foreground mt-1">Set the strict minimum cart value required to checkout.</p>
+                  </div>
+                  <div className="flex gap-2 w-full sm:w-auto">
+                    <Input type="number" value={globalMinOrder} onChange={e => setGlobalMinOrder(Number(e.target.value))} className="bg-black/50 border-white/10 w-full sm:w-32 text-center text-[#CCFF00] font-mono font-black text-lg" />
+                    <Button onClick={handleSaveGlobalMinOrder} className="bg-[#CCFF00] text-black font-black hover:bg-[#CCFF00]/80 px-6 uppercase">Save Limit</Button>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <div className="flex justify-between items-center gap-4 pt-4 border-t border-white/10">
                 <div><p className="text-muted-foreground font-mono">Manage discount coupons for your customers.</p></div>
                 <Sheet>
                   <SheetTrigger asChild>
-                    <Button className="bg-[#CCFF00] text-black font-black hover:bg-[#CCFF00]/90 shadow-[0_0_15px_rgba(204,255,0,0.3)] h-12 rounded-xl px-6">
+                    <Button className="bg-[#00FFFF] text-black font-black hover:bg-[#00FFFF]/90 shadow-[0_0_15px_rgba(0,255,255,0.3)] h-12 rounded-xl px-6">
                       <Plus className="w-5 h-5 mr-2" /> NEW OFFER
                     </Button>
                   </SheetTrigger>
