@@ -8,7 +8,8 @@ import {
   MessageSquare, Users, IndianRupee, Clock, CheckCircle2, ArrowLeft,
   MapPin, Phone, Truck, XCircle, Plus, UploadCloud, Trash2, Edit, PowerOff, Power,
   Star, Ban, MessageCircle, FileText, Send, CheckSquare, Square, Smartphone,
-  TrendingUp, Target, BarChart, ShieldAlert, LockKeyhole, Calendar, Settings, AlertTriangle, MoonStar, LayoutGrid
+  TrendingUp, Target, BarChart, ShieldAlert, LockKeyhole, Calendar, Settings, AlertTriangle, MoonStar, LayoutGrid,
+  ArrowUp, ArrowDown 
 } from "lucide-react"
 
 import { useAppStore } from "@/lib/store"
@@ -55,7 +56,7 @@ export default function AdminDashboard() {
     promoCodes, addPromoCode, togglePromoStatus, deletePromo,
     storeConfig, fetchStoreConfig, updateStoreConfig, 
     fetchData,
-    categories, addCategory, deleteCategory 
+    categories, addCategory, deleteCategory, reorderCategory
   } = useAppStore() as any
   
   const [activeTab, setActiveTab] = React.useState('live_orders')
@@ -74,14 +75,13 @@ export default function AdminDashboard() {
   const [messageText, setMessageText] = React.useState('')
 
   const [newCategoryName, setNewCategoryName] = React.useState('')
+  const [newCategoryImage, setNewCategoryImage] = React.useState('') // 🔥 State for custom category image
 
   const [settingsFormData, setSettingsFormData] = React.useState({
     storeMode: 'manual', openTime: '08:00', closeTime: '22:00',
     isStoreOpen: true, bannerTextOpen: '', bannerImageUrlOpen: '', bannerTextClosed: '', bannerImageUrlClosed: ''
   })
   const [isSettingsSaving, setIsSettingsSaving] = React.useState(false)
-
-  // 🔥 MINIMUM ORDER STATE
   const [globalMinOrder, setGlobalMinOrder] = React.useState(0)
 
   React.useEffect(() => { 
@@ -107,11 +107,10 @@ export default function AdminDashboard() {
         bannerTextClosed: storeConfig.bannerTextClosed || '',
         bannerImageUrlClosed: storeConfig.bannerImageUrlClosed || ''
       })
-      setGlobalMinOrder(storeConfig.minOrderAmount || 0) // 🔥 SYNC STATE
+      setGlobalMinOrder(storeConfig.minOrderAmount || 0) 
     }
   }, [storeConfig])
 
-  // 🔥 TITANIUM FIX: Purane default aur naye DB categories dono ko Mix (Merge) kar diya!
   const dbCategoryNames = categories ? categories.map((c: any) => c.name) : [];
   const displayCategories = Array.from(new Set([...ADMIN_CATEGORIES, ...dbCategoryNames]));
 
@@ -123,15 +122,12 @@ export default function AdminDashboard() {
 
   const filteredAnalyticsOrders = React.useMemo(() => {
     if (analyticsFilter === 'all') return orders;
-    
     const getLocalYYYYMMDD = (d: Date) => {
       const offset = d.getTimezoneOffset() * 60000;
       return new Date(d.getTime() - offset).toISOString().split('T')[0];
     }
-
     const today = new Date();
     const todayStr = getLocalYYYYMMDD(today);
-    
     const yesterday = new Date(today);
     yesterday.setDate(yesterday.getDate() - 1);
     const yesterdayStr = getLocalYYYYMMDD(yesterday);
@@ -141,7 +137,6 @@ export default function AdminDashboard() {
       if (!orderDateStr && o.id && !isNaN(Number(o.id))) {
         orderDateStr = getLocalYYYYMMDD(new Date(Number(o.id)));
       }
-
       if (analyticsFilter === 'today') return orderDateStr === todayStr;
       if (analyticsFilter === 'yesterday') return orderDateStr === yesterdayStr;
       if (analyticsFilter === 'custom') return orderDateStr === customDate;
@@ -184,7 +179,6 @@ export default function AdminDashboard() {
     setIsSettingsSaving(false);
   }
 
-  // 🔥 SAVE GLOBAL MINIMUM ORDER
   const handleSaveGlobalMinOrder = async () => {
     if (!updateStoreConfig) return;
     try {
@@ -196,11 +190,22 @@ export default function AdminDashboard() {
     }
   }
 
+  // 🔥 TITANIUM UPDATE: Upload logic for Category Image
+  const handleCategoryImgUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) { 
+      const reader = new FileReader(); 
+      reader.onloadend = () => setNewCategoryImage(reader.result as string); 
+      reader.readAsDataURL(file) 
+    }
+  }
+
   const handleAddCategory = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!newCategoryName.trim()) return;
-    await addCategory(newCategoryName.trim());
+    await addCategory({ name: newCategoryName.trim(), image: newCategoryImage }); // 🔥 Send image to DB
     setNewCategoryName('');
+    setNewCategoryImage('');
   }
 
   if (!isMounted) return null
@@ -232,15 +237,12 @@ export default function AdminDashboard() {
 
   const liveOrders = orders.filter((o: any) => o.status === 'Pending' || o.status === 'In Transit').reverse()
   const orderHistory = orders.filter((o: any) => o.status === 'Delivered' || o.status === 'Cancelled').reverse()
-  
   const analyticsDelivered = filteredAnalyticsOrders.filter((o: any) => o.status === 'Delivered')
   const analyticsCancelled = filteredAnalyticsOrders.filter((o: any) => o.status === 'Cancelled')
   const analyticsPending = filteredAnalyticsOrders.filter((o: any) => o.status === 'Pending' || o.status === 'In Transit')
-  
   const totalRevenue = analyticsDelivered.reduce((acc: number, order: any) => acc + order.amount, 0)
   const totalOrdersCount = filteredAnalyticsOrders.length
   const avgOrderValue = analyticsDelivered.length > 0 ? Math.round(totalRevenue / analyticsDelivered.length) : 0
-  
   const uniqueCustomersInAnalytics = new Set(filteredAnalyticsOrders.map((o: any) => o.phone)).size;
 
   const productSales = new Map()
@@ -377,7 +379,7 @@ export default function AdminDashboard() {
 
         <AnimatePresence mode="wait">
 
-          {/* 🔥 🗂️ CATEGORIES MANAGEMENT TAB */}
+          {/* 🔥 🗂️ CATEGORIES MANAGEMENT TAB (NOW WITH IMAGE UPLOAD) */}
           {activeTab === 'categories' && (
              <motion.div key="categories" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="space-y-6 max-w-2xl">
                 <Card className="glass-strong border-white/10">
@@ -387,27 +389,72 @@ export default function AdminDashboard() {
                       <h3 className="text-xl font-black uppercase text-white">Manage Store Categories</h3>
                     </div>
                     
-                    <form onSubmit={handleAddCategory} className="flex gap-4 items-end">
-                      <div className="flex-1 space-y-2">
-                        <Label className="text-xs uppercase tracking-widest text-[#00FFFF]">New Category Name</Label>
-                        <Input required placeholder="e.g. Energy Drinks" value={newCategoryName} onChange={(e) => setNewCategoryName(e.target.value)} className="bg-black/50 border-white/20 text-white h-12" />
+                    <form onSubmit={handleAddCategory} className="flex flex-col gap-4">
+                      
+                      {/* 🔥 Image Uploader Box */}
+                      <div className="space-y-4 bg-white/5 p-4 rounded-xl border border-white/10">
+                        <Label className="text-xs font-black uppercase tracking-widest text-[#00FFFF]">Category Image (Optional)</Label>
+                        <div className="relative w-full h-24 rounded-xl border-2 border-dashed border-[#00FFFF]/40 bg-[#00FFFF]/5 flex items-center justify-center overflow-hidden cursor-pointer group">
+                          <input type="file" accept="image/*" onChange={handleCategoryImgUpload} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" />
+                          {newCategoryImage && newCategoryImage.startsWith('data:') ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img src={newCategoryImage} alt="Preview" className="w-full h-full object-cover" />
+                          ) : (
+                            <div className="text-center group-hover:scale-105 transition-transform"><UploadCloud className="w-6 h-6 text-[#00FFFF] mx-auto mb-1" /><span className="text-[10px] font-bold text-[#00FFFF]">Upload from Device</span></div>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-4"><div className="h-px bg-white/10 flex-1"></div><span className="text-[10px] text-muted-foreground uppercase font-black tracking-widest">OR</span><div className="h-px bg-white/10 flex-1"></div></div>
+                        <div className="space-y-2">
+                          <Label className="text-[10px] text-white/70">Paste Image Link (URL)</Label>
+                          <Input type="url" placeholder="https://..." value={newCategoryImage && !newCategoryImage.startsWith('data:') ? newCategoryImage : ''} onChange={(e) => setNewCategoryImage(e.target.value)} className="bg-black/50 border-white/20 text-xs focus-visible:border-[#00FFFF] h-10" />
+                          {newCategoryImage && !newCategoryImage.startsWith('data:') && (
+                            <div className="mt-2 relative w-full h-20 rounded-lg overflow-hidden border border-white/10 bg-black/50">
+                              {/* eslint-disable-next-line @next/next/no-img-element */}
+                              <img src={newCategoryImage} alt="URL Preview" className="w-full h-full object-cover" onError={(e) => { e.currentTarget.src = '' }} />
+                            </div>
+                          )}
+                        </div>
                       </div>
-                      <Button type="submit" className="h-12 bg-[#CCFF00] text-black font-black uppercase tracking-widest px-6 hover:bg-[#CCFF00]/90">Add</Button>
+
+                      {/* 🔥 Category Name & Button */}
+                      <div className="flex gap-4 items-end mt-2">
+                        <div className="flex-1 space-y-2">
+                          <Label className="text-xs uppercase tracking-widest text-[#00FFFF]">New Category Name</Label>
+                          <Input required placeholder="e.g. Fresh Fruits" value={newCategoryName} onChange={(e) => setNewCategoryName(e.target.value)} className="bg-black/50 border-white/20 text-white h-12" />
+                        </div>
+                        <Button type="submit" className="h-12 bg-[#CCFF00] text-black font-black uppercase tracking-widest px-6 hover:bg-[#CCFF00]/90">Add Category</Button>
+                      </div>
                     </form>
 
                     <div className="mt-6 space-y-3">
-                      <h4 className="text-xs font-black text-muted-foreground uppercase tracking-widest mb-3 border-b border-white/10 pb-2">Categories List</h4>
-                      {displayCategories.map((catName: string, idx: number) => {
-                        const dbCat = categories?.find((c: any) => c.name === catName);
-                        return (
-                          <div key={dbCat ? dbCat.id : idx} className="flex justify-between items-center p-4 bg-white/5 border border-white/10 rounded-xl">
-                            <span className="font-bold text-white uppercase tracking-wider">{catName}</span>
-                            {dbCat && (
-                              <Button variant="ghost" size="icon" onClick={() => { if(confirm("Delete this category?")) deleteCategory(dbCat.id) }} className="text-red-500 hover:text-white hover:bg-red-500"><Trash2 className="w-4 h-4" /></Button>
-                            )}
+                      <h4 className="text-xs font-black text-muted-foreground uppercase tracking-widest mb-3 border-b border-white/10 pb-2">Active Categories (Order Control)</h4>
+                      
+                      {categories.map((cat: any, idx: number) => (
+                        <div key={cat.id} className="flex justify-between items-center p-3 bg-white/5 border border-white/10 rounded-xl">
+                          <div className="flex items-center gap-3">
+                             <span className="text-xs text-muted-foreground font-mono">{idx + 1}.</span>
+                             {cat.image ? (
+                               // eslint-disable-next-line @next/next/no-img-element
+                               <img src={cat.image} alt={cat.name} className="w-8 h-8 rounded-md object-cover border border-white/10" />
+                             ) : (
+                               <div className="w-8 h-8 rounded-md bg-white/10 flex items-center justify-center border border-white/10"><PackageIcon className="w-4 h-4 text-white/50" /></div>
+                             )}
+                             <span className="font-bold text-white uppercase tracking-wider text-sm">{cat.name}</span>
                           </div>
-                        )
-                      })}
+                          
+                          <div className="flex gap-1 items-center">
+                             <Button variant="ghost" size="icon" onClick={() => reorderCategory(cat.id, 'up')} disabled={idx === 0} className="w-8 h-8 text-[#00FFFF] hover:bg-[#00FFFF]/20"><ArrowUp className="w-4 h-4" /></Button>
+                             <Button variant="ghost" size="icon" onClick={() => reorderCategory(cat.id, 'down')} disabled={idx === categories.length - 1} className="w-8 h-8 text-[#00FFFF] hover:bg-[#00FFFF]/20"><ArrowDown className="w-4 h-4" /></Button>
+                             <div className="w-px h-5 bg-white/10 mx-1"></div>
+                             <Button variant="ghost" size="icon" onClick={() => { if(confirm("Delete this category?")) deleteCategory(cat.id) }} className="w-8 h-8 text-red-500 hover:text-white hover:bg-red-500"><Trash2 className="w-4 h-4" /></Button>
+                          </div>
+                        </div>
+                      ))}
+                      {categories.length === 0 && (
+                         <p className="text-[10px] text-muted-foreground uppercase tracking-widest text-center py-4">
+                           No categories added yet. Default ones are shown at bottom. <br/>Add a category here to control its rank & image!
+                         </p>
+                      )}
                     </div>
                   </CardContent>
                 </Card>
@@ -511,90 +558,32 @@ export default function AdminDashboard() {
           {/* 📊 ANALYTICS DASHBOARD VIEW */}
           {activeTab === 'analytics' && (
             <motion.div key="analytics" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="space-y-6">
-              
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 glass-strong p-4 rounded-xl border border-[#00FFFF]/20 shadow-[0_0_15px_rgba(0,255,255,0.05)]">
                 <div className="flex items-center gap-2">
                    <Calendar className="w-5 h-5 text-[#00FFFF]" />
                    <h3 className="text-sm font-black text-white uppercase tracking-widest">Performance Metrics</h3>
                 </div>
                 <div className="flex items-center gap-3 w-full sm:w-auto">
-                  <select 
-                    value={analyticsFilter} 
-                    onChange={(e) => setAnalyticsFilter(e.target.value)} 
-                    className="bg-black/50 border border-white/10 rounded-lg px-3 h-10 text-xs font-bold text-white focus:outline-none focus:border-[#00FFFF] w-full sm:w-auto uppercase tracking-wider"
-                  >
+                  <select value={analyticsFilter} onChange={(e) => setAnalyticsFilter(e.target.value)} className="bg-black/50 border border-white/10 rounded-lg px-3 h-10 text-xs font-bold text-white focus:outline-none focus:border-[#00FFFF] w-full sm:w-auto uppercase tracking-wider">
                     <option value="all" className="bg-black">All Time</option>
                     <option value="today" className="bg-black">Today</option>
                     <option value="yesterday" className="bg-black">Yesterday</option>
                     <option value="custom" className="bg-black">Custom Date</option>
                   </select>
                   {analyticsFilter === 'custom' && (
-                    <Input 
-                      type="date" 
-                      value={customDate} 
-                      onChange={(e) => setCustomDate(e.target.value)} 
-                      className="bg-black/50 border-white/10 h-10 text-xs w-full sm:w-auto text-white" 
-                    />
+                    <Input type="date" value={customDate} onChange={(e) => setCustomDate(e.target.value)} className="bg-black/50 border-white/10 h-10 text-xs w-full sm:w-auto text-white" />
                   )}
                 </div>
               </div>
-
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                <Card className="glass-strong border-[#CCFF00]/30 hover:border-[#CCFF00]/50 transition-colors">
-                  <CardContent className="p-6">
-                    <div className="flex justify-between items-start mb-4"><div className="bg-[#CCFF00]/10 p-3 rounded-lg"><IndianRupee className="w-6 h-6 text-[#CCFF00]" /></div><Badge variant="outline" className="text-[#CCFF00] border-[#CCFF00]/30 font-bold uppercase tracking-widest text-[10px]">Revenue</Badge></div>
-                    <p className="text-3xl font-black text-white font-mono tracking-tighter">₹{totalRevenue}</p><p className="text-xs text-muted-foreground mt-1 uppercase tracking-widest">From Delivered Orders</p>
-                  </CardContent>
-                </Card>
-                <Card className="glass-strong border-[#00FFFF]/30 hover:border-[#00FFFF]/50 transition-colors">
-                  <CardContent className="p-6">
-                    <div className="flex justify-between items-start mb-4"><div className="bg-[#00FFFF]/10 p-3 rounded-lg"><PackageIcon className="w-6 h-6 text-[#00FFFF]" /></div><Badge variant="outline" className="text-[#00FFFF] border-[#00FFFF]/30 font-bold uppercase tracking-widest text-[10px]">Orders</Badge></div>
-                    <p className="text-3xl font-black text-white font-mono tracking-tighter">{totalOrdersCount}</p><p className="text-xs text-muted-foreground mt-1 uppercase tracking-widest">Total Orders Received</p>
-                  </CardContent>
-                </Card>
-                <Card className="glass-strong border-white/10 hover:border-white/30 transition-colors">
-                  <CardContent className="p-6">
-                    <div className="flex justify-between items-start mb-4"><div className="bg-white/10 p-3 rounded-lg"><TrendingUp className="w-6 h-6 text-white" /></div><Badge variant="outline" className="text-white border-white/30 font-bold uppercase tracking-widest text-[10px]">A.O.V</Badge></div>
-                    <p className="text-3xl font-black text-white font-mono tracking-tighter">₹{avgOrderValue}</p><p className="text-xs text-muted-foreground mt-1 uppercase tracking-widest">Average Order Value</p>
-                  </CardContent>
-                </Card>
-                <Card className="glass-strong border-white/10 hover:border-white/30 transition-colors">
-                  <CardContent className="p-6">
-                    <div className="flex justify-between items-start mb-4"><div className="bg-white/10 p-3 rounded-lg"><Users className="w-6 h-6 text-white" /></div><Badge variant="outline" className="text-white border-white/30 font-bold uppercase tracking-widest text-[10px]">Customers</Badge></div>
-                    <p className="text-3xl font-black text-white font-mono tracking-tighter">{uniqueCustomersInAnalytics}</p><p className="text-xs text-muted-foreground mt-1 uppercase tracking-widest">Unique Buyers</p>
-                  </CardContent>
-                </Card>
+                <Card className="glass-strong border-[#CCFF00]/30 hover:border-[#CCFF00]/50 transition-colors"><CardContent className="p-6"><div className="flex justify-between items-start mb-4"><div className="bg-[#CCFF00]/10 p-3 rounded-lg"><IndianRupee className="w-6 h-6 text-[#CCFF00]" /></div><Badge variant="outline" className="text-[#CCFF00] border-[#CCFF00]/30 font-bold uppercase tracking-widest text-[10px]">Revenue</Badge></div><p className="text-3xl font-black text-white font-mono tracking-tighter">₹{totalRevenue}</p><p className="text-xs text-muted-foreground mt-1 uppercase tracking-widest">From Delivered Orders</p></CardContent></Card>
+                <Card className="glass-strong border-[#00FFFF]/30 hover:border-[#00FFFF]/50 transition-colors"><CardContent className="p-6"><div className="flex justify-between items-start mb-4"><div className="bg-[#00FFFF]/10 p-3 rounded-lg"><PackageIcon className="w-6 h-6 text-[#00FFFF]" /></div><Badge variant="outline" className="text-[#00FFFF] border-[#00FFFF]/30 font-bold uppercase tracking-widest text-[10px]">Orders</Badge></div><p className="text-3xl font-black text-white font-mono tracking-tighter">{totalOrdersCount}</p><p className="text-xs text-muted-foreground mt-1 uppercase tracking-widest">Total Orders Received</p></CardContent></Card>
+                <Card className="glass-strong border-white/10 hover:border-white/30 transition-colors"><CardContent className="p-6"><div className="flex justify-between items-start mb-4"><div className="bg-white/10 p-3 rounded-lg"><TrendingUp className="w-6 h-6 text-white" /></div><Badge variant="outline" className="text-white border-white/30 font-bold uppercase tracking-widest text-[10px]">A.O.V</Badge></div><p className="text-3xl font-black text-white font-mono tracking-tighter">₹{avgOrderValue}</p><p className="text-xs text-muted-foreground mt-1 uppercase tracking-widest">Average Order Value</p></CardContent></Card>
+                <Card className="glass-strong border-white/10 hover:border-white/30 transition-colors"><CardContent className="p-6"><div className="flex justify-between items-start mb-4"><div className="bg-white/10 p-3 rounded-lg"><Users className="w-6 h-6 text-white" /></div><Badge variant="outline" className="text-white border-white/30 font-bold uppercase tracking-widest text-[10px]">Customers</Badge></div><p className="text-3xl font-black text-white font-mono tracking-tighter">{uniqueCustomersInAnalytics}</p><p className="text-xs text-muted-foreground mt-1 uppercase tracking-widest">Unique Buyers</p></CardContent></Card>
               </div>
-
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <Card className="glass-strong border-white/10">
-                  <CardContent className="p-6">
-                    <div className="flex items-center gap-2 mb-6 border-b border-white/10 pb-4"><Target className="w-5 h-5 text-[#00FFFF]" /><h3 className="text-lg font-black text-white uppercase tracking-widest">Order Success Rate</h3></div>
-                    <div className="space-y-4">
-                      <div><div className="flex justify-between text-sm mb-1"><span className="font-bold text-[#CCFF00] uppercase tracking-widest flex items-center gap-2"><CheckCircle2 className="w-4 h-4"/> Delivered</span><span className="font-mono text-white">{analyticsDelivered.length}</span></div><div className="w-full bg-white/5 rounded-full h-2"><div className="bg-[#CCFF00] h-2 rounded-full" style={{ width: `${totalOrdersCount > 0 ? (analyticsDelivered.length / totalOrdersCount) * 100 : 0}%` }}></div></div></div>
-                      <div><div className="flex justify-between text-sm mb-1"><span className="font-bold text-yellow-500 uppercase tracking-widest flex items-center gap-2"><Clock className="w-4 h-4"/> Pending / Transit</span><span className="font-mono text-white">{analyticsPending.length}</span></div><div className="w-full bg-white/5 rounded-full h-2"><div className="bg-yellow-500 h-2 rounded-full" style={{ width: `${totalOrdersCount > 0 ? (analyticsPending.length / totalOrdersCount) * 100 : 0}%` }}></div></div></div>
-                      <div><div className="flex justify-between text-sm mb-1"><span className="font-bold text-red-500 uppercase tracking-widest flex items-center gap-2"><XCircle className="w-4 h-4"/> Cancelled</span><span className="font-mono text-white">{analyticsCancelled.length}</span></div><div className="w-full bg-white/5 rounded-full h-2"><div className="bg-red-500 h-2 rounded-full" style={{ width: `${totalOrdersCount > 0 ? (analyticsCancelled.length / totalOrdersCount) * 100 : 0}%` }}></div></div></div>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                <Card className="glass-strong border-white/10">
-                  <CardContent className="p-6">
-                    <div className="flex items-center gap-2 mb-6 border-b border-white/10 pb-4"><BarChart className="w-5 h-5 text-[#CCFF00]" /><h3 className="text-lg font-black text-white uppercase tracking-widest">Top Selling Products</h3></div>
-                    {topProducts.length === 0 ? (
-                      <div className="text-center py-8 opacity-50"><PackageIcon className="w-8 h-8 mx-auto mb-2" /><p className="text-xs uppercase tracking-widest font-bold">No delivered items in period</p></div>
-                    ) : (
-                      <div className="space-y-4">
-                        {topProducts.map((product, idx) => (
-                          <div key={idx} className="flex items-center justify-between p-3 rounded-lg bg-white/5 border border-white/5">
-                            <div className="flex items-center gap-3"><span className="w-6 h-6 rounded flex items-center justify-center bg-white/10 text-xs font-black text-white">{idx + 1}</span><span className="font-bold text-sm text-white">{product.name}</span></div>
-                            <div className="text-right"><p className="text-xs text-muted-foreground uppercase tracking-widest mb-0.5">Sold: <span className="text-[#00FFFF] font-black font-mono">{product.qty}</span></p><p className="font-mono text-sm font-black text-[#CCFF00]">₹{product.revenue}</p></div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
+                <Card className="glass-strong border-white/10"><CardContent className="p-6"><div className="flex items-center gap-2 mb-6 border-b border-white/10 pb-4"><Target className="w-5 h-5 text-[#00FFFF]" /><h3 className="text-lg font-black text-white uppercase tracking-widest">Order Success Rate</h3></div><div className="space-y-4"><div><div className="flex justify-between text-sm mb-1"><span className="font-bold text-[#CCFF00] uppercase tracking-widest flex items-center gap-2"><CheckCircle2 className="w-4 h-4"/> Delivered</span><span className="font-mono text-white">{analyticsDelivered.length}</span></div><div className="w-full bg-white/5 rounded-full h-2"><div className="bg-[#CCFF00] h-2 rounded-full" style={{ width: `${totalOrdersCount > 0 ? (analyticsDelivered.length / totalOrdersCount) * 100 : 0}%` }}></div></div></div><div><div className="flex justify-between text-sm mb-1"><span className="font-bold text-yellow-500 uppercase tracking-widest flex items-center gap-2"><Clock className="w-4 h-4"/> Pending / Transit</span><span className="font-mono text-white">{analyticsPending.length}</span></div><div className="w-full bg-white/5 rounded-full h-2"><div className="bg-yellow-500 h-2 rounded-full" style={{ width: `${totalOrdersCount > 0 ? (analyticsPending.length / totalOrdersCount) * 100 : 0}%` }}></div></div></div><div><div className="flex justify-between text-sm mb-1"><span className="font-bold text-red-500 uppercase tracking-widest flex items-center gap-2"><XCircle className="w-4 h-4"/> Cancelled</span><span className="font-mono text-white">{analyticsCancelled.length}</span></div><div className="w-full bg-white/5 rounded-full h-2"><div className="bg-red-500 h-2 rounded-full" style={{ width: `${totalOrdersCount > 0 ? (analyticsCancelled.length / totalOrdersCount) * 100 : 0}%` }}></div></div></div></div></CardContent></Card>
+                <Card className="glass-strong border-white/10"><CardContent className="p-6"><div className="flex items-center gap-2 mb-6 border-b border-white/10 pb-4"><BarChart className="w-5 h-5 text-[#CCFF00]" /><h3 className="text-lg font-black text-white uppercase tracking-widest">Top Selling Products</h3></div>{topProducts.length === 0 ? (<div className="text-center py-8 opacity-50"><PackageIcon className="w-8 h-8 mx-auto mb-2" /><p className="text-xs uppercase tracking-widest font-bold">No delivered items in period</p></div>) : (<div className="space-y-4">{topProducts.map((product, idx) => (<div key={idx} className="flex items-center justify-between p-3 rounded-lg bg-white/5 border border-white/5"><div className="flex items-center gap-3"><span className="w-6 h-6 rounded flex items-center justify-center bg-white/10 text-xs font-black text-white">{idx + 1}</span><span className="font-bold text-sm text-white">{product.name}</span></div><div className="text-right"><p className="text-xs text-muted-foreground uppercase tracking-widest mb-0.5">Sold: <span className="text-[#00FFFF] font-black font-mono">{product.qty}</span></p><p className="font-mono text-sm font-black text-[#CCFF00]">₹{product.revenue}</p></div></div>))}</div>)}</CardContent></Card>
               </div>
             </motion.div>
           )}
@@ -628,24 +617,14 @@ export default function AdminDashboard() {
                                  <div key={i} className="flex justify-between items-center text-sm"><span className="text-white">{item.quantity}x {item.name}</span><span className="font-mono text-muted-foreground">₹{item.price * item.quantity}</span></div>
                                ))}
                              </div>
-                             
                              <div className="mt-4 pt-4 border-t border-white/10 space-y-2">
                                {order.discount > 0 && (
                                  <>
-                                   <div className="flex justify-between items-center text-[10px] text-muted-foreground uppercase font-bold">
-                                     <span>Subtotal</span>
-                                     <span>₹{order.subtotal}</span>
-                                   </div>
-                                   <div className="flex justify-between items-center text-[10px] text-[#CCFF00] uppercase font-bold">
-                                     <span>Discount ({order.promoCode})</span>
-                                     <span>-₹{order.discount}</span>
-                                   </div>
+                                   <div className="flex justify-between items-center text-[10px] text-muted-foreground uppercase font-bold"><span>Subtotal</span><span>₹{order.subtotal}</span></div>
+                                   <div className="flex justify-between items-center text-[10px] text-[#CCFF00] uppercase font-bold"><span>Discount ({order.promoCode})</span><span>-₹{order.discount}</span></div>
                                  </>
                                )}
-                               <div className="flex justify-between items-center pt-2 border-t border-white/5 mt-2">
-                                 <span className="text-xs font-bold text-white uppercase tracking-widest">Final Paid</span>
-                                 <span className="font-mono font-black text-[#00FFFF] text-lg">₹{order.amount}</span>
-                               </div>
+                               <div className="flex justify-between items-center pt-2 border-t border-white/5 mt-2"><span className="text-xs font-bold text-white uppercase tracking-widest">Final Paid</span><span className="font-mono font-black text-[#00FFFF] text-lg">₹{order.amount}</span></div>
                              </div>
                            </div>
                            <div className="p-4 sm:p-6 space-y-6">
@@ -695,20 +674,11 @@ export default function AdminDashboard() {
                               <div className="mt-4 pt-4 border-t border-white/10 space-y-2">
                                {order.discount > 0 && (
                                  <>
-                                   <div className="flex justify-between items-center text-[10px] text-muted-foreground uppercase font-bold">
-                                     <span>Subtotal</span>
-                                     <span>₹{order.subtotal}</span>
-                                   </div>
-                                   <div className="flex justify-between items-center text-[10px] text-[#CCFF00] uppercase font-bold">
-                                     <span>Discount ({order.promoCode})</span>
-                                     <span>-₹{order.discount}</span>
-                                   </div>
+                                   <div className="flex justify-between items-center text-[10px] text-muted-foreground uppercase font-bold"><span>Subtotal</span><span>₹{order.subtotal}</span></div>
+                                   <div className="flex justify-between items-center text-[10px] text-[#CCFF00] uppercase font-bold"><span>Discount ({order.promoCode})</span><span>-₹{order.discount}</span></div>
                                  </>
                                )}
-                               <div className="flex justify-between items-center pt-2 border-t border-white/5 mt-2">
-                                 <span className="text-xs font-bold text-white uppercase tracking-widest">Final Paid</span>
-                                 <span className="font-mono font-black text-[#00FFFF] text-lg">₹{order.amount}</span>
-                               </div>
+                               <div className="flex justify-between items-center pt-2 border-t border-white/5 mt-2"><span className="text-xs font-bold text-white uppercase tracking-widest">Final Paid</span><span className="font-mono font-black text-[#00FFFF] text-lg">₹{order.amount}</span></div>
                               </div>
                             </div>
                             <div className="p-4 sm:p-6"><div className="flex gap-3"><MapPin className="w-5 h-5 text-muted-foreground" /><div><p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Drop Details</p><p className="text-sm text-muted-foreground mt-1">{order.landmark}</p></div></div></div>
@@ -725,8 +695,6 @@ export default function AdminDashboard() {
           {/* 🏷️ OFFERS & PROMO CODES VIEW */}
           {activeTab === 'offers' && (
             <motion.div key="offers" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="space-y-6">
-              
-              {/* 🔥 GLOBAL MINIMUM ORDER SECTION */}
               <Card className="glass-strong border-[#CCFF00]/30 hover:border-[#CCFF00]/50 transition-all mb-6">
                 <CardContent className="p-6 flex flex-col sm:flex-row items-center gap-4 justify-between">
                   <div>
@@ -739,7 +707,6 @@ export default function AdminDashboard() {
                   </div>
                 </CardContent>
               </Card>
-
               <div className="flex justify-between items-center gap-4 pt-4 border-t border-white/10">
                 <div><p className="text-muted-foreground font-mono">Manage discount coupons for your customers.</p></div>
                 <Sheet>
@@ -749,27 +716,20 @@ export default function AdminDashboard() {
                     </Button>
                   </SheetTrigger>
                   <SheetContent className="bg-black/95 backdrop-blur-2xl border-l border-[#00FFFF]/30 sm:max-w-md w-full overflow-y-auto">
-                    <SheetHeader className="text-left mb-8 mt-6">
-                      <SheetTitle className="text-3xl font-black italic uppercase text-[#00FFFF]">Create Coupon</SheetTitle>
-                    </SheetHeader>
+                    <SheetHeader className="text-left mb-8 mt-6"><SheetTitle className="text-3xl font-black italic uppercase text-[#00FFFF]">Create Coupon</SheetTitle></SheetHeader>
                     <form onSubmit={(e: any) => {
-                      e.preventDefault();
-                      const data = new FormData(e.target);
+                      e.preventDefault(); const data = new FormData(e.target);
                       addPromoCode({ code: data.get('code')?.toString().toUpperCase() || '', type: data.get('type') as any, value: Number(data.get('value')), minOrder: Number(data.get('minOrder')), isActive: true });
                       e.target.reset();
                     }} className="flex flex-col gap-6">
                       <div className="space-y-2"><Label>Coupon Code (e.g. HOLI50)</Label><Input name="code" required className="bg-white/5 border-white/10 uppercase font-mono text-[#00FFFF]" placeholder="WEBFOO20" /></div>
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2"><Label>Discount Type</Label><select name="type" className="w-full h-10 bg-white/5 border border-white/10 rounded-md px-3 text-sm text-white focus:outline-none focus:border-[#00FFFF]"><option value="flat" className="bg-black">Flat Amount (₹)</option><option value="percent" className="bg-black">Percentage (%)</option></select></div>
-                        <div className="space-y-2"><Label>Discount Value</Label><Input name="value" type="number" required min="1" className="bg-white/5 border-white/10" placeholder="e.g. 50" /></div>
-                      </div>
+                      <div className="grid grid-cols-2 gap-4"><div className="space-y-2"><Label>Discount Type</Label><select name="type" className="w-full h-10 bg-white/5 border border-white/10 rounded-md px-3 text-sm text-white focus:outline-none focus:border-[#00FFFF]"><option value="flat" className="bg-black">Flat Amount (₹)</option><option value="percent" className="bg-black">Percentage (%)</option></select></div><div className="space-y-2"><Label>Discount Value</Label><Input name="value" type="number" required min="1" className="bg-white/5 border-white/10" placeholder="e.g. 50" /></div></div>
                       <div className="space-y-2"><Label>Minimum Order Amount (₹)</Label><Input name="minOrder" type="number" required min="0" className="bg-white/5 border-white/10" placeholder="e.g. 500" /></div>
                       <Button type="submit" className="w-full h-14 bg-[#00FFFF] text-black font-black hover:bg-[#00FFFF]/80">SAVE OFFER</Button>
                     </form>
                   </SheetContent>
                 </Sheet>
               </div>
-
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-6">
                 {(!promoCodes || promoCodes.length === 0) ? (
                   <div className="col-span-full py-20 text-center opacity-30"><Tag className="w-12 h-12 mx-auto mb-4" /><p className="font-black uppercase tracking-widest text-xl">No Active Offers</p></div>
@@ -794,17 +754,7 @@ export default function AdminDashboard() {
           {/* 📢 MESSAGES / IN-APP BROADCAST VIEW */}
           {activeTab === 'messages' && (
             <motion.div key="messages" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              <Card className="glass-strong border-[#00FFFF]/20 lg:col-span-1 h-fit">
-                <CardContent className="p-6 space-y-6">
-                  <div><h3 className="text-xl font-black text-white uppercase tracking-tight mb-2 flex items-center gap-2"><MessageSquare className="w-5 h-5 text-[#00FFFF]"/> Broadcast Center</h3><p className="text-xs text-muted-foreground">Select customers to push an alert to their app or send a direct WhatsApp text.</p></div>
-                  <div className="space-y-3"><Label className="text-xs uppercase tracking-widest text-[#00FFFF]">Message Content</Label><textarea value={messageText} onChange={(e) => setMessageText(e.target.value)} placeholder="Hey! Use code WEBFOO20 for 20% off your next neon drop... 🚀" className="w-full bg-black/50 border border-white/10 focus-visible:border-[#00FFFF] rounded-xl p-4 min-h-[200px] text-sm text-white resize-none shadow-[0_0_15px_rgba(0,255,255,0.05)]" /><div className="flex justify-between text-[10px] text-muted-foreground uppercase tracking-widest"><span>{messageText.length} characters</span><span>{selectedCustomers.length} selected</span></div></div>
-                  <div className="flex flex-col gap-3">
-                    <Button onClick={handleSendToApp} disabled={selectedCustomers.length === 0 || !messageText.trim()} className="w-full h-12 bg-[#CCFF00] text-black font-black hover:bg-[#CCFF00]/80 shadow-[0_0_20px_rgba(204,255,0,0.2)] disabled:opacity-50 disabled:cursor-not-allowed"><Smartphone className="w-4 h-4 mr-2" /> PUSH TO APP</Button>
-                    <Button onClick={handleSendToWhatsApp} disabled={selectedCustomers.length === 0 || !messageText.trim()} className="w-full h-12 bg-[#25D366] text-white font-black hover:bg-[#25D366]/80 shadow-[0_0_20px_rgba(37,211,102,0.2)] disabled:opacity-50 disabled:cursor-not-allowed"><MessageCircle className="w-4 h-4 mr-2" /> PUSH TO WHATSAPP</Button>
-                  </div>
-                </CardContent>
-              </Card>
-
+              <Card className="glass-strong border-[#00FFFF]/20 lg:col-span-1 h-fit"><CardContent className="p-6 space-y-6"><div><h3 className="text-xl font-black text-white uppercase tracking-tight mb-2 flex items-center gap-2"><MessageSquare className="w-5 h-5 text-[#00FFFF]"/> Broadcast Center</h3><p className="text-xs text-muted-foreground">Select customers to push an alert to their app or send a direct WhatsApp text.</p></div><div className="space-y-3"><Label className="text-xs uppercase tracking-widest text-[#00FFFF]">Message Content</Label><textarea value={messageText} onChange={(e) => setMessageText(e.target.value)} placeholder="Hey! Use code WEBFOO20 for 20% off your next neon drop... 🚀" className="w-full bg-black/50 border border-white/10 focus-visible:border-[#00FFFF] rounded-xl p-4 min-h-[200px] text-sm text-white resize-none shadow-[0_0_15px_rgba(0,255,255,0.05)]" /><div className="flex justify-between text-[10px] text-muted-foreground uppercase tracking-widest"><span>{messageText.length} characters</span><span>{selectedCustomers.length} selected</span></div></div><div className="flex flex-col gap-3"><Button onClick={handleSendToApp} disabled={selectedCustomers.length === 0 || !messageText.trim()} className="w-full h-12 bg-[#CCFF00] text-black font-black hover:bg-[#CCFF00]/80 shadow-[0_0_20px_rgba(204,255,0,0.2)] disabled:opacity-50 disabled:cursor-not-allowed"><Smartphone className="w-4 h-4 mr-2" /> PUSH TO APP</Button><Button onClick={handleSendToWhatsApp} disabled={selectedCustomers.length === 0 || !messageText.trim()} className="w-full h-12 bg-[#25D366] text-white font-black hover:bg-[#25D366]/80 shadow-[0_0_20px_rgba(37,211,102,0.2)] disabled:opacity-50 disabled:cursor-not-allowed"><MessageCircle className="w-4 h-4 mr-2" /> PUSH TO WHATSAPP</Button></div></CardContent></Card>
               <Card className="glass-strong border-white/10 lg:col-span-2">
                 <CardContent className="p-6 space-y-4">
                   <div className="flex justify-between items-center border-b border-white/10 pb-4"><h3 className="text-sm font-black text-white uppercase tracking-widest">Select Recipients</h3><button onClick={handleSelectAll} className="flex items-center gap-2 text-xs font-bold text-[#00FFFF] hover:text-white transition-colors uppercase tracking-widest">{selectedCustomers.length === customersList.length && customersList.length > 0 ? <CheckSquare className="w-4 h-4" /> : <Square className="w-4 h-4" />} {selectedCustomers.length === customersList.length && customersList.length > 0 ? 'Deselect All' : 'Select All'}</button></div>
@@ -813,8 +763,7 @@ export default function AdminDashboard() {
                   ) : (
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-[500px] overflow-y-auto pr-2 scrollbar-hide">
                       {customersList.map((cust: any) => {
-                        const isSelected = selectedCustomers.includes(cust.phone)
-                        const isVip = customerMeta[cust.phone]?.isVip
+                        const isSelected = selectedCustomers.includes(cust.phone); const isVip = customerMeta[cust.phone]?.isVip;
                         return (
                           <div key={cust.phone} onClick={() => handleSelectCustomer(cust.phone)} className={`p-3 rounded-xl border cursor-pointer flex items-center gap-4 transition-all ${isSelected ? 'bg-[#00FFFF]/10 border-[#00FFFF]/50 shadow-[0_0_15px_rgba(0,255,255,0.1)]' : 'bg-white/5 border-white/5 hover:border-white/20'}`}><div className={`shrink-0 transition-colors ${isSelected ? 'text-[#00FFFF]' : 'text-muted-foreground'}`}>{isSelected ? <CheckSquare className="w-5 h-5" /> : <Square className="w-5 h-5" />}</div><div className="flex-1 overflow-hidden"><div className="flex items-center gap-2"><p className={`font-bold uppercase truncate ${isSelected ? 'text-white' : 'text-white/80'}`}>{cust.name}</p>{isVip && <Star className="w-3 h-3 text-[#CCFF00] shrink-0" />}</div><p className="text-xs font-mono text-muted-foreground mt-0.5">{cust.phone}</p></div></div>
                         )
@@ -891,7 +840,6 @@ export default function AdminDashboard() {
                      <SheetHeader className="text-left mb-8 mt-6"><SheetTitle className="text-3xl font-black italic uppercase text-[#00FFFF]">{editingId ? 'Edit Product' : 'New Product'}</SheetTitle></SheetHeader>
                      
                      <form onSubmit={handleSaveProduct} className="flex flex-col gap-6">
-                       
                        <div className="space-y-4 bg-white/5 p-4 rounded-xl border border-white/10">
                          <Label className="text-xs font-black uppercase tracking-widest text-[#00FFFF]">Product Image</Label>
                          <div className="relative w-full h-32 rounded-xl border-2 border-dashed border-[#00FFFF]/40 bg-[#00FFFF]/5 flex items-center justify-center overflow-hidden cursor-pointer group">
@@ -903,11 +851,7 @@ export default function AdminDashboard() {
                              <div className="text-center group-hover:scale-105 transition-transform"><UploadCloud className="w-6 h-6 text-[#00FFFF] mx-auto mb-2" /><span className="text-xs font-bold text-[#00FFFF]">Upload from Device</span></div>
                            )}
                          </div>
-                         <div className="flex items-center gap-4">
-                           <div className="h-px bg-white/10 flex-1"></div>
-                           <span className="text-[10px] text-muted-foreground uppercase font-black tracking-widest">OR</span>
-                           <div className="h-px bg-white/10 flex-1"></div>
-                         </div>
+                         <div className="flex items-center gap-4"><div className="h-px bg-white/10 flex-1"></div><span className="text-[10px] text-muted-foreground uppercase font-black tracking-widest">OR</span><div className="h-px bg-white/10 flex-1"></div></div>
                          <div className="space-y-2">
                            <Label className="text-[10px] text-white/70">Paste Image Link (URL)</Label>
                            <Input type="url" placeholder="https://..." value={formData.image && !formData.image.startsWith('data:') ? formData.image : ''} onChange={(e) => setFormData({...formData, image: e.target.value})} className="bg-black/50 border-white/20 text-xs focus-visible:border-[#00FFFF]" />
@@ -926,9 +870,7 @@ export default function AdminDashboard() {
                              <Label>Product Name</Label>
                              <Input required value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className="bg-white/5 border-white/10" />
                            </div>
-                           <Button type="button" onClick={generateAIDesc} className="bg-[#CCFF00] text-black h-10 px-3">
-                             <Zap className="w-4 h-4" />
-                           </Button>
+                           <Button type="button" onClick={generateAIDesc} className="bg-[#CCFF00] text-black h-10 px-3"><Zap className="w-4 h-4" /></Button>
                          </div>
                          <div className="grid grid-cols-2 gap-4"><div className="space-y-2"><Label>Selling Price (₹)</Label><Input required type="number" value={formData.price} onChange={e => setFormData({...formData, price: e.target.value})} className="bg-white/5 border-white/10" /></div><div className="space-y-2"><Label>MRP / Cut Price (₹)</Label><Input required type="number" value={formData.mrp} onChange={e => setFormData({...formData, mrp: e.target.value})} className="bg-white/5 border-white/10" /></div></div>
                          <div className="space-y-2">
