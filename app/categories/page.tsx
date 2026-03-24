@@ -35,7 +35,7 @@ export default function CategoriesPage() {
   const { 
     products, cart, addToCart, updateQuantity, user, login, register,
     storeConfig, fetchStoreConfig, checkIfStoreOpen, triggerStoreClosedAlert,
-    categories, fetchData // 🔥 TITANIUM FIX: Added fetchData here to force DB sync
+    categories, fetchData
   } = useAppStore() as any
 
   const [searchQuery, setSearchQuery] = React.useState('')
@@ -53,7 +53,7 @@ export default function CategoriesPage() {
   React.useEffect(() => {
     setIsMounted(true)
     if (fetchStoreConfig) fetchStoreConfig()
-    if (fetchData) fetchData() // 🔥 TITANIUM FIX: Force fetches new categories on page load!
+    if (fetchData) fetchData() 
   }, [fetchStoreConfig, fetchData])
 
   React.useEffect(() => {
@@ -68,26 +68,50 @@ export default function CategoriesPage() {
     return () => clearInterval(interval);
   }, [storeConfig, checkIfStoreOpen]);
 
-  if (!isMounted) return null
+  // 🔥 DOUBLE ENGINE MERGE LOGIC (Bulletproof)
+  const mergedCategories = React.useMemo(() => {
+    const merged = [...CATEGORIES];
+    
+    // Engine 1: Database ke Categories Table se uthao
+    if (categories && Array.isArray(categories)) {
+      categories.forEach((dbCat: any) => {
+        if (!dbCat || !dbCat.name) return;
+        const exists = merged.find(c => c.name.toLowerCase() === dbCat.name.toLowerCase());
+        if (!exists) {
+          merged.push({
+            id: dbCat.id,
+            name: dbCat.name,
+            desc: 'Explore items in ' + dbCat.name,
+            icon: ShoppingBasket,
+            color: 'text-[#00FFFF]',
+            border: 'group-hover:border-[#00FFFF]',
+            bg: 'bg-[#00FFFF]/10'
+          });
+        }
+      });
+    }
 
-  // 🔥 MERGE LOGIC
-  const mergedCategories = [...CATEGORIES];
-  if (categories && categories.length > 0) {
-    categories.forEach((dbCat: any) => {
-      const exists = mergedCategories.find(c => c.name.toLowerCase() === dbCat.name.toLowerCase());
-      if (!exists) {
-        mergedCategories.push({
-          id: dbCat.id,
-          name: dbCat.name,
-          desc: 'Explore items in ' + dbCat.name,
-          icon: ShoppingBasket,
-          color: 'text-[#00FFFF]',
-          border: 'group-hover:border-[#00FFFF]',
-          bg: 'bg-[#00FFFF]/10'
-        });
-      }
-    });
-  }
+    // Engine 2: Seedha Products List se Scan maaro (Ultimate Fallback)
+    if (products && Array.isArray(products)) {
+      products.forEach((p: any) => {
+        if (!p || !p.category) return;
+        const exists = merged.find(c => c.name.toLowerCase() === p.category.toLowerCase());
+        if (!exists) {
+          merged.push({
+            id: p.category.toLowerCase().replace(/\s+/g, '-'),
+            name: p.category,
+            desc: 'Explore items in ' + p.category,
+            icon: Plus, // Alternate icon for dynamically caught categories
+            color: 'text-[#CCFF00]',
+            border: 'group-hover:border-[#CCFF00]',
+            bg: 'bg-[#CCFF00]/10'
+          });
+        }
+      });
+    }
+    
+    return merged;
+  }, [categories, products]);
 
   const getCartItem = (id: string) => cart.find((item: any) => String(item.id) === String(id))
 
@@ -146,6 +170,8 @@ export default function CategoriesPage() {
       setAuthError(result.message)
     }
   }
+
+  if (!isMounted) return null
 
   return (
     <div className="min-h-screen bg-background text-foreground font-sans selection:bg-[#00FFFF]/30">
