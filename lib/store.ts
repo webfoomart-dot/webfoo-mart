@@ -16,7 +16,7 @@ export interface StoreConfig {
   storeMode: 'auto' | 'manual'; 
   openTime: string; 
   closeTime: string; 
-  minOrderAmount: number; // 🔥 ADDED MIN ORDER
+  minOrderAmount: number;
 }
 
 interface AppState {
@@ -65,7 +65,6 @@ interface AppState {
   register: (phone: string, name: string, password: string) => Promise<{ success: boolean; message: string }>
   logout: () => void
 
-  // 🔥 CATEGORY ENGINE ONLY
   categories: { id: string, name: string }[]
   addCategory: (name: string) => Promise<void>
   deleteCategory: (id: string) => Promise<void>
@@ -101,7 +100,7 @@ export const useAppStore = create<AppState>()(
             storeMode: data.store_mode || 'manual',
             openTime: data.open_time || '08:00',
             closeTime: data.close_time || '22:00',
-            minOrderAmount: data.min_order_amount || 0 // 🔥 FETCH MIN ORDER
+            minOrderAmount: data.min_order_amount || 0
           }})
         }
       },
@@ -117,7 +116,7 @@ export const useAppStore = create<AppState>()(
           store_mode: newConfig.storeMode,
           open_time: newConfig.openTime,
           close_time: newConfig.closeTime,
-          min_order_amount: newConfig.minOrderAmount, // 🔥 SAVE MIN ORDER
+          min_order_amount: newConfig.minOrderAmount,
           updated_at: new Date()
         }).eq('id', 1)
       },
@@ -203,14 +202,29 @@ export const useAppStore = create<AppState>()(
         await supabase.from('products').update({ in_stock: !prod.inStock }).eq('id', id)
       },
 
+      // 🔥 TITANIUM CART FIX: Ab String vs Number id fail nahi hoga!
       cart: [],
       addToCart: (item) => set((state) => {
-        const existing = state.cart.find((i) => i.id === item.id)
-        if (existing) return { cart: state.cart.map((i) => i.id === item.id ? { ...i, quantity: i.quantity + 1 } : i) }
-        return { cart: [...state.cart, { ...item, quantity: 1 }] }
+        const stringId = String(item.id).trim()
+        const existing = state.cart.find((i) => String(i.id).trim() === stringId)
+        if (existing) {
+          return { cart: state.cart.map((i) => String(i.id).trim() === stringId ? { ...i, quantity: i.quantity + 1 } : i) }
+        }
+        return { cart: [...state.cart, { ...item, id: stringId, quantity: 1 }] }
       }),
-      removeFromCart: (id) => set((state) => ({ cart: state.cart.filter((i) => i.id !== id) })),
-      updateQuantity: (id, quantity) => set((state) => ({ cart: quantity <= 0 ? state.cart.filter((i) => i.id !== id) : state.cart.map((i) => i.id === id ? { ...i, quantity } : i) })),
+      removeFromCart: (id) => set((state) => ({ 
+        cart: state.cart.filter((i) => String(i.id).trim() !== String(id).trim()) 
+      })),
+      updateQuantity: (id, quantity) => set((state) => {
+        const stringId = String(id).trim()
+        const numQ = Number(quantity)
+        
+        if (numQ <= 0) {
+          // 0 hote hi item FORCE DELETE
+          return { cart: state.cart.filter((i) => String(i.id).trim() !== stringId) }
+        }
+        return { cart: state.cart.map((i) => String(i.id).trim() === stringId ? { ...i, quantity: numQ } : i) }
+      }),
       clearCart: () => set({ cart: [] }),
       getCartCount: () => get().cart.reduce((total, item) => total + item.quantity, 0),
       getCartTotal: () => get().cart.reduce((total, item) => total + (item.price * item.quantity), 0),
@@ -296,7 +310,6 @@ export const useAppStore = create<AppState>()(
       },
       logout: () => set({ user: null, cart: [] }),
 
-      // 🔥 CATEGORY LOGIC ONLY
       categories: [],
       addCategory: async (name) => {
         const tempId = Date.now().toString()
