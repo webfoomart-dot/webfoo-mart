@@ -111,9 +111,9 @@ export default function AdminDashboard() {
     }
   }, [storeConfig])
 
-  const displayCategories = categories && categories.length > 0 
-    ? categories.map((c: any) => c.name) 
-    : ADMIN_CATEGORIES;
+  // 🔥 TITANIUM FIX: Purane default aur naye DB categories dono ko Mix (Merge) kar diya!
+  const dbCategoryNames = categories ? categories.map((c: any) => c.name) : [];
+  const displayCategories = Array.from(new Set([...ADMIN_CATEGORIES, ...dbCategoryNames]));
 
   React.useEffect(() => {
     if (!formData.category && !editingId) {
