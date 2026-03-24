@@ -3,6 +3,7 @@ import { Inter } from "next/font/google"
 import "./globals.css"
 import FloatingCart from "@/components/FloatingCart"
 import { Analytics } from "@vercel/analytics/react" // 🔥 VERCEL ANALYTICS IMPORT
+import { SpeedInsights } from "@vercel/speed-insights/next"
 
 const inter = Inter({ subsets: ["latin"] })
 
@@ -46,6 +47,7 @@ export default function RootLayout({
 
         {/* 🔥 YAHAN ADD KIYA HAI VERCEL TRACKING */}
         <Analytics />
+        <SpeedInsights />
       </body>
     </html>
   )
