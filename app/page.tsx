@@ -57,11 +57,11 @@ export default function HomePage() {
     return matchesCategory && matchesSearch;
   })
 
-  // 🔥 Smart Categories Extractor (Jo categories database mein hain sirf wahi dikhengi)
-  const availableCategories = Array.from(new Set(products.map((p: any) => p.category)));
-  const displayCategories = [
+  // 🔥 Smart Categories Extractor (TypeScript Strict String Fix)
+  const availableCategories: string[] = Array.from(new Set(products.map((p: any) => String(p.category))));
+  const displayCategories: string[] = [
     ...MAIN_CATEGORIES.filter(cat => availableCategories.includes(cat)),
-    ...availableCategories.filter((cat: any) => !MAIN_CATEGORIES.includes(cat))
+    ...availableCategories.filter(cat => !MAIN_CATEGORIES.includes(cat))
   ];
 
   const handleAddToCart = (product: any) => {
@@ -80,7 +80,7 @@ export default function HomePage() {
     updateQuantity(productId, currentQuantity + 1);
   }
 
-  // 🔥 PRODUCT CARD ENGINE (Grid aur Horizontal Dono ke liye)
+  // 🔥 PRODUCT CARD ENGINE
   const renderProductCard = (product: any, isHorizontalMode: boolean = false) => {
     const cartItem = getCartItem(product.id)
     return (
@@ -228,25 +228,25 @@ export default function HomePage() {
         ) : (
           /* 🔥 MAIN RENDER LOGIC: Grid vs Horizontal Swipe */
           searchQuery.trim() !== "" || activeCategory !== "All" ? (
-            // GRID VIEW: Agar Search ho raha hai ya specific category button clicked hai
+            // GRID VIEW
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-5">
               {filteredProducts.map((product: any) => renderProductCard(product, false))}
             </div>
           ) : (
-            // SWIPE VIEW: Netflix Style (Default View)
+            // SWIPE VIEW
             <div className="space-y-8 pt-2">
-              {displayCategories.map(category => {
+              {displayCategories.map((category: string) => {
                 const categoryProducts = products.filter((p: any) => p.category === category);
                 if (categoryProducts.length === 0) return null;
                 
                 return (
-                  <div key={category} className="space-y-4">
+                  <div key={String(category)} className="space-y-4">
                     <div className="flex items-center justify-between">
                       <h3 className="text-xl font-black uppercase tracking-widest text-white pl-3 border-l-4 border-[#CCFF00] leading-none">
                         {category}
                       </h3>
                     </div>
-                    {/* Horizontal Scroll Container without visible scrollbar */}
+                    {/* Horizontal Scroll Container */}
                     <div className="flex overflow-x-auto gap-3 sm:gap-4 pb-4 snap-x snap-mandatory [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
                       {categoryProducts.map((p: any) => renderProductCard(p, true))}
                     </div>
