@@ -35,7 +35,7 @@ export default function CategoriesPage() {
   const { 
     products, cart, addToCart, updateQuantity, user, login, register,
     storeConfig, fetchStoreConfig, checkIfStoreOpen, triggerStoreClosedAlert,
-    categories // 🔥 DB CATEGORIES FETCHED HERE
+    categories, fetchData // 🔥 TITANIUM FIX: Added fetchData here to force DB sync
   } = useAppStore() as any
 
   const [searchQuery, setSearchQuery] = React.useState('')
@@ -53,7 +53,8 @@ export default function CategoriesPage() {
   React.useEffect(() => {
     setIsMounted(true)
     if (fetchStoreConfig) fetchStoreConfig()
-  }, [fetchStoreConfig])
+    if (fetchData) fetchData() // 🔥 TITANIUM FIX: Force fetches new categories on page load!
+  }, [fetchStoreConfig, fetchData])
 
   React.useEffect(() => {
     if (!storeConfig) return;
@@ -69,14 +70,12 @@ export default function CategoriesPage() {
 
   if (!isMounted) return null
 
-  // 🔥 TITANIUM FIX: Merge Default & Database Categories
+  // 🔥 MERGE LOGIC
   const mergedCategories = [...CATEGORIES];
   if (categories && categories.length > 0) {
     categories.forEach((dbCat: any) => {
-      // Check if it already exists in the default list
       const exists = mergedCategories.find(c => c.name.toLowerCase() === dbCat.name.toLowerCase());
       if (!exists) {
-        // Fallback styling for newly added categories
         mergedCategories.push({
           id: dbCat.id,
           name: dbCat.name,
@@ -184,7 +183,6 @@ export default function CategoriesPage() {
                 />
               </div>
 
-              {/* 🔥 CATEGORY GRID */}
               <div className="grid grid-cols-2 gap-4">
                 {filteredCategories.map((category, index) => {
                   const Icon = category.icon
