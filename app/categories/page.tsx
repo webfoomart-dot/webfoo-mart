@@ -34,7 +34,8 @@ export default function CategoriesPage() {
   
   const { 
     products, cart, addToCart, updateQuantity, user, login, register,
-    storeConfig, fetchStoreConfig, checkIfStoreOpen, triggerStoreClosedAlert 
+    storeConfig, fetchStoreConfig, checkIfStoreOpen, triggerStoreClosedAlert,
+    categories // 🔥 DB CATEGORIES FETCHED HERE
   } = useAppStore() as any
 
   const [searchQuery, setSearchQuery] = React.useState('')
@@ -68,9 +69,30 @@ export default function CategoriesPage() {
 
   if (!isMounted) return null
 
-  const getCartItem = (id: string) => cart.find((item: any) => item.id === id)
+  // 🔥 TITANIUM FIX: Merge Default & Database Categories
+  const mergedCategories = [...CATEGORIES];
+  if (categories && categories.length > 0) {
+    categories.forEach((dbCat: any) => {
+      // Check if it already exists in the default list
+      const exists = mergedCategories.find(c => c.name.toLowerCase() === dbCat.name.toLowerCase());
+      if (!exists) {
+        // Fallback styling for newly added categories
+        mergedCategories.push({
+          id: dbCat.id,
+          name: dbCat.name,
+          desc: 'Explore items in ' + dbCat.name,
+          icon: ShoppingBasket,
+          color: 'text-[#00FFFF]',
+          border: 'group-hover:border-[#00FFFF]',
+          bg: 'bg-[#00FFFF]/10'
+        });
+      }
+    });
+  }
 
-  const filteredCategories = CATEGORIES.filter(cat => 
+  const getCartItem = (id: string) => cart.find((item: any) => String(item.id) === String(id))
+
+  const filteredCategories = mergedCategories.filter(cat => 
     cat.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
     cat.desc.toLowerCase().includes(searchQuery.toLowerCase())
   )
@@ -162,7 +184,7 @@ export default function CategoriesPage() {
                 />
               </div>
 
-              {/* 🔥 BINA VARIANTS KA DIRECT ANIMATION - ERROR IMPOSSIBLE HAI */}
+              {/* 🔥 CATEGORY GRID */}
               <div className="grid grid-cols-2 gap-4">
                 {filteredCategories.map((category, index) => {
                   const Icon = category.icon
