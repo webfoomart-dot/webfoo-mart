@@ -23,10 +23,11 @@ export default function HomePage() {
   const { 
     products, cart, addToCart, removeFromCart, updateQuantity,
     fetchData, storeConfig, fetchStoreConfig, checkIfStoreOpen,
-    triggerStoreClosedAlert // 🔥 NAYA FUNCTION CALL
+    triggerStoreClosedAlert 
   } = useAppStore() as any
 
   const [activeCategory, setActiveCategory] = React.useState("All")
+  const [searchQuery, setSearchQuery] = React.useState("") // 🔥 1. Yahan Search State add ki
   const [isStoreOpen, setIsStoreOpen] = React.useState(true)
 
   React.useEffect(() => {
@@ -50,11 +51,13 @@ export default function HomePage() {
 
   const getCartItem = (id: string) => cart.find((item: any) => item.id === id)
 
-  const filteredProducts = activeCategory === "All" 
-    ? products 
-    : products.filter((p: any) => p.category === activeCategory)
+  // 🔥 2. Yahan Search + Category dono ka Filter Logic add kiya
+  const filteredProducts = products.filter((p: any) => {
+    const matchesCategory = activeCategory === "All" || p.category === activeCategory;
+    const matchesSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase());
+    return matchesCategory && matchesSearch;
+  })
 
-  // 🔥 CUSTOM ADD TO CART LOGIC
   const handleAddToCart = (product: any) => {
     if (!isStoreOpen) {
       triggerStoreClosedAlert();
@@ -82,6 +85,8 @@ export default function HomePage() {
           <Input 
             type="search" 
             placeholder="Search for snacks, drinks & more..." 
+            value={searchQuery} // 🔥 3. Search input ko state se joda
+            onChange={(e) => setSearchQuery(e.target.value)} // 🔥 4. Type karne pe update hoga
             className="h-14 pl-12 pr-6 bg-white/5 border-white/10 rounded-2xl text-sm text-white focus-visible:border-[#00FFFF] shadow-inner"
           />
         </div>
@@ -120,7 +125,7 @@ export default function HomePage() {
                 <MoonStar className="absolute w-40 h-40 text-[#FF0055]/10 -right-5 -bottom-5 rotate-12" />
               )}
               <div className="relative z-10 max-w-xl space-y-2">
-                
+                <Badge className="bg-red-500/20 text-red-500 font-black text-[10px] uppercase tracking-widest px-3 py-0.5 border border-red-500/30">STATUS</Badge>
                 <p className="text-lg sm:text-2xl font-bold text-red-300 uppercase tracking-tight leading-tight">
                   {storeConfig.bannerTextClosed}
                 </p>
@@ -145,71 +150,74 @@ export default function HomePage() {
           </div>
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-5">
-          {(!products || products.length === 0) ? (
-            Array(8).fill(0).map((_, i) => <Skeleton key={i} className="h-72 rounded-[1.5rem] bg-white/5" />)
-          ) : filteredProducts.map((product: any) => {
-            const cartItem = getCartItem(product.id)
-            return (
-              <motion.div 
-                key={product.id} 
-                layout 
-                initial={{ opacity: 0 }} 
-                animate={{ opacity: 1 }} 
-                // 🔥 PRODUCTS HAMESHA NORMAL RAHENGE (No Grayscale, No Opacity Loss if closed)
-                className={`bg-white/5 p-3 rounded-[1.5rem] border border-white/10 flex flex-col gap-3 relative transition-all duration-300 hover:border-[#00FFFF]/40 hover:bg-white/10 group ${!product.inStock ? 'opacity-60 grayscale' : ''}`}
-              >
-                <div className="relative h-36 sm:h-44 w-full rounded-xl overflow-hidden flex items-center justify-center p-0 border border-white/5 bg-black/20">
-                  <Image 
-                    src={product.image || "/placeholder.jpg"} 
-                    alt={product.name} 
-                    fill 
-                    className="object-cover group-hover:scale-110 transition-transform duration-500" 
-                  />
-                  {/* 🔥 OUT OF STOCK HAMESHA DIKHEGA, PAR CLOSED NAHI DIKHEGA */}
-                  {!product.inStock && (
-                    <div className="absolute inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-10">
-                      <span className="bg-red-500 text-white font-black text-[10px] px-3 py-1.5 uppercase tracking-widest rounded-md shadow-lg">
-                        Out of Stock
-                      </span>
-                    </div>
-                  )}
-                </div>
-                
-                <div className="mt-1 flex-1 flex flex-col justify-start space-y-1">
-                  <p className="text-[#00FFFF] font-bold text-[9px] uppercase tracking-widest opacity-80">{product.category}</p>
-                  <p className="font-bold text-white text-xs leading-tight line-clamp-2">{product.name}</p>
-                </div>
-
-                <div className="flex items-center justify-between mt-1 pt-3 border-t border-white/10">
-                  <div className="flex flex-col">
-                    <span className="font-mono font-black text-[#00FFFF] text-base">₹{product.price}</span>
-                    {product.mrp > product.price && <span className="text-[10px] text-muted-foreground line-through font-mono">₹{product.mrp}</span>}
+        {/* Agar search pe kuch na mile, toh Empty state dikhayenge */}
+        {filteredProducts.length === 0 && products.length > 0 ? (
+          <div className="py-20 text-center border border-dashed border-white/10 rounded-[1.5rem] bg-white/5">
+            <p className="text-muted-foreground font-bold uppercase tracking-widest text-xs">No items found for "{searchQuery}"</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-5">
+            {(!products || products.length === 0) ? (
+              Array(8).fill(0).map((_, i) => <Skeleton key={i} className="h-72 rounded-[1.5rem] bg-white/5" />)
+            ) : filteredProducts.map((product: any) => {
+              const cartItem = getCartItem(product.id)
+              return (
+                <motion.div 
+                  key={product.id} 
+                  layout 
+                  initial={{ opacity: 0 }} 
+                  animate={{ opacity: 1 }} 
+                  className={`bg-white/5 p-3 rounded-[1.5rem] border border-white/10 flex flex-col gap-3 relative transition-all duration-300 hover:border-[#00FFFF]/40 hover:bg-white/10 group ${!product.inStock ? 'opacity-60 grayscale' : ''}`}
+                >
+                  <div className="relative h-36 sm:h-44 w-full rounded-xl overflow-hidden flex items-center justify-center p-0 border border-white/5 bg-black/20">
+                    <Image 
+                      src={product.image || "/placeholder.jpg"} 
+                      alt={product.name} 
+                      fill 
+                      className="object-cover group-hover:scale-110 transition-transform duration-500" 
+                    />
+                    {!product.inStock && (
+                      <div className="absolute inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-10">
+                        <span className="bg-red-500 text-white font-black text-[10px] px-3 py-1.5 uppercase tracking-widest rounded-md shadow-lg">
+                          Out of Stock
+                        </span>
+                      </div>
+                    )}
                   </div>
                   
-                  {cartItem ? (
-                    <div className="flex items-center gap-2 bg-[#00FFFF]/10 border border-[#00FFFF]/30 rounded-lg p-1">
-                      {/* 🔥 MINUS karne denge chahe dukan band ho */}
-                      <button onClick={() => updateQuantity(product.id, cartItem.quantity - 1)} className="w-7 h-7 flex items-center justify-center text-[#00FFFF] hover:bg-[#00FFFF]/20 rounded-md transition-colors"><Minus className="w-3 h-3" /></button>
-                      <span className="text-sm font-black w-4 text-center text-white">{cartItem.quantity}</span>
-                      {/* 🔥 PLUS karne par alert aayega agar dukan band ho */}
-                      <button onClick={() => handlePlusClick(product.id, cartItem.quantity)} className="w-7 h-7 flex items-center justify-center text-[#00FFFF] hover:bg-[#00FFFF]/20 rounded-md transition-colors"><Plus className="w-3 h-3" /></button>
+                  <div className="mt-1 flex-1 flex flex-col justify-start space-y-1">
+                    <p className="text-[#00FFFF] font-bold text-[9px] uppercase tracking-widest opacity-80">{product.category}</p>
+                    <p className="font-bold text-white text-xs leading-tight line-clamp-2">{product.name}</p>
+                  </div>
+
+                  <div className="flex items-center justify-between mt-1 pt-3 border-t border-white/10">
+                    <div className="flex flex-col">
+                      <span className="font-mono font-black text-[#00FFFF] text-base">₹{product.price}</span>
+                      {product.mrp > product.price && <span className="text-[10px] text-muted-foreground line-through font-mono">₹{product.mrp}</span>}
                     </div>
-                  ) : (
-                    <Button 
-                      disabled={!product.inStock} // 🔥 BUTTON DISABLED NAHI RAHEGA
-                      onClick={() => handleAddToCart(product)} 
-                      size="sm"
-                      className="h-9 bg-[#CCFF00] text-black font-black text-[11px] uppercase tracking-widest rounded-lg px-4 hover:bg-[#CCFF00]/80 disabled:bg-white/10 disabled:text-white/30 shadow-[0_0_15px_rgba(204,255,0,0.15)] hover:shadow-[0_0_20px_rgba(204,255,0,0.3)]"
-                    >
-                      ADD
-                    </Button>
-                  )}
-                </div>
-              </motion.div>
-            )
-          })}
-        </div>
+                    
+                    {cartItem ? (
+                      <div className="flex items-center gap-2 bg-[#00FFFF]/10 border border-[#00FFFF]/30 rounded-lg p-1">
+                        <button onClick={() => updateQuantity(product.id, cartItem.quantity - 1)} className="w-7 h-7 flex items-center justify-center text-[#00FFFF] hover:bg-[#00FFFF]/20 rounded-md transition-colors"><Minus className="w-3 h-3" /></button>
+                        <span className="text-sm font-black w-4 text-center text-white">{cartItem.quantity}</span>
+                        <button onClick={() => handlePlusClick(product.id, cartItem.quantity)} className="w-7 h-7 flex items-center justify-center text-[#00FFFF] hover:bg-[#00FFFF]/20 rounded-md transition-colors"><Plus className="w-3 h-3" /></button>
+                      </div>
+                    ) : (
+                      <Button 
+                        disabled={!product.inStock} 
+                        onClick={() => handleAddToCart(product)} 
+                        size="sm"
+                        className="h-9 bg-[#CCFF00] text-black font-black text-[11px] uppercase tracking-widest rounded-lg px-4 hover:bg-[#CCFF00]/80 disabled:bg-white/10 disabled:text-white/30 shadow-[0_0_15px_rgba(204,255,0,0.15)] hover:shadow-[0_0_20px_rgba(204,255,0,0.3)]"
+                      >
+                        ADD
+                      </Button>
+                    )}
+                  </div>
+                </motion.div>
+              )
+            })}
+          </div>
+        )}
       </main>
 
       <BottomNav />
