@@ -202,29 +202,19 @@ export const useAppStore = create<AppState>()(
         await supabase.from('products').update({ in_stock: !prod.inStock }).eq('id', id)
       },
 
-      // 🔥 TITANIUM CART FIX: Ab String vs Number id fail nahi hoga!
+      // 🔥 BULLETPROOF CART LOGIC (Fixed String vs Number match)
       cart: [],
       addToCart: (item) => set((state) => {
-        const stringId = String(item.id).trim()
-        const existing = state.cart.find((i) => String(i.id).trim() === stringId)
-        if (existing) {
-          return { cart: state.cart.map((i) => String(i.id).trim() === stringId ? { ...i, quantity: i.quantity + 1 } : i) }
-        }
-        return { cart: [...state.cart, { ...item, id: stringId, quantity: 1 }] }
+        const existing = state.cart.find((i) => String(i.id) === String(item.id))
+        if (existing) return { cart: state.cart.map((i) => String(i.id) === String(item.id) ? { ...i, quantity: i.quantity + 1 } : i) }
+        return { cart: [...state.cart, { ...item, quantity: 1 }] }
       }),
-      removeFromCart: (id) => set((state) => ({ 
-        cart: state.cart.filter((i) => String(i.id).trim() !== String(id).trim()) 
+      removeFromCart: (id) => set((state) => ({ cart: state.cart.filter((i) => String(i.id) !== String(id)) })),
+      updateQuantity: (id, quantity) => set((state) => ({ 
+        cart: quantity <= 0 
+          ? state.cart.filter((i) => String(i.id) !== String(id)) 
+          : state.cart.map((i) => String(i.id) === String(id) ? { ...i, quantity } : i) 
       })),
-      updateQuantity: (id, quantity) => set((state) => {
-        const stringId = String(id).trim()
-        const numQ = Number(quantity)
-        
-        if (numQ <= 0) {
-          // 0 hote hi item FORCE DELETE
-          return { cart: state.cart.filter((i) => String(i.id).trim() !== stringId) }
-        }
-        return { cart: state.cart.map((i) => String(i.id).trim() === stringId ? { ...i, quantity: numQ } : i) }
-      }),
       clearCart: () => set({ cart: [] }),
       getCartCount: () => get().cart.reduce((total, item) => total + item.quantity, 0),
       getCartTotal: () => get().cart.reduce((total, item) => total + (item.price * item.quantity), 0),
