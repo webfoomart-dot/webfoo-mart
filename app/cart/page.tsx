@@ -77,14 +77,14 @@ export default function CartPage() {
 
   if (!isMounted) {
     return (
-      <div className="min-h-screen bg-background text-foreground font-sans">
+      <div className="min-h-screen bg-[#050505] text-foreground font-sans">
         <Header /><main className="container mx-auto pb-40 pt-24 px-4 flex justify-center items-center h-[60vh]"><Loader2 className="w-12 h-12 text-[#00FFFF] animate-spin opacity-50" /></main><BottomNav />
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-background text-foreground font-sans selection:bg-[#00FFFF]/30">
+    <div className="min-h-screen bg-[#050505] text-foreground font-sans selection:bg-[#00FFFF]/30">
       <Header />
       <main className="container mx-auto pb-40 pt-24 px-4 max-w-3xl">
         <div className="flex items-center gap-4 mb-8">
@@ -111,7 +111,13 @@ export default function CartPage() {
                   <Card className="glass-strong border-white/5 overflow-hidden group hover:border-[#00FFFF]/30 transition-colors">
                     <CardContent className="p-4 flex items-center gap-4">
                       <div className="relative h-20 w-20 shrink-0 rounded-xl overflow-hidden border border-white/10 bg-muted/20"><Image src={item.image || "/placeholder.jpg"} alt={item.name} fill className="object-cover group-hover:scale-110 transition-transform duration-500" /></div>
-                      <div className="flex-1 min-w-0"><h3 className="font-bold text-lg truncate leading-tight">{item.name}</h3><p className="text-[#00FFFF] font-mono font-bold mt-1">₹{item.price}</p></div>
+                      
+                      {/* 🔥 FIX: TRUNCATE HATA KE LINE-CLAMP-2 LAGA DIYA */}
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-bold text-sm sm:text-lg line-clamp-2 leading-tight">{item.name}</h3>
+                        <p className="text-[#00FFFF] font-mono font-bold mt-1">₹{item.price}</p>
+                      </div>
+                      
                       <div className="flex flex-col items-end gap-3 min-w-[120px]">
                         <div className="flex items-center gap-1 glass rounded-full p-1 border-white/10">
                           <Button variant="ghost" size="icon" className="h-7 w-7 rounded-full hover:bg-white/10" onClick={() => updateQuantity(item.id, item.quantity - 1)}><Minus className="h-4 w-4" /></Button>
