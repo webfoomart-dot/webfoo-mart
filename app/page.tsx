@@ -137,6 +137,12 @@ export default function HomePage() {
 
       <main className="p-4 sm:p-6 space-y-6 max-w-7xl mx-auto">
         
+        {/* 🔥 STATIC WEBFOO MART TEXT - AB BANNER KE UPAR AAGAYA */}
+        <div className="mb-2 pl-2">
+          <h2 className="text-3xl font-black uppercase tracking-widest text-white not-italic drop-shadow-[0_0_10px_rgba(255,255,255,0.2)]">WebFoo Mart</h2>
+          <p className="text-[11px] font-black uppercase tracking-[0.3em] text-[#00FFFF] mt-1 not-italic drop-shadow-[0_0_8px_rgba(0,255,255,0.4)]">Delivering Desires</p>
+        </div>
+
         <AnimatePresence mode="wait">
           {!storeConfig ? (
             <Skeleton className="h-40 sm:h-52 w-full rounded-[1.5rem] bg-white/5 border border-white/10" />
@@ -180,12 +186,6 @@ export default function HomePage() {
         </AnimatePresence>
 
         <div className="space-y-4">
-          {/* 🔥 STATIC WEBFOO MART & DELIVERING DESIRES TEXT */}
-          <div className="mb-2 pl-2">
-            <h2 className="text-3xl font-black uppercase tracking-widest text-white not-italic drop-shadow-[0_0_10px_rgba(255,255,255,0.2)]">WebFoo Mart</h2>
-            <p className="text-[11px] font-black uppercase tracking-[0.3em] text-[#00FFFF] mt-1 not-italic drop-shadow-[0_0_8px_rgba(0,255,255,0.4)]">Delivering Desires</p>
-          </div>
-
           <div className="relative mt-2">
             <Search className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-white/40" />
             <Input 
@@ -241,10 +241,10 @@ export default function HomePage() {
                 )
               })}
 
-              {/* VIEW ALL CATEGORIES BUTTON */}
+              {/* VIEW ALL CATEGORIES BUTTON - Scroll Fix Added Here */}
               <div className="pt-6 pb-4">
                 <Button asChild className="w-full h-14 bg-white/5 text-white border border-white/20 font-black uppercase tracking-widest text-lg rounded-xl hover:bg-[#00FFFF] hover:text-black hover:border-[#00FFFF] transition-all">
-                  <Link href="/categories">View All Categories</Link>
+                  <Link href="/categories" onClick={() => window.scrollTo(0, 0)}>View All Categories</Link>
                 </Button>
               </div>
             </div>
