@@ -2,6 +2,7 @@
 
 import * as React from "react"
 import Link from "next/link"
+import Image from "next/image"
 import { motion, AnimatePresence } from "framer-motion"
 import { 
   ArrowLeft, Search, ShoppingBasket, Plus, Lock, Zap, 
@@ -54,7 +55,6 @@ export default function CategoriesPage() {
     return () => clearInterval(interval);
   }, [storeConfig, checkIfStoreOpen]);
 
-  // 🔥 TITANIUM CLEANUP: Sirf Database wala data dikhega
   const displayCategories = React.useMemo(() => {
     if (!categories || !Array.isArray(categories)) return [];
     
@@ -103,7 +103,7 @@ export default function CategoriesPage() {
   if (!isMounted) return null
 
   return (
-    <div className="min-h-screen bg-background text-foreground font-sans selection:bg-[#00FFFF]/30">
+    <div className="min-h-screen bg-[#050505] text-foreground font-sans selection:bg-[#00FFFF]/30">
       <Header />
       <main className="container mx-auto pb-40 pt-24 px-4 max-w-7xl">
         <AnimatePresence mode="wait">
@@ -156,32 +156,63 @@ export default function CategoriesPage() {
                   <p className="text-[10px] font-bold uppercase tracking-widest text-[#00FFFF]">{categoryProducts.length} Items Found</p>
                 </div>
               </div>
-              <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
+              
+              {/* 🔥 EXACT HOME PAGE STYLE PRODUCT GRID */}
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-5">
                 {categoryProducts.map((product: any) => {
                   const cartItem = getCartItem(product.id)
                   return (
-                    <motion.div key={product.id} layout initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-                      <Card className="glass-strong border-white/10 overflow-hidden hover:border-[#00FFFF]/30 flex flex-col h-full group">
-                        <div className="relative h-32 sm:h-40 w-full bg-white/5 overflow-hidden">
-                          <img src={product.image || "/placeholder.jpg"} alt={product.name} className="object-cover w-full h-full group-hover:scale-110 transition-transform" />
-                          {!product.inStock && <div className="absolute inset-0 bg-black/70 flex items-center justify-center z-10"><span className="bg-red-500 text-white font-black text-[10px] px-3 py-1.5 uppercase rounded-md shadow-lg">Out of Stock</span></div>}
-                        </div>
-                        <CardContent className="p-3 flex flex-col flex-1 justify-between gap-3">
-                          <div><p className="text-[10px] text-muted-foreground uppercase tracking-widest mb-1">{product.category}</p><h3 className="font-bold text-white text-sm leading-tight line-clamp-2">{product.name}</h3></div>
-                          <div className="flex items-center justify-between mt-auto">
-                            <span className="font-mono font-black text-[#CCFF00] text-lg">₹{product.price}</span>
-                            {cartItem ? (
-                              <div className="flex items-center gap-2 bg-[#00FFFF]/10 border border-[#00FFFF]/30 rounded-lg p-1">
-                                <button onClick={() => updateQuantity(product.id, cartItem.quantity - 1)} className="w-7 h-7 flex items-center justify-center text-[#00FFFF] hover:bg-[#00FFFF]/20 rounded-md"><Minus className="w-4 h-4" /></button>
-                                <span className="text-sm font-black w-4 text-center text-white">{cartItem.quantity}</span>
-                                <button onClick={() => handlePlusClick(product.id, cartItem.quantity)} className="w-7 h-7 flex items-center justify-center text-[#00FFFF] hover:bg-[#00FFFF]/20 rounded-md"><Plus className="w-4 h-4" /></button>
-                              </div>
-                            ) : (
-                              <Button disabled={!product.inStock} onClick={() => handleCartClick(product)} size="icon" className="h-9 w-9 rounded-xl bg-white/10 text-white border border-white/20 hover:bg-[#00FFFF] hover:text-black transition-all"><Plus className="w-5 h-5" /></Button>
-                            )}
+                    <motion.div 
+                      key={product.id} 
+                      layout 
+                      initial={{ opacity: 0 }} 
+                      animate={{ opacity: 1 }} 
+                      className={`bg-white/5 p-3 rounded-[1.5rem] border border-white/10 flex flex-col gap-3 relative transition-all duration-300 hover:border-[#00FFFF]/40 hover:bg-white/10 group ${!product.inStock ? 'opacity-60 grayscale' : ''}`}
+                    >
+                      <div className="relative h-36 sm:h-44 w-full rounded-xl overflow-hidden flex items-center justify-center p-0 border border-white/5 bg-black/20">
+                        <Image 
+                          src={product.image || "/placeholder.jpg"} 
+                          alt={product.name} 
+                          fill 
+                          className="object-cover group-hover:scale-110 transition-transform duration-500" 
+                        />
+                        {!product.inStock && (
+                          <div className="absolute inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-10">
+                            <span className="bg-red-500 text-white font-black text-[10px] px-3 py-1.5 uppercase tracking-widest rounded-md shadow-lg">
+                              Out of Stock
+                            </span>
                           </div>
-                        </CardContent>
-                      </Card>
+                        )}
+                      </div>
+                      
+                      <div className="mt-1 flex-1 flex flex-col justify-start space-y-1">
+                        <p className="text-[#00FFFF] font-bold text-[9px] uppercase tracking-widest opacity-80">{product.category}</p>
+                        <p className="font-bold text-white text-xs leading-tight line-clamp-2">{product.name}</p>
+                      </div>
+
+                      <div className="flex items-center justify-between mt-1 pt-3 border-t border-white/10">
+                        <div className="flex flex-col">
+                          <span className="font-mono font-black text-[#00FFFF] text-base">₹{product.price}</span>
+                          {product.mrp > product.price && <span className="text-[10px] text-muted-foreground line-through font-mono">₹{product.mrp}</span>}
+                        </div>
+                        
+                        {cartItem ? (
+                          <div className="flex items-center gap-2 bg-[#00FFFF]/10 border border-[#00FFFF]/30 rounded-lg p-1">
+                            <button onClick={() => updateQuantity(product.id, cartItem.quantity - 1)} className="w-7 h-7 flex items-center justify-center text-[#00FFFF] hover:bg-[#00FFFF]/20 rounded-md transition-colors"><Minus className="w-3 h-3" /></button>
+                            <span className="text-sm font-black w-4 text-center text-white">{cartItem.quantity}</span>
+                            <button onClick={() => handlePlusClick(product.id, cartItem.quantity)} className="w-7 h-7 flex items-center justify-center text-[#00FFFF] hover:bg-[#00FFFF]/20 rounded-md transition-colors"><Plus className="w-3 h-3" /></button>
+                          </div>
+                        ) : (
+                          <Button 
+                            disabled={!product.inStock} 
+                            onClick={() => handleCartClick(product)} 
+                            size="sm"
+                            className="h-9 bg-[#CCFF00] text-black font-black text-[11px] uppercase tracking-widest rounded-lg px-4 hover:bg-[#CCFF00]/80 disabled:bg-white/10 disabled:text-white/30 shadow-[0_0_15px_rgba(204,255,0,0.15)] hover:shadow-[0_0_20px_rgba(204,255,0,0.3)]"
+                          >
+                            ADD
+                          </Button>
+                        )}
+                      </div>
                     </motion.div>
                 )})}
               </div>
@@ -189,7 +220,9 @@ export default function CategoriesPage() {
           )}
         </AnimatePresence>
       </main>
+
       <BottomNav />
+      
       <AnimatePresence>
         {showAuthModal && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
