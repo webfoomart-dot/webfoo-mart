@@ -21,21 +21,17 @@ export interface StoreConfig {
 
 interface AppState {
   fetchData: () => Promise<void>
-  
   storeConfig: StoreConfig | null
   fetchStoreConfig: () => Promise<void>
   updateStoreConfig: (config: Partial<Omit<StoreConfig, 'id'>>) => Promise<void>
   checkIfStoreOpen: () => boolean
-
   storeClosedAlert: boolean;
   triggerStoreClosedAlert: () => void;
-
   products: Product[]
   addProduct: (product: Omit<Product, 'id'>) => void
   updateProduct: (id: string, product: Partial<Product>) => void
   deleteProduct: (id: string) => void
   toggleStock: (id: string) => void
-
   cart: any[]
   addToCart: (item: any) => void
   removeFromCart: (id: string) => void
@@ -43,29 +39,22 @@ interface AppState {
   clearCart: () => void
   getCartCount: () => number
   getCartTotal: () => number
-  
   orders: any[]
   addOrder: (order: any) => void
   updateOrderStatus: (orderId: string | number, status: string) => void
-  
   customerMeta: Record<string, any>
   updateCustomerMeta: (phone: string, meta: any) => void
-  
   notifications: AppNotification[]
   addNotification: (phone: string, message: string) => void
   markNotificationRead: (id: string) => void
-
   promoCodes: PromoCode[]
   addPromoCode: (promo: Omit<PromoCode, 'id'>) => void
   togglePromoStatus: (id: string) => void
   deletePromo: (id: string) => void
-
   user: { phone: string, name: string } | null
   login: (phone: string, password: string) => Promise<{ success: boolean; message: string }>
   register: (phone: string, name: string, password: string) => Promise<{ success: boolean; message: string }>
   logout: () => void
-
-  // 🔥 TITANIUM: Added updateCategory function
   categories: { id: string, name: string, sortOrder?: number, image?: string }[]
   addCategory: (catData: {name: string, image: string}) => Promise<void>
   updateCategory: (id: string, catData: {name: string, image: string}) => Promise<void>
@@ -81,13 +70,10 @@ export const useAppStore = create<AppState>()(
   persist(
     (set, get) => ({
       storeConfig: null,
-      
       storeClosedAlert: false,
       triggerStoreClosedAlert: () => {
         set({ storeClosedAlert: true })
-        setTimeout(() => {
-          set({ storeClosedAlert: false })
-        }, 3000)
+        setTimeout(() => set({ storeClosedAlert: false }), 3000)
       },
 
       fetchStoreConfig: async () => {
@@ -127,23 +113,14 @@ export const useAppStore = create<AppState>()(
       checkIfStoreOpen: () => {
         const config = get().storeConfig;
         if (!config) return true; 
-        
-        if (config.storeMode === 'manual') {
-          return config.isStoreOpen;
-        }
-
+        if (config.storeMode === 'manual') return config.isStoreOpen;
         const now = new Date();
         const currentMinutes = now.getHours() * 60 + now.getMinutes();
-        
         const [openH, openM] = (config.openTime || '08:00').split(':').map(Number);
         const openMinutes = openH * 60 + openM;
-        
         const [closeH, closeM] = (config.closeTime || '22:00').split(':').map(Number);
         const closeMinutes = closeH * 60 + closeM;
-
-        if (closeMinutes < openMinutes) {
-          return currentMinutes >= openMinutes || currentMinutes < closeMinutes;
-        }
+        if (closeMinutes < openMinutes) return currentMinutes >= openMinutes || currentMinutes < closeMinutes;
         return currentMinutes >= openMinutes && currentMinutes < closeMinutes;
       },
 
@@ -156,9 +133,7 @@ export const useAppStore = create<AppState>()(
         }
 
         const { data: promos } = await supabase.from('promo_codes').select('*').order('created_at', { ascending: false })
-        if (promos) {
-          set({ promoCodes: promos.map(p => ({ id: p.id, code: p.code, type: p.type, value: p.value, minOrder: p.min_order, isActive: p.is_active })) })
-        }
+        if (promos) set({ promoCodes: promos.map(p => ({ id: p.id, code: p.code, type: p.type, value: p.value, minOrder: p.min_order, isActive: p.is_active })) })
 
         const { data: ords } = await supabase.from('orders').select('*').order('created_at', { ascending: true })
         if (ords) {
@@ -173,14 +148,12 @@ export const useAppStore = create<AppState>()(
         const { data: custs } = await supabase.from('customers').select('*')
         if (custs) {
           const metaMap: Record<string, any> = {}
-          custs.forEach(c => { metaMap[c.phone] = { isVip: c.is_vip, isBlocked: c.is_blocked, name: c.name, phone: c.phone, address: c.address } })
+          custs.forEach(c => metaMap[c.phone] = { isVip: c.is_vip, isBlocked: c.is_blocked, name: c.name, phone: c.phone, address: c.address })
           set({ customerMeta: metaMap })
         }
 
-        const { data: cats } = await supabase.from('webfoo_categories').select('*').order('sort_order', { ascending: true }).order('created_at', { ascending: true })
-        if (cats) {
-          set({ categories: cats.map(c => ({ id: c.id, name: c.name, sortOrder: c.sort_order || 0, image: c.image })) })
-        }
+        const { data: cats } = await supabase.from('webfoo_categories').select('*').order('sort_order', { ascending: true })
+        if (cats) set({ categories: cats.map(c => ({ id: c.id, name: c.name, sortOrder: c.sort_order || 0, image: c.image })) })
       },
 
       products: defaultProducts,
@@ -207,32 +180,24 @@ export const useAppStore = create<AppState>()(
 
       cart: [],
       addToCart: (item) => set((state) => {
-        const stringId = String(item.id).trim()
-        const existing = state.cart.find((i) => String(i.id).trim() === stringId)
-        if (existing) {
-          return { cart: state.cart.map((i) => String(i.id).trim() === stringId ? { ...i, quantity: i.quantity + 1 } : i) }
-        }
-        return { cart: [...state.cart, { ...item, id: stringId, quantity: 1 }] }
+        const sid = String(item.id)
+        const exists = state.cart.find((i) => String(i.id) === sid)
+        if (exists) return { cart: state.cart.map((i) => String(i.id) === sid ? { ...i, quantity: i.quantity + 1 } : i) }
+        return { cart: [...state.cart, { ...item, quantity: 1 }] }
       }),
-      removeFromCart: (id) => set((state) => ({ 
-        cart: state.cart.filter((i) => String(i.id).trim() !== String(id).trim()) 
+      removeFromCart: (id) => set((state) => ({ cart: state.cart.filter((i) => String(i.id) !== String(id)) })),
+      updateQuantity: (id, quantity) => set((state) => ({ 
+        cart: quantity <= 0 
+          ? state.cart.filter((i) => String(i.id) !== String(id)) 
+          : state.cart.map((i) => String(i.id) === String(id) ? { ...i, quantity } : i) 
       })),
-      updateQuantity: (id, quantity) => set((state) => {
-        const stringId = String(id).trim()
-        const numQ = Number(quantity)
-        
-        if (numQ <= 0) {
-          return { cart: state.cart.filter((i) => String(i.id).trim() !== stringId) }
-        }
-        return { cart: state.cart.map((i) => String(i.id).trim() === stringId ? { ...i, quantity: numQ } : i) }
-      }),
       clearCart: () => set({ cart: [] }),
       getCartCount: () => get().cart.reduce((total, item) => total + item.quantity, 0),
       getCartTotal: () => get().cart.reduce((total, item) => total + (item.price * item.quantity), 0),
       
       orders: [],
       addOrder: async (order) => {
-        const tempId = Date.now().toString()
+        const tempId = Date.now().toString();
         const d = new Date();
         const offset = d.getTimezoneOffset() * 60000;
         const localDate = new Date(d.getTime() - offset).toISOString().split('T')[0];
@@ -240,38 +205,27 @@ export const useAppStore = create<AppState>()(
         const { data } = await supabase.from('orders').insert({
           customer_name: order.customer, phone: order.phone, amount: order.amount, subtotal: order.subtotal || order.amount, discount: order.discount || 0, promo_code: order.promoCode || null, status: order.status, landmark: order.landmark, items: order.items
         }).select().single()
-        if (data) {
-          set((state) => ({ orders: state.orders.map(o => o.id === tempId ? { ...o, id: data.id } : o) }))
-          try {
-            fetch('/api/whatsapp', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ phone: order.phone, customer: order.customer, orderId: data.id, amount: order.amount }) }).catch(() => {});
-          } catch (e) {}
-        }
+        if (data) set((state) => ({ orders: state.orders.map(o => o.id === tempId ? { ...o, id: data.id } : o) }))
         await supabase.from('customers').upsert({ phone: order.phone, name: order.customer, address: order.landmark }, { onConflict: 'phone' })
       },
       updateOrderStatus: async (orderId, status) => {
         set((state) => {
-          const orderIndex = typeof orderId === 'number' ? orderId : state.orders.findIndex(o => o.id === orderId)
-          if (orderIndex === -1) return state
-          const newOrders = [...state.orders]
-          newOrders[orderIndex] = { ...newOrders[orderIndex], status }
+          const idx = typeof orderId === 'number' ? orderId : state.orders.findIndex(o => o.id === orderId)
+          if (idx === -1) return state
+          const newOrders = [...state.orders]; newOrders[idx] = { ...newOrders[idx], status }
           return { orders: newOrders }
         })
-        if (typeof orderId === 'string' && orderId.includes('-')) {
-          await supabase.from('orders').update({ status }).eq('id', orderId)
-        }
+        await supabase.from('orders').update({ status }).eq('id', orderId)
       },
       
       customerMeta: {},
       updateCustomerMeta: async (phone, meta) => {
         set((state) => ({ customerMeta: { ...state.customerMeta, [phone]: { ...(state.customerMeta[phone] || {}), ...meta } } }))
-        const { data } = await supabase.from('customers').select('*').eq('phone', phone).single()
-        if (data) {
-          await supabase.from('customers').update({ is_vip: meta.isVip !== undefined ? meta.isVip : data.is_vip, is_blocked: meta.isBlocked !== undefined ? meta.isBlocked : data.is_blocked }).eq('phone', phone)
-        }
+        await supabase.from('customers').update({ is_vip: meta.isVip, is_blocked: meta.isBlocked }).eq('phone', phone)
       },
 
       notifications: [],
-      addNotification: (phone, message) => set((state) => ({ notifications: [{ id: Date.now().toString() + Math.random().toString(36).substr(2, 9), phone, message, time: new Date().toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' }), read: false }, ...state.notifications] })),
+      addNotification: (phone, message) => set((state) => ({ notifications: [{ id: Date.now().toString(), phone, message, time: new Date().toLocaleString(), read: false }, ...state.notifications] })),
       markNotificationRead: (id) => set((state) => ({ notifications: state.notifications.map(n => n.id === id ? { ...n, read: true } : n) })),
 
       promoCodes: [],
@@ -297,13 +251,10 @@ export const useAppStore = create<AppState>()(
         const { data, error } = await supabase.from('customers').select('*').eq('phone', phone).single()
         if (error || !data) return { success: false, message: 'Number not found!' }
         if (data.password !== password) return { success: false, message: 'Wrong password!' }
-        if (data.is_blocked) return { success: false, message: 'Account blocked.' }
         set({ user: { phone: data.phone, name: data.name } })
         return { success: true, message: 'Login successful!' }
       },
       register: async (phone, name, password) => {
-        const { data: existing } = await supabase.from('customers').select('phone').eq('phone', phone).single()
-        if (existing) return { success: false, message: 'Already registered!' }
         const { error } = await supabase.from('customers').insert({ phone, name, password })
         if (error) return { success: false, message: 'Registration failed.' }
         set({ user: { phone, name } })
@@ -312,16 +263,20 @@ export const useAppStore = create<AppState>()(
       logout: () => set({ user: null, cart: [] }),
 
       categories: [],
+      // 🔥 TITANIUM FIXED: Full Data insertion
       addCategory: async (catData) => {
-        const tempId = Date.now().toString()
-        const currentCats = get().categories;
-        const nextSortOrder = currentCats.length > 0 ? Math.max(...currentCats.map(c => c.sortOrder || 0)) + 1 : 0;
+        const tempId = Date.now().toString();
+        const current = get().categories;
+        const sOrder = current.length > 0 ? Math.max(...current.map(c => c.sortOrder || 0)) + 1 : 0;
+        set((state) => ({ categories: [...state.categories, { id: tempId, name: catData.name, image: catData.image, sortOrder: sOrder }] }))
         
-        set((state) => ({ categories: [...state.categories, { id: tempId, name: catData.name, image: catData.image, sortOrder: nextSortOrder }] }))
-        const { data } = await supabase.from('webfoo_categories').insert({ name: catData.name, image: catData.image, sort_order: nextSortOrder }).select().single()
+        const { data, error } = await supabase.from('webfoo_categories')
+          .insert({ name: catData.name, image: catData.image, sort_order: sOrder })
+          .select().single()
+        
+        if (error) { console.error(error); return; }
         if (data) set((state) => ({ categories: state.categories.map(c => c.id === tempId ? { ...c, id: data.id } : c) }))
       },
-      // 🔥 TITANIUM: Category Edit karne ka logic
       updateCategory: async (id, catData) => {
         set((state) => ({ categories: state.categories.map(c => c.id === id ? { ...c, name: catData.name, image: catData.image } : c) }))
         await supabase.from('webfoo_categories').update({ name: catData.name, image: catData.image }).eq('id', id)
@@ -330,28 +285,18 @@ export const useAppStore = create<AppState>()(
         set((state) => ({ categories: state.categories.filter(c => c.id !== id) }))
         await supabase.from('webfoo_categories').delete().eq('id', id)
       },
-      
       reorderCategory: async (id, direction) => {
         const cats = [...get().categories];
-        const index = cats.findIndex((c) => c.id === id);
-        if (index === -1) return;
-        if (direction === 'up' && index === 0) return;
-        if (direction === 'down' && index === cats.length - 1) return;
-
-        const swapIndex = direction === 'up' ? index - 1 : index + 1;
-        
-        const temp = cats[index];
-        cats[index] = cats[swapIndex];
-        cats[swapIndex] = temp;
-
-        const updatedCats = cats.map((c, i) => ({ ...c, sortOrder: i }));
-        set({ categories: updatedCats });
-
-        updatedCats.forEach((c) => {
-          supabase.from('webfoo_categories').update({ sort_order: c.sortOrder }).eq('id', c.id).then();
-        });
+        const idx = cats.findIndex(c => c.id === id);
+        if (idx === -1) return;
+        if (direction === 'up' && idx === 0) return;
+        if (direction === 'down' && idx === cats.length - 1) return;
+        const sIdx = direction === 'up' ? idx - 1 : idx + 1;
+        const temp = cats[idx]; cats[idx] = cats[sIdx]; cats[sIdx] = temp;
+        const updated = cats.map((c, i) => ({ ...c, sortOrder: i }));
+        set({ categories: updated });
+        for (const c of updated) { await supabase.from('webfoo_categories').update({ sort_order: c.sortOrder }).eq('id', c.id); }
       },
-
     }),
     { name: 'webfoo-storage' }
   )
