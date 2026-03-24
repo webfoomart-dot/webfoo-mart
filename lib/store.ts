@@ -65,9 +65,10 @@ interface AppState {
   register: (phone: string, name: string, password: string) => Promise<{ success: boolean; message: string }>
   logout: () => void
 
-  // 🔥 TITANIUM UPDATE: Image added to Category
+  // 🔥 TITANIUM: Added updateCategory function
   categories: { id: string, name: string, sortOrder?: number, image?: string }[]
   addCategory: (catData: {name: string, image: string}) => Promise<void>
+  updateCategory: (id: string, catData: {name: string, image: string}) => Promise<void>
   deleteCategory: (id: string) => Promise<void>
   reorderCategory: (id: string, direction: 'up' | 'down') => Promise<void>
 }
@@ -176,7 +177,6 @@ export const useAppStore = create<AppState>()(
           set({ customerMeta: metaMap })
         }
 
-        // 🔥 SORT ORDER + IMAGE KE SATH FETCH HO RAHI HAI
         const { data: cats } = await supabase.from('webfoo_categories').select('*').order('sort_order', { ascending: true }).order('created_at', { ascending: true })
         if (cats) {
           set({ categories: cats.map(c => ({ id: c.id, name: c.name, sortOrder: c.sort_order || 0, image: c.image })) })
@@ -312,7 +312,6 @@ export const useAppStore = create<AppState>()(
       logout: () => set({ user: null, cart: [] }),
 
       categories: [],
-      // 🔥 Image bhi save hogi ab DB mein
       addCategory: async (catData) => {
         const tempId = Date.now().toString()
         const currentCats = get().categories;
@@ -321,6 +320,11 @@ export const useAppStore = create<AppState>()(
         set((state) => ({ categories: [...state.categories, { id: tempId, name: catData.name, image: catData.image, sortOrder: nextSortOrder }] }))
         const { data } = await supabase.from('webfoo_categories').insert({ name: catData.name, image: catData.image, sort_order: nextSortOrder }).select().single()
         if (data) set((state) => ({ categories: state.categories.map(c => c.id === tempId ? { ...c, id: data.id } : c) }))
+      },
+      // 🔥 TITANIUM: Category Edit karne ka logic
+      updateCategory: async (id, catData) => {
+        set((state) => ({ categories: state.categories.map(c => c.id === id ? { ...c, name: catData.name, image: catData.image } : c) }))
+        await supabase.from('webfoo_categories').update({ name: catData.name, image: catData.image }).eq('id', id)
       },
       deleteCategory: async (id) => {
         set((state) => ({ categories: state.categories.filter(c => c.id !== id) }))
