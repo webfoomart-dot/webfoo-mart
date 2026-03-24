@@ -16,6 +16,7 @@ export interface StoreConfig {
   storeMode: 'auto' | 'manual'; 
   openTime: string; 
   closeTime: string; 
+  minOrderAmount: number; // 🔥 ADDED MIN ORDER
 }
 
 interface AppState {
@@ -99,7 +100,8 @@ export const useAppStore = create<AppState>()(
             bannerImageUrlClosed: data.banner_image_url_closed,
             storeMode: data.store_mode || 'manual',
             openTime: data.open_time || '08:00',
-            closeTime: data.close_time || '22:00'
+            closeTime: data.close_time || '22:00',
+            minOrderAmount: data.min_order_amount || 0 // 🔥 FETCH MIN ORDER
           }})
         }
       },
@@ -115,6 +117,7 @@ export const useAppStore = create<AppState>()(
           store_mode: newConfig.storeMode,
           open_time: newConfig.openTime,
           close_time: newConfig.closeTime,
+          min_order_amount: newConfig.minOrderAmount, // 🔥 SAVE MIN ORDER
           updated_at: new Date()
         }).eq('id', 1)
       },
@@ -172,7 +175,6 @@ export const useAppStore = create<AppState>()(
           set({ customerMeta: metaMap })
         }
 
-        // 🔥 FETCH CATEGORIES ONLY
         const { data: cats } = await supabase.from('webfoo_categories').select('*').order('created_at', { ascending: true })
         if (cats) {
           set({ categories: cats.map(c => ({ id: c.id, name: c.name })) })
