@@ -56,7 +56,7 @@ export default function AdminDashboard() {
     promoCodes, addPromoCode, togglePromoStatus, deletePromo,
     storeConfig, fetchStoreConfig, updateStoreConfig, 
     fetchData,
-    categories, addCategory, deleteCategory, reorderCategory
+    categories, addCategory, updateCategory, deleteCategory, reorderCategory // 🔥 FETCHED updateCategory
   } = useAppStore() as any
   
   const [activeTab, setActiveTab] = React.useState('live_orders')
@@ -74,8 +74,10 @@ export default function AdminDashboard() {
   const [selectedCustomers, setSelectedCustomers] = React.useState<string[]>([])
   const [messageText, setMessageText] = React.useState('')
 
+  // 🔥 Categories State
+  const [editingCategoryId, setEditingCategoryId] = React.useState<string | null>(null)
   const [newCategoryName, setNewCategoryName] = React.useState('')
-  const [newCategoryImage, setNewCategoryImage] = React.useState('') // 🔥 State for custom category image
+  const [newCategoryImage, setNewCategoryImage] = React.useState('')
 
   const [settingsFormData, setSettingsFormData] = React.useState({
     storeMode: 'manual', openTime: '08:00', closeTime: '22:00',
@@ -190,7 +192,6 @@ export default function AdminDashboard() {
     }
   }
 
-  // 🔥 TITANIUM UPDATE: Upload logic for Category Image
   const handleCategoryImgUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (file) { 
@@ -200,10 +201,31 @@ export default function AdminDashboard() {
     }
   }
 
-  const handleAddCategory = async (e: React.FormEvent) => {
+  // 🔥 TITANIUM: Handle Save OR Update Category
+  const handleSaveCategory = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!newCategoryName.trim()) return;
-    await addCategory({ name: newCategoryName.trim(), image: newCategoryImage }); // 🔥 Send image to DB
+
+    if (editingCategoryId) {
+      await updateCategory(editingCategoryId, { name: newCategoryName.trim(), image: newCategoryImage });
+    } else {
+      await addCategory({ name: newCategoryName.trim(), image: newCategoryImage });
+    }
+    
+    setNewCategoryName('');
+    setNewCategoryImage('');
+    setEditingCategoryId(null);
+  }
+
+  const editCategoryUI = (cat: any) => {
+    setEditingCategoryId(cat.id);
+    setNewCategoryName(cat.name);
+    setNewCategoryImage(cat.image || '');
+    window.scrollTo({ top: 0, behavior: 'smooth' }); // Scroll to top to see form
+  }
+
+  const resetCategoryForm = () => {
+    setEditingCategoryId(null);
     setNewCategoryName('');
     setNewCategoryImage('');
   }
@@ -379,7 +401,7 @@ export default function AdminDashboard() {
 
         <AnimatePresence mode="wait">
 
-          {/* 🔥 🗂️ CATEGORIES MANAGEMENT TAB (NOW WITH IMAGE UPLOAD) */}
+          {/* 🔥 🗂️ CATEGORIES MANAGEMENT TAB (NOW WITH EDIT) */}
           {activeTab === 'categories' && (
              <motion.div key="categories" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="space-y-6 max-w-2xl">
                 <Card className="glass-strong border-white/10">
@@ -389,9 +411,7 @@ export default function AdminDashboard() {
                       <h3 className="text-xl font-black uppercase text-white">Manage Store Categories</h3>
                     </div>
                     
-                    <form onSubmit={handleAddCategory} className="flex flex-col gap-4">
-                      
-                      {/* 🔥 Image Uploader Box */}
+                    <form onSubmit={handleSaveCategory} className="flex flex-col gap-4">
                       <div className="space-y-4 bg-white/5 p-4 rounded-xl border border-white/10">
                         <Label className="text-xs font-black uppercase tracking-widest text-[#00FFFF]">Category Image (Optional)</Label>
                         <div className="relative w-full h-24 rounded-xl border-2 border-dashed border-[#00FFFF]/40 bg-[#00FFFF]/5 flex items-center justify-center overflow-hidden cursor-pointer group">
@@ -416,13 +436,19 @@ export default function AdminDashboard() {
                         </div>
                       </div>
 
-                      {/* 🔥 Category Name & Button */}
                       <div className="flex gap-4 items-end mt-2">
                         <div className="flex-1 space-y-2">
-                          <Label className="text-xs uppercase tracking-widest text-[#00FFFF]">New Category Name</Label>
+                          <Label className="text-xs uppercase tracking-widest text-[#00FFFF]">
+                            {editingCategoryId ? 'Edit Category Name' : 'New Category Name'}
+                          </Label>
                           <Input required placeholder="e.g. Fresh Fruits" value={newCategoryName} onChange={(e) => setNewCategoryName(e.target.value)} className="bg-black/50 border-white/20 text-white h-12" />
                         </div>
-                        <Button type="submit" className="h-12 bg-[#CCFF00] text-black font-black uppercase tracking-widest px-6 hover:bg-[#CCFF00]/90">Add Category</Button>
+                        <Button type="submit" className="h-12 bg-[#CCFF00] text-black font-black uppercase tracking-widest px-6 hover:bg-[#CCFF00]/90">
+                          {editingCategoryId ? 'UPDATE' : 'ADD'}
+                        </Button>
+                        {editingCategoryId && (
+                          <Button type="button" onClick={resetCategoryForm} variant="outline" className="h-12 border-white/20 text-white hover:bg-white/10">CANCEL</Button>
+                        )}
                       </div>
                     </form>
 
@@ -443,6 +469,7 @@ export default function AdminDashboard() {
                           </div>
                           
                           <div className="flex gap-1 items-center">
+                             <Button variant="ghost" size="icon" onClick={() => editCategoryUI(cat)} className="w-8 h-8 text-[#CCFF00] hover:bg-[#CCFF00]/20"><Edit className="w-4 h-4" /></Button>
                              <Button variant="ghost" size="icon" onClick={() => reorderCategory(cat.id, 'up')} disabled={idx === 0} className="w-8 h-8 text-[#00FFFF] hover:bg-[#00FFFF]/20"><ArrowUp className="w-4 h-4" /></Button>
                              <Button variant="ghost" size="icon" onClick={() => reorderCategory(cat.id, 'down')} disabled={idx === categories.length - 1} className="w-8 h-8 text-[#00FFFF] hover:bg-[#00FFFF]/20"><ArrowDown className="w-4 h-4" /></Button>
                              <div className="w-px h-5 bg-white/10 mx-1"></div>
