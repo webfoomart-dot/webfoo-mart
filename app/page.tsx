@@ -103,7 +103,7 @@ export default function HomePage() {
                 </>
               )}
               <div className="relative z-10 max-w-xl space-y-2">
-                <Badge className="bg-[#00FFFF] text-black hover:bg-[#00FFFF] font-black text-[10px] uppercase tracking-widest px-3 py-0.5">LIVE AD</Badge>
+                <Badge className="bg-[#00FFFF] text-black hover:bg-[#00FFFF] font-black text-[10px] uppercase tracking-widest px-3 py-0.5"></Badge>
                 <p className="text-xl sm:text-3xl font-extrabold text-white uppercase tracking-tight leading-tight [text-shadow:0_0_15px_#fff]">
                   {storeConfig.bannerTextOpen}
                 </p>
