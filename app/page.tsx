@@ -2,6 +2,7 @@
 
 import * as React from "react"
 import Image from "next/image"
+import Link from "next/link"
 import { motion, AnimatePresence } from "framer-motion"
 import { Search, Zap, MoonStar, TicketPercent, Plus, Minus } from "lucide-react"
 
@@ -14,9 +15,8 @@ import { Badge } from "@/components/ui/badge"
 import { Header } from "@/components/header"
 import { BottomNav } from "@/components/bottom-nav"
 
-const MAIN_CATEGORIES = [
-  "Snacks & Bites", "Cold Drinks"
-]
+// EXACT WAHI 3 CATEGORY JO TUNE BOLI
+const HOME_CATEGORIES = ["HK Fast Food", "Fast Food", "Cold Drink"]
 
 export default function HomePage() {
   const [isMounted, setIsMounted] = React.useState(false)
@@ -26,7 +26,6 @@ export default function HomePage() {
     triggerStoreClosedAlert 
   } = useAppStore() as any
 
-  const [activeCategory, setActiveCategory] = React.useState("All")
   const [searchQuery, setSearchQuery] = React.useState("") 
   const [isStoreOpen, setIsStoreOpen] = React.useState(true)
 
@@ -51,18 +50,10 @@ export default function HomePage() {
 
   const getCartItem = (id: string) => cart.find((item: any) => item.id === id)
 
+  // Sirf search ke liye filter, category button wala logic hata diya
   const filteredProducts = products.filter((p: any) => {
-    const matchesCategory = activeCategory === "All" || p.category === activeCategory;
-    const matchesSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesCategory && matchesSearch;
+    return p.name.toLowerCase().includes(searchQuery.toLowerCase());
   })
-
-  // 🔥 Smart Categories Extractor (TypeScript Strict String Fix)
-  const availableCategories: string[] = Array.from(new Set(products.map((p: any) => String(p.category))));
-  const displayCategories: string[] = [
-    ...MAIN_CATEGORIES.filter(cat => availableCategories.includes(cat)),
-    ...availableCategories.filter(cat => !MAIN_CATEGORIES.includes(cat))
-  ];
 
   const handleAddToCart = (product: any) => {
     if (!isStoreOpen) {
@@ -80,7 +71,7 @@ export default function HomePage() {
     updateQuantity(productId, currentQuantity + 1);
   }
 
-  // 🔥 PRODUCT CARD ENGINE
+  // PRODUCT CARD ENGINE
   const renderProductCard = (product: any, isHorizontalMode: boolean = false) => {
     const cartItem = getCartItem(product.id)
     return (
@@ -189,18 +180,10 @@ export default function HomePage() {
         </AnimatePresence>
 
         <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <h2 className="text-lg font-black uppercase tracking-widest">Categories & Shops</h2>
-          </div>
-          <div className="flex flex-wrap gap-2 sm:gap-3">
-            <button onClick={() => setActiveCategory("All")} className={`px-5 py-2.5 rounded-xl text-xs font-bold uppercase tracking-widest transition-all ${activeCategory === "All" ? 'bg-[#00FFFF] text-black shadow-[0_0_15px_rgba(0,255,255,0.3)]' : 'bg-white/5 text-white/70 hover:bg-white/10'}`}>
-              All Items
-            </button>
-            {MAIN_CATEGORIES.map((cat) => (
-              <button key={cat} onClick={() => setActiveCategory(cat)} className={`px-5 py-2.5 rounded-xl text-xs font-bold uppercase tracking-widest transition-all ${activeCategory === cat ? 'bg-[#00FFFF] text-black shadow-[0_0_15px_rgba(0,255,255,0.3)]' : 'bg-white/5 text-white/70 hover:bg-white/10'}`}>
-                {cat}
-              </button>
-            ))}
+          {/* 🔥 STATIC WEBFOO MART & DELIVERING DESIRES TEXT */}
+          <div className="mb-2 pl-2">
+            <h2 className="text-3xl font-black uppercase tracking-widest text-white not-italic drop-shadow-[0_0_10px_rgba(255,255,255,0.2)]">WebFoo Mart</h2>
+            <p className="text-[11px] font-black uppercase tracking-[0.3em] text-[#00FFFF] mt-1 not-italic drop-shadow-[0_0_8px_rgba(0,255,255,0.4)]">Delivering Desires</p>
           </div>
 
           <div className="relative mt-2">
@@ -226,21 +209,25 @@ export default function HomePage() {
             <p className="text-muted-foreground font-bold uppercase tracking-widest text-xs">No items found for "{searchQuery}"</p>
           </div>
         ) : (
-          /* 🔥 MAIN RENDER LOGIC: Grid vs Horizontal Swipe */
-          searchQuery.trim() !== "" || activeCategory !== "All" ? (
-            // GRID VIEW
+          searchQuery.trim() !== "" ? (
+            // GRID VIEW FOR SEARCH RESULTS
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-5">
               {filteredProducts.map((product: any) => renderProductCard(product, false))}
             </div>
           ) : (
-            // SWIPE VIEW
+            // SWIPE VIEW: Sirf wo 3 categories jo tune maangi
             <div className="space-y-8 pt-2">
-              {displayCategories.map((category: string) => {
-                const categoryProducts = products.filter((p: any) => p.category === category);
+              {HOME_CATEGORIES.map((category: string) => {
+                // Case-insensitive match taaki "Cold Drink" aur "Cold Drinks" dono chal jayein
+                const categoryProducts = products.filter((p: any) => 
+                  String(p.category).toLowerCase() === category.toLowerCase() || 
+                  String(p.category).toLowerCase() === category.toLowerCase() + 's'
+                );
+                
                 if (categoryProducts.length === 0) return null;
                 
                 return (
-                  <div key={String(category)} className="space-y-4">
+                  <div key={category} className="space-y-4">
                     <div className="flex items-center justify-between">
                       <h3 className="text-xl font-black uppercase tracking-widest text-white pl-3 border-l-4 border-[#CCFF00] leading-none">
                         {category}
@@ -253,6 +240,13 @@ export default function HomePage() {
                   </div>
                 )
               })}
+
+              {/* VIEW ALL CATEGORIES BUTTON */}
+              <div className="pt-6 pb-4">
+                <Button asChild className="w-full h-14 bg-white/5 text-white border border-white/20 font-black uppercase tracking-widest text-lg rounded-xl hover:bg-[#00FFFF] hover:text-black hover:border-[#00FFFF] transition-all">
+                  <Link href="/categories">View All Categories</Link>
+                </Button>
+              </div>
             </div>
           )
         )}
