@@ -33,6 +33,13 @@ export default function CheckoutPage() {
   const [discountAmt, setDiscountAmt] = React.useState(0)
   const [finalTotal, setFinalTotal] = React.useState(totalAmount)
 
+  // 🔥 AUTO SCROLL TO TOP LOGIC (Yahan add kiya hai)
+  React.useEffect(() => {
+    if (isSuccess) {
+      window.scrollTo({ top: 0, behavior: 'smooth' })
+    }
+  }, [isSuccess])
+
   // 🔥 TITANIUM STRICT ADDRESS CATCHER (String Matching Fix)
   React.useEffect(() => {
     setIsMounted(true)
