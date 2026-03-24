@@ -57,6 +57,13 @@ export default function HomePage() {
     return matchesCategory && matchesSearch;
   })
 
+  // 🔥 Smart Categories Extractor (Jo categories database mein hain sirf wahi dikhengi)
+  const availableCategories = Array.from(new Set(products.map((p: any) => p.category)));
+  const displayCategories = [
+    ...MAIN_CATEGORIES.filter(cat => availableCategories.includes(cat)),
+    ...availableCategories.filter((cat: any) => !MAIN_CATEGORIES.includes(cat))
+  ];
+
   const handleAddToCart = (product: any) => {
     if (!isStoreOpen) {
       triggerStoreClosedAlert();
@@ -73,6 +80,65 @@ export default function HomePage() {
     updateQuantity(productId, currentQuantity + 1);
   }
 
+  // 🔥 PRODUCT CARD ENGINE (Grid aur Horizontal Dono ke liye)
+  const renderProductCard = (product: any, isHorizontalMode: boolean = false) => {
+    const cartItem = getCartItem(product.id)
+    return (
+      <motion.div 
+        key={product.id} 
+        layout 
+        initial={{ opacity: 0 }} 
+        animate={{ opacity: 1 }} 
+        className={`bg-white/5 p-3 rounded-[1.5rem] border border-white/10 flex flex-col gap-3 relative transition-all duration-300 hover:border-[#00FFFF]/40 hover:bg-white/10 group ${!product.inStock ? 'opacity-60 grayscale' : ''} ${isHorizontalMode ? 'min-w-[160px] max-w-[160px] sm:min-w-[190px] sm:max-w-[190px] snap-start shrink-0' : ''}`}
+      >
+        <div className="relative h-36 sm:h-44 w-full rounded-xl overflow-hidden flex items-center justify-center p-0 border border-white/5 bg-black/20">
+          <Image 
+            src={product.image || "/placeholder.jpg"} 
+            alt={product.name} 
+            fill 
+            className="object-cover group-hover:scale-110 transition-transform duration-500" 
+          />
+          {!product.inStock && (
+            <div className="absolute inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-10">
+              <span className="bg-red-500 text-white font-black text-[10px] px-3 py-1.5 uppercase tracking-widest rounded-md shadow-lg">
+                Out of Stock
+              </span>
+            </div>
+          )}
+        </div>
+        
+        <div className="mt-1 flex-1 flex flex-col justify-start space-y-1">
+          <p className="text-[#00FFFF] font-bold text-[9px] uppercase tracking-widest opacity-80">{product.category}</p>
+          <p className="font-bold text-white text-xs leading-tight line-clamp-2">{product.name}</p>
+        </div>
+
+        <div className="flex items-center justify-between mt-1 pt-3 border-t border-white/10">
+          <div className="flex flex-col">
+            <span className="font-mono font-black text-[#00FFFF] text-base">₹{product.price}</span>
+            {product.mrp > product.price && <span className="text-[10px] text-muted-foreground line-through font-mono">₹{product.mrp}</span>}
+          </div>
+          
+          {cartItem ? (
+            <div className="flex items-center gap-2 bg-[#00FFFF]/10 border border-[#00FFFF]/30 rounded-lg p-1">
+              <button onClick={() => updateQuantity(product.id, cartItem.quantity - 1)} className="w-7 h-7 flex items-center justify-center text-[#00FFFF] hover:bg-[#00FFFF]/20 rounded-md transition-colors"><Minus className="w-3 h-3" /></button>
+              <span className="text-sm font-black w-4 text-center text-white">{cartItem.quantity}</span>
+              <button onClick={() => handlePlusClick(product.id, cartItem.quantity)} className="w-7 h-7 flex items-center justify-center text-[#00FFFF] hover:bg-[#00FFFF]/20 rounded-md transition-colors"><Plus className="w-3 h-3" /></button>
+            </div>
+          ) : (
+            <Button 
+              disabled={!product.inStock} 
+              onClick={() => handleAddToCart(product)} 
+              size="sm"
+              className="h-9 bg-[#CCFF00] text-black font-black text-[11px] uppercase tracking-widest rounded-lg px-4 hover:bg-[#CCFF00]/80 disabled:bg-white/10 disabled:text-white/30 shadow-[0_0_15px_rgba(204,255,0,0.15)] hover:shadow-[0_0_20px_rgba(204,255,0,0.3)]"
+            >
+              ADD
+            </Button>
+          )}
+        </div>
+      </motion.div>
+    )
+  }
+
   return (
     <div className="min-h-screen bg-[#050505] text-foreground font-sans selection:bg-[#00FFFF]/30 pb-32 pt-24">
       
@@ -80,8 +146,6 @@ export default function HomePage() {
 
       <main className="p-4 sm:p-6 space-y-6 max-w-7xl mx-auto">
         
-        {/* 🔥 SEARCH BAR YAHAN SE HATA DIYA HAI */}
-
         <AnimatePresence mode="wait">
           {!storeConfig ? (
             <Skeleton className="h-40 sm:h-52 w-full rounded-[1.5rem] bg-white/5 border border-white/10" />
@@ -139,7 +203,6 @@ export default function HomePage() {
             ))}
           </div>
 
-          {/* 🔥 SEARCH BAR YAHAN AAGAYA (MAST CAPSULE SHAPE MEIN) */}
           <div className="relative mt-2">
             <Search className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-white/40" />
             <Input 
@@ -152,73 +215,46 @@ export default function HomePage() {
           </div>
         </div>
 
-        {/* Agar search pe kuch na mile */}
-        {filteredProducts.length === 0 && products.length > 0 ? (
+        {/* LOADING STATE */}
+        {(!products || products.length === 0) ? (
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-5">
+            {Array(8).fill(0).map((_, i) => <Skeleton key={i} className="h-72 rounded-[1.5rem] bg-white/5" />)}
+          </div>
+        ) : filteredProducts.length === 0 ? (
+          /* EMPTY SEARCH RESULT */
           <div className="py-20 text-center border border-dashed border-white/10 rounded-[1.5rem] bg-white/5">
             <p className="text-muted-foreground font-bold uppercase tracking-widest text-xs">No items found for "{searchQuery}"</p>
           </div>
         ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-5">
-            {(!products || products.length === 0) ? (
-              Array(8).fill(0).map((_, i) => <Skeleton key={i} className="h-72 rounded-[1.5rem] bg-white/5" />)
-            ) : filteredProducts.map((product: any) => {
-              const cartItem = getCartItem(product.id)
-              return (
-                <motion.div 
-                  key={product.id} 
-                  layout 
-                  initial={{ opacity: 0 }} 
-                  animate={{ opacity: 1 }} 
-                  className={`bg-white/5 p-3 rounded-[1.5rem] border border-white/10 flex flex-col gap-3 relative transition-all duration-300 hover:border-[#00FFFF]/40 hover:bg-white/10 group ${!product.inStock ? 'opacity-60 grayscale' : ''}`}
-                >
-                  <div className="relative h-36 sm:h-44 w-full rounded-xl overflow-hidden flex items-center justify-center p-0 border border-white/5 bg-black/20">
-                    <Image 
-                      src={product.image || "/placeholder.jpg"} 
-                      alt={product.name} 
-                      fill 
-                      className="object-cover group-hover:scale-110 transition-transform duration-500" 
-                    />
-                    {!product.inStock && (
-                      <div className="absolute inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-10">
-                        <span className="bg-red-500 text-white font-black text-[10px] px-3 py-1.5 uppercase tracking-widest rounded-md shadow-lg">
-                          Out of Stock
-                        </span>
-                      </div>
-                    )}
-                  </div>
-                  
-                  <div className="mt-1 flex-1 flex flex-col justify-start space-y-1">
-                    <p className="text-[#00FFFF] font-bold text-[9px] uppercase tracking-widest opacity-80">{product.category}</p>
-                    <p className="font-bold text-white text-xs leading-tight line-clamp-2">{product.name}</p>
-                  </div>
-
-                  <div className="flex items-center justify-between mt-1 pt-3 border-t border-white/10">
-                    <div className="flex flex-col">
-                      <span className="font-mono font-black text-[#00FFFF] text-base">₹{product.price}</span>
-                      {product.mrp > product.price && <span className="text-[10px] text-muted-foreground line-through font-mono">₹{product.mrp}</span>}
+          /* 🔥 MAIN RENDER LOGIC: Grid vs Horizontal Swipe */
+          searchQuery.trim() !== "" || activeCategory !== "All" ? (
+            // GRID VIEW: Agar Search ho raha hai ya specific category button clicked hai
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-5">
+              {filteredProducts.map((product: any) => renderProductCard(product, false))}
+            </div>
+          ) : (
+            // SWIPE VIEW: Netflix Style (Default View)
+            <div className="space-y-8 pt-2">
+              {displayCategories.map(category => {
+                const categoryProducts = products.filter((p: any) => p.category === category);
+                if (categoryProducts.length === 0) return null;
+                
+                return (
+                  <div key={category} className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-xl font-black uppercase tracking-widest text-white pl-3 border-l-4 border-[#CCFF00] leading-none">
+                        {category}
+                      </h3>
                     </div>
-                    
-                    {cartItem ? (
-                      <div className="flex items-center gap-2 bg-[#00FFFF]/10 border border-[#00FFFF]/30 rounded-lg p-1">
-                        <button onClick={() => updateQuantity(product.id, cartItem.quantity - 1)} className="w-7 h-7 flex items-center justify-center text-[#00FFFF] hover:bg-[#00FFFF]/20 rounded-md transition-colors"><Minus className="w-3 h-3" /></button>
-                        <span className="text-sm font-black w-4 text-center text-white">{cartItem.quantity}</span>
-                        <button onClick={() => handlePlusClick(product.id, cartItem.quantity)} className="w-7 h-7 flex items-center justify-center text-[#00FFFF] hover:bg-[#00FFFF]/20 rounded-md transition-colors"><Plus className="w-3 h-3" /></button>
-                      </div>
-                    ) : (
-                      <Button 
-                        disabled={!product.inStock} 
-                        onClick={() => handleAddToCart(product)} 
-                        size="sm"
-                        className="h-9 bg-[#CCFF00] text-black font-black text-[11px] uppercase tracking-widest rounded-lg px-4 hover:bg-[#CCFF00]/80 disabled:bg-white/10 disabled:text-white/30 shadow-[0_0_15px_rgba(204,255,0,0.15)] hover:shadow-[0_0_20px_rgba(204,255,0,0.3)]"
-                      >
-                        ADD
-                      </Button>
-                    )}
+                    {/* Horizontal Scroll Container without visible scrollbar */}
+                    <div className="flex overflow-x-auto gap-3 sm:gap-4 pb-4 snap-x snap-mandatory [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+                      {categoryProducts.map((p: any) => renderProductCard(p, true))}
+                    </div>
                   </div>
-                </motion.div>
-              )
-            })}
-          </div>
+                )
+              })}
+            </div>
+          )
         )}
       </main>
 
