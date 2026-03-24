@@ -65,9 +65,10 @@ interface AppState {
   register: (phone: string, name: string, password: string) => Promise<{ success: boolean; message: string }>
   logout: () => void
 
-  categories: { id: string, name: string }[]
+  categories: { id: string, name: string, sortOrder?: number }[]
   addCategory: (name: string) => Promise<void>
   deleteCategory: (id: string) => Promise<void>
+  reorderCategory: (id: string, direction: 'up' | 'down') => Promise<void>
 }
 
 const defaultProducts: Product[] = [
@@ -174,9 +175,10 @@ export const useAppStore = create<AppState>()(
           set({ customerMeta: metaMap })
         }
 
-        const { data: cats } = await supabase.from('webfoo_categories').select('*').order('created_at', { ascending: true })
+        // 🔥 SORT ORDER KE SATH FETCH HO RAHI HAI
+        const { data: cats } = await supabase.from('webfoo_categories').select('*').order('sort_order', { ascending: true }).order('created_at', { ascending: true })
         if (cats) {
-          set({ categories: cats.map(c => ({ id: c.id, name: c.name })) })
+          set({ categories: cats.map(c => ({ id: c.id, name: c.name, sortOrder: c.sort_order || 0 })) })
         }
       },
 
@@ -202,19 +204,27 @@ export const useAppStore = create<AppState>()(
         await supabase.from('products').update({ in_stock: !prod.inStock }).eq('id', id)
       },
 
-      // 🔥 BULLETPROOF CART LOGIC (Fixed String vs Number match)
       cart: [],
       addToCart: (item) => set((state) => {
-        const existing = state.cart.find((i) => String(i.id) === String(item.id))
-        if (existing) return { cart: state.cart.map((i) => String(i.id) === String(item.id) ? { ...i, quantity: i.quantity + 1 } : i) }
-        return { cart: [...state.cart, { ...item, quantity: 1 }] }
+        const stringId = String(item.id).trim()
+        const existing = state.cart.find((i) => String(i.id).trim() === stringId)
+        if (existing) {
+          return { cart: state.cart.map((i) => String(i.id).trim() === stringId ? { ...i, quantity: i.quantity + 1 } : i) }
+        }
+        return { cart: [...state.cart, { ...item, id: stringId, quantity: 1 }] }
       }),
-      removeFromCart: (id) => set((state) => ({ cart: state.cart.filter((i) => String(i.id) !== String(id)) })),
-      updateQuantity: (id, quantity) => set((state) => ({ 
-        cart: quantity <= 0 
-          ? state.cart.filter((i) => String(i.id) !== String(id)) 
-          : state.cart.map((i) => String(i.id) === String(id) ? { ...i, quantity } : i) 
+      removeFromCart: (id) => set((state) => ({ 
+        cart: state.cart.filter((i) => String(i.id).trim() !== String(id).trim()) 
       })),
+      updateQuantity: (id, quantity) => set((state) => {
+        const stringId = String(id).trim()
+        const numQ = Number(quantity)
+        
+        if (numQ <= 0) {
+          return { cart: state.cart.filter((i) => String(i.id).trim() !== stringId) }
+        }
+        return { cart: state.cart.map((i) => String(i.id).trim() === stringId ? { ...i, quantity: numQ } : i) }
+      }),
       clearCart: () => set({ cart: [] }),
       getCartCount: () => get().cart.reduce((total, item) => total + item.quantity, 0),
       getCartTotal: () => get().cart.reduce((total, item) => total + (item.price * item.quantity), 0),
@@ -303,14 +313,40 @@ export const useAppStore = create<AppState>()(
       categories: [],
       addCategory: async (name) => {
         const tempId = Date.now().toString()
-        set((state) => ({ categories: [...state.categories, { id: tempId, name }] }))
-        const { data } = await supabase.from('webfoo_categories').insert({ name }).select().single()
+        const currentCats = get().categories;
+        const nextSortOrder = currentCats.length > 0 ? Math.max(...currentCats.map(c => c.sortOrder || 0)) + 1 : 0;
+        
+        set((state) => ({ categories: [...state.categories, { id: tempId, name, sortOrder: nextSortOrder }] }))
+        const { data } = await supabase.from('webfoo_categories').insert({ name, sort_order: nextSortOrder }).select().single()
         if (data) set((state) => ({ categories: state.categories.map(c => c.id === tempId ? { ...c, id: data.id } : c) }))
       },
       deleteCategory: async (id) => {
         set((state) => ({ categories: state.categories.filter(c => c.id !== id) }))
         await supabase.from('webfoo_categories').delete().eq('id', id)
-      }
+      },
+      
+      // 🔥 NAYA ENGINE: Upar-Neeche Reorder karne wala
+      reorderCategory: async (id, direction) => {
+        const cats = [...get().categories];
+        const index = cats.findIndex((c) => c.id === id);
+        if (index === -1) return;
+        if (direction === 'up' && index === 0) return;
+        if (direction === 'down' && index === cats.length - 1) return;
+
+        const swapIndex = direction === 'up' ? index - 1 : index + 1;
+        
+        const temp = cats[index];
+        cats[index] = cats[swapIndex];
+        cats[swapIndex] = temp;
+
+        const updatedCats = cats.map((c, i) => ({ ...c, sortOrder: i }));
+        set({ categories: updatedCats });
+
+        updatedCats.forEach((c) => {
+          supabase.from('webfoo_categories').update({ sort_order: c.sortOrder }).eq('id', c.id).then();
+        });
+      },
+
     }),
     { name: 'webfoo-storage' }
   )
