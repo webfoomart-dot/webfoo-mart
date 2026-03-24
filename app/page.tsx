@@ -120,7 +120,7 @@ export default function HomePage() {
                 <MoonStar className="absolute w-40 h-40 text-[#FF0055]/10 -right-5 -bottom-5 rotate-12" />
               )}
               <div className="relative z-10 max-w-xl space-y-2">
-                <Badge className="bg-red-500/20 text-red-500 font-black text-[10px] uppercase tracking-widest px-3 py-0.5 border border-red-500/30">STATUS</Badge>
+                
                 <p className="text-lg sm:text-2xl font-bold text-red-300 uppercase tracking-tight leading-tight">
                   {storeConfig.bannerTextClosed}
                 </p>
