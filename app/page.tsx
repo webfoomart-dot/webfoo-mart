@@ -27,7 +27,7 @@ export default function HomePage() {
   } = useAppStore() as any
 
   const [activeCategory, setActiveCategory] = React.useState("All")
-  const [searchQuery, setSearchQuery] = React.useState("") // 🔥 1. Yahan Search State add ki
+  const [searchQuery, setSearchQuery] = React.useState("") 
   const [isStoreOpen, setIsStoreOpen] = React.useState(true)
 
   React.useEffect(() => {
@@ -51,7 +51,6 @@ export default function HomePage() {
 
   const getCartItem = (id: string) => cart.find((item: any) => item.id === id)
 
-  // 🔥 2. Yahan Search + Category dono ka Filter Logic add kiya
   const filteredProducts = products.filter((p: any) => {
     const matchesCategory = activeCategory === "All" || p.category === activeCategory;
     const matchesSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase());
@@ -80,16 +79,8 @@ export default function HomePage() {
       <Header />
 
       <main className="p-4 sm:p-6 space-y-6 max-w-7xl mx-auto">
-        <div className="relative">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/40" />
-          <Input 
-            type="search" 
-            placeholder="Search for snacks, drinks & more..." 
-            value={searchQuery} // 🔥 3. Search input ko state se joda
-            onChange={(e) => setSearchQuery(e.target.value)} // 🔥 4. Type karne pe update hoga
-            className="h-14 pl-12 pr-6 bg-white/5 border-white/10 rounded-2xl text-sm text-white focus-visible:border-[#00FFFF] shadow-inner"
-          />
-        </div>
+        
+        {/* 🔥 SEARCH BAR YAHAN SE HATA DIYA HAI */}
 
         <AnimatePresence mode="wait">
           {!storeConfig ? (
@@ -108,7 +99,6 @@ export default function HomePage() {
                 </>
               )}
               <div className="relative z-10 max-w-xl space-y-2">
-                
                 <p className="text-xl sm:text-3xl font-extrabold text-white uppercase tracking-tight leading-tight [text-shadow:0_0_15px_#fff]">
                   {storeConfig.bannerTextOpen}
                 </p>
@@ -134,11 +124,11 @@ export default function HomePage() {
           )}
         </AnimatePresence>
 
-        <div className="space-y-3">
+        <div className="space-y-4">
           <div className="flex items-center justify-between">
             <h2 className="text-lg font-black uppercase tracking-widest">Categories & Shops</h2>
           </div>
-          <div className="flex flex-wrap gap-2 sm:gap-3 pb-2">
+          <div className="flex flex-wrap gap-2 sm:gap-3">
             <button onClick={() => setActiveCategory("All")} className={`px-5 py-2.5 rounded-xl text-xs font-bold uppercase tracking-widest transition-all ${activeCategory === "All" ? 'bg-[#00FFFF] text-black shadow-[0_0_15px_rgba(0,255,255,0.3)]' : 'bg-white/5 text-white/70 hover:bg-white/10'}`}>
               All Items
             </button>
@@ -148,9 +138,21 @@ export default function HomePage() {
               </button>
             ))}
           </div>
+
+          {/* 🔥 SEARCH BAR YAHAN AAGAYA (MAST CAPSULE SHAPE MEIN) */}
+          <div className="relative mt-2">
+            <Search className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-white/40" />
+            <Input 
+              type="search" 
+              placeholder="Search for snacks, drinks & more..." 
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="h-14 pl-14 pr-6 bg-white/5 border-white/10 rounded-full text-sm text-white focus-visible:border-[#00FFFF] shadow-inner w-full"
+            />
+          </div>
         </div>
 
-        {/* Agar search pe kuch na mile, toh Empty state dikhayenge */}
+        {/* Agar search pe kuch na mile */}
         {filteredProducts.length === 0 && products.length > 0 ? (
           <div className="py-20 text-center border border-dashed border-white/10 rounded-[1.5rem] bg-white/5">
             <p className="text-muted-foreground font-bold uppercase tracking-widest text-xs">No items found for "{searchQuery}"</p>
