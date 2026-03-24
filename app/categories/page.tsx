@@ -68,49 +68,41 @@ export default function CategoriesPage() {
     return () => clearInterval(interval);
   }, [storeConfig, checkIfStoreOpen]);
 
-  // 🔥 DOUBLE ENGINE MERGE LOGIC (Bulletproof)
+  // 🔥 TITANIUM DOUBLE ENGINE MERGE LOGIC
   const mergedCategories = React.useMemo(() => {
-    const merged = [...CATEGORIES];
+    const merged: any[] = [];
     
-    // Engine 1: Database ke Categories Table se uthao
+    // Engine 1: Database ke Categories (Main Priority + Image + Sort)
     if (categories && Array.isArray(categories)) {
       categories.forEach((dbCat: any) => {
         if (!dbCat || !dbCat.name) return;
-        const exists = merged.find(c => c.name.toLowerCase() === dbCat.name.toLowerCase());
-        if (!exists) {
-          merged.push({
-            id: dbCat.id,
-            name: dbCat.name,
-            desc: 'Explore items in ' + dbCat.name,
-            icon: ShoppingBasket,
-            color: 'text-[#00FFFF]',
-            border: 'group-hover:border-[#00FFFF]',
-            bg: 'bg-[#00FFFF]/10'
-          });
-        }
+        
+        // Check if it matches any hardcoded default category
+        const defaultMatch = CATEGORIES.find(c => c.name.toLowerCase() === dbCat.name.toLowerCase());
+        
+        merged.push({
+          id: dbCat.id,
+          name: dbCat.name,
+          image: dbCat.image || null, // 🔥 DB Image priority
+          desc: defaultMatch?.desc || 'Explore items in ' + dbCat.name,
+          icon: defaultMatch?.icon || ShoppingBasket,
+          color: defaultMatch?.color || 'text-[#00FFFF]',
+          border: defaultMatch?.border || 'group-hover:border-[#00FFFF]',
+          bg: defaultMatch?.bg || 'bg-[#00FFFF]/10',
+          sortOrder: dbCat.sortOrder ?? 0 // 🔥 Rank Control
+        });
       });
     }
 
-    // Engine 2: Seedha Products List se Scan maaro (Ultimate Fallback)
-    if (products && Array.isArray(products)) {
-      products.forEach((p: any) => {
-        if (!p || !p.category) return;
-        const exists = merged.find(c => c.name.toLowerCase() === p.category.toLowerCase());
-        if (!exists) {
-          merged.push({
-            id: p.category.toLowerCase().replace(/\s+/g, '-'),
-            name: p.category,
-            desc: 'Explore items in ' + p.category,
-            icon: Plus, // Alternate icon for dynamically caught categories
-            color: 'text-[#CCFF00]',
-            border: 'group-hover:border-[#CCFF00]',
-            bg: 'bg-[#CCFF00]/10'
-          });
-        }
-      });
-    }
-    
-    return merged;
+    // Engine 2: Default ones that are NOT in DB yet
+    CATEGORIES.forEach(cat => {
+      if (!merged.find(m => m.name.toLowerCase() === cat.name.toLowerCase())) {
+        merged.push({...cat, sortOrder: 999}); // Push default ones to bottom
+      }
+    });
+
+    // Final Sort by Admin's Ranking
+    return merged.sort((a, b) => a.sortOrder - b.sortOrder);
   }, [categories, products]);
 
   const getCartItem = (id: string) => cart.find((item: any) => String(item.id) === String(id))
@@ -129,7 +121,6 @@ export default function CategoriesPage() {
       triggerStoreClosedAlert();
       return;
     }
-    
     if (!user) {
       setPendingProduct(product)
       setShowAuthModal(true)
@@ -225,9 +216,18 @@ export default function CategoriesPage() {
                       >
                         <CardContent className="p-5 flex flex-col items-center justify-center text-center h-full aspect-square relative">
                           <div className={`absolute inset-0 opacity-0 group-hover:opacity-10 transition-opacity duration-300 ${category.bg}`} />
-                          <div className={`w-16 h-16 rounded-2xl ${category.bg} border border-white/5 flex items-center justify-center mb-4 transition-transform duration-300 group-hover:scale-110 shadow-lg`}>
-                            <Icon className={`w-8 h-8 ${category.color}`} />
-                          </div>
+                          
+                          {/* 🔥 CUSTOM IMAGE OR BORING ICON LOGIC */}
+                          {category.image ? (
+                            <div className="w-16 h-16 rounded-2xl overflow-hidden border border-white/10 mb-4 transition-transform duration-300 group-hover:scale-110 shadow-lg relative">
+                              <img src={category.image} alt={category.name} className="w-full h-full object-cover" onError={(e) => { e.currentTarget.style.display='none' }} />
+                            </div>
+                          ) : (
+                            <div className={`w-16 h-16 rounded-2xl ${category.bg} border border-white/5 flex items-center justify-center mb-4 transition-transform duration-300 group-hover:scale-110 shadow-lg`}>
+                              <Icon className={`w-8 h-8 ${category.color}`} />
+                            </div>
+                          )}
+
                           <h3 className="font-black text-white uppercase tracking-wider text-sm mb-1 line-clamp-1">{category.name}</h3>
                           <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest line-clamp-2 leading-tight">{category.desc}</p>
                         </CardContent>
@@ -276,13 +276,10 @@ export default function CategoriesPage() {
                     <motion.div key={product.id} layout initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
                       <Card className="glass-strong border-white/10 overflow-hidden hover:border-[#00FFFF]/30 flex flex-col h-full group">
                         <div className="relative h-32 sm:h-40 w-full bg-white/5 overflow-hidden">
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
                           <img src={product.image || "/placeholder.jpg"} alt={product.name} className="object-cover w-full h-full group-hover:scale-110 transition-transform" onError={(e) => { e.currentTarget.src = '/placeholder.jpg' }} />
                           {!product.inStock && (
                             <div className="absolute inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-10">
-                              <span className="bg-red-500 text-white font-black text-[10px] px-3 py-1.5 uppercase tracking-widest rounded-md shadow-lg">
-                                Out of Stock
-                              </span>
+                              <span className="bg-red-500 text-white font-black text-[10px] px-3 py-1.5 uppercase tracking-widest rounded-md shadow-lg">Out of Stock</span>
                             </div>
                           )}
                         </div>
@@ -293,7 +290,6 @@ export default function CategoriesPage() {
                           </div>
                           <div className="flex items-center justify-between mt-auto">
                             <span className="font-mono font-black text-[#CCFF00] text-lg">₹{product.price}</span>
-                            
                             {cartItem ? (
                               <div className="flex items-center gap-2 bg-[#00FFFF]/10 border border-[#00FFFF]/30 rounded-lg p-1">
                                 <button onClick={() => updateQuantity(product.id, cartItem.quantity - 1)} className="w-7 h-7 flex items-center justify-center text-[#00FFFF] hover:bg-[#00FFFF]/20 rounded-md transition-colors"><Minus className="w-4 h-4" /></button>
@@ -301,16 +297,10 @@ export default function CategoriesPage() {
                                 <button onClick={() => handlePlusClick(product.id, cartItem.quantity)} className="w-7 h-7 flex items-center justify-center text-[#00FFFF] hover:bg-[#00FFFF]/20 rounded-md transition-colors"><Plus className="w-4 h-4" /></button>
                               </div>
                             ) : (
-                              <Button 
-                                disabled={!product.inStock} 
-                                onClick={() => handleCartClick(product)} 
-                                size="icon" 
-                                className="h-9 w-9 rounded-xl bg-white/10 text-white border border-white/20 hover:bg-[#00FFFF] hover:text-black active:scale-90 transition-all disabled:opacity-50 disabled:hover:bg-white/10 disabled:hover:text-white"
-                              >
+                              <Button disabled={!product.inStock} onClick={() => handleCartClick(product)} size="icon" className="h-9 w-9 rounded-xl bg-white/10 text-white border border-white/20 hover:bg-[#00FFFF] hover:text-black active:scale-90 transition-all disabled:opacity-50">
                                 <Plus className="w-5 h-5" />
                               </Button>
                             )}
-
                           </div>
                         </CardContent>
                       </Card>
@@ -322,9 +312,7 @@ export default function CategoriesPage() {
                   <ShoppingBasket className="w-16 h-16 text-white/20 mb-4" />
                   <h2 className="text-xl font-black uppercase text-white">Aisle is Empty</h2>
                   <p className="text-muted-foreground text-sm mt-2">No items have been teleported to this category yet.</p>
-                  <Button onClick={() => setSelectedCategory(null)} className="mt-6 bg-[#CCFF00] text-black font-black uppercase rounded-xl">
-                    Browse Other Categories
-                  </Button>
+                  <Button onClick={() => setSelectedCategory(null)} className="mt-6 bg-[#CCFF00] text-black font-black uppercase rounded-xl">Browse Other Categories</Button>
                 </div>
               )}
             </motion.div>
@@ -340,38 +328,35 @@ export default function CategoriesPage() {
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
             <motion.div initial={{ scale: 0.9, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.9, y: 20 }} className="w-full max-w-md bg-[#050505] border border-white/10 rounded-[2rem] p-8 relative overflow-hidden shadow-[0_0_50px_rgba(0,255,255,0.05)]">
               <button onClick={() => { setShowAuthModal(false); setPendingProduct(null); setAuthError(''); }} className="absolute top-6 right-6 text-white/50 hover:text-white transition-colors z-10"><X className="w-6 h-6" /></button>
-              <div className="relative z-10">
-                <div className="text-center mb-8">
-                  <div className="w-16 h-16 bg-[#CCFF00]/10 border border-[#CCFF00]/30 rounded-2xl flex items-center justify-center mx-auto mb-4"><Lock className="w-8 h-8 text-[#CCFF00]" /></div>
-                  <h2 className="text-3xl font-black italic uppercase text-white tracking-tighter">{authMode === 'login' ? 'Welcome Back' : 'Join Squad'}</h2>
-                </div>
-                {authError && <div className="mb-4 p-3 rounded-lg bg-red-500/10 border border-red-500/30 text-red-500 text-[10px] font-black text-center uppercase tracking-widest">{authError}</div>}
-                <form onSubmit={handleAuthSubmit} className="space-y-4">
-                  {authMode === 'register' && (
-                    <div className="relative">
-                      <UserIcon className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/40" />
-                      <Input required placeholder="Full Name" value={authData.name} onChange={(e) => setAuthData({...authData, name: e.target.value})} className="pl-12 h-14 bg-white/5 border-white/10 text-white rounded-xl font-bold" />
-                    </div>
-                  )}
+              <div className="relative z-10 text-center mb-8">
+                <div className="w-16 h-16 bg-[#CCFF00]/10 border border-[#CCFF00]/30 rounded-2xl flex items-center justify-center mx-auto mb-4"><Lock className="w-8 h-8 text-[#CCFF00]" /></div>
+                <h2 className="text-3xl font-black italic uppercase text-white tracking-tighter">{authMode === 'login' ? 'Welcome Back' : 'Join Squad'}</h2>
+              </div>
+              {authError && <div className="mb-4 p-3 rounded-lg bg-red-500/10 border border-red-500/30 text-red-500 text-[10px] font-black text-center uppercase tracking-widest">{authError}</div>}
+              <form onSubmit={handleAuthSubmit} className="space-y-4">
+                {authMode === 'register' && (
                   <div className="relative">
-                    <PhoneIcon className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/40" />
-                    <Input required type="tel" placeholder="Phone Number" value={authData.phone} onChange={(e) => setAuthData({...authData, phone: e.target.value})} className="pl-12 h-14 bg-white/5 border-white/10 text-white rounded-xl font-bold font-mono" />
+                    <UserIcon className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/40" />
+                    <Input required placeholder="Full Name" value={authData.name} onChange={(e) => setAuthData({...authData, name: e.target.value})} className="pl-12 h-14 bg-white/5 border-white/10 text-white rounded-xl font-bold" />
                   </div>
-                  <div className="relative">
-                    <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/40" />
-                    <Input required type="password" placeholder="Password" value={authData.password} onChange={(e) => setAuthData({...authData, password: e.target.value})} className="pl-12 h-14 bg-white/5 border-white/10 text-white rounded-xl font-bold" />
-                  </div>
-                  <Button type="submit" disabled={isLoading} className={`w-full h-14 font-black text-lg mt-4 ${authMode === 'login' ? 'bg-[#CCFF00] text-black' : 'bg-[#00FFFF] text-black'}`}>{isLoading ? 'PROCESSING...' : (authMode === 'login' ? 'Login' : 'CREATE ACCOUNT')}</Button>
-                </form>
-                <div className="mt-8 text-center border-t border-white/10 pt-6">
-                  <button type="button" onClick={() => { setAuthMode(authMode === 'login' ? 'register' : 'login'); setAuthError(''); }} className="text-sm font-black uppercase tracking-widest text-[#00FFFF]">{authMode === 'login' ? 'Register Now' : 'Login Here'}</button>
+                )}
+                <div className="relative">
+                  <PhoneIcon className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/40" />
+                  <Input required type="tel" placeholder="Phone Number" value={authData.phone} onChange={(e) => setAuthData({...authData, phone: e.target.value})} className="pl-12 h-14 bg-white/5 border-white/10 text-white rounded-xl font-bold font-mono" />
                 </div>
+                <div className="relative">
+                  <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/40" />
+                  <Input required type="password" placeholder="Password" value={authData.password} onChange={(e) => setAuthData({...authData, password: e.target.value})} className="pl-12 h-14 bg-white/5 border-white/10 text-white rounded-xl font-bold" />
+                </div>
+                <Button type="submit" disabled={isLoading} className={`w-full h-14 font-black text-lg mt-4 ${authMode === 'login' ? 'bg-[#CCFF00] text-black' : 'bg-[#00FFFF] text-black'}`}>{isLoading ? 'PROCESSING...' : (authMode === 'login' ? 'Login' : 'CREATE ACCOUNT')}</Button>
+              </form>
+              <div className="mt-8 text-center border-t border-white/10 pt-6">
+                <button type="button" onClick={() => { setAuthMode(authMode === 'login' ? 'register' : 'login'); setAuthError(''); }} className="text-sm font-black uppercase tracking-widest text-[#00FFFF]">{authMode === 'login' ? 'Register Now' : 'Login Here'}</button>
               </div>
             </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
-
     </div>
   )
 }
