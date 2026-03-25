@@ -3,8 +3,12 @@ import { Inter } from "next/font/google"
 import "./globals.css"
 import FloatingCart from "@/components/FloatingCart"
 import { Analytics } from "@vercel/analytics/react" // 🔥 VERCEL ANALYTICS IMPORT
+import { createClient } from '@supabase/supabase-js' // 🔥 SUPABASE IMPORT THEME KE LIYE
 
 const inter = Inter({ subsets: ["latin"] })
+
+// 🔥 Ye line zaroori hai taaki Next.js har baar naya color database se fetch kare
+export const dynamic = 'force-dynamic'
 
 // 📱 VIEWPORT: Phone screen ke liye perfect sizing
 export const viewport: Viewport = {
@@ -30,15 +34,46 @@ export const metadata: Metadata = {
   },
 }
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
+  // 🔥 DATABASE SE COLORS FETCH KARNE KA LOGIC
+  let themeBg = "#050505"; // Tera default background
+  let themeText = "#ffffff"; // Tera default text color
+  let themePrimary = "#00FFFF";
+  let themeBtn = "#CCFF00";
+
+  try {
+    // ⚠️ WARNING: YAHAN APNA ASLI SUPABASE URL AUR ANON KEY DAALNA ⚠️
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'TERA_SUPABASE_URL_YAHAN_DAAL'
+    const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'TERA_SUPABASE_ANON_KEY_YAHAN_DAAL'
+    const supabase = createClient(supabaseUrl, supabaseKey)
+
+    const { data } = await supabase.from('theme_settings').select('*').eq('id', 1).single()
+    if (data) {
+      themeBg = data.background_color;
+      themeText = data.text_color;
+      themePrimary = data.primary_color;
+      themeBtn = data.button_color;
+    }
+  } catch (error) {
+    console.error("Theme Load Error:", error)
+  }
+
   return (
     <html lang="en">
       {/* pb-24 add kiya hai taaki niche scroll karne pe content capsule ke piche na chhupe */}
-      <body className={`${inter.className} bg-[#050505] text-white antialiased selection:bg-[#00FFFF]/30 pb-24`}>
+      <body 
+        className={`${inter.className} antialiased selection:bg-[#00FFFF]/30 pb-24`}
+        style={{ 
+          backgroundColor: themeBg, 
+          color: themeText, 
+          '--primary-color': themePrimary,
+          '--btn-color': themeBtn 
+        } as React.CSSProperties} // 🔥 YAHAN SE PURI WEBSITE KA COLOR CONTROL HOGA
+      >
         {children}
         
         {/* 🔥 YAHAN ADD KIYA HAI MAGIC CAPSULE */}
