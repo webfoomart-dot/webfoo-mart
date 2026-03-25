@@ -47,8 +47,8 @@ export default async function RootLayout({
 
   try {
     // ⚠️ WARNING: YAHAN APNA ASLI SUPABASE URL AUR ANON KEY DAALNA ⚠️
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'TERA_SUPABASE_URL_YAHAN_DAAL'
-    const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'TERA_SUPABASE_ANON_KEY_YAHAN_DAAL'
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://yzuvlxvtszzvnzqymcvg.supabase.co'
+    const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl6dXZseHZ0c3p6dm56cXltY3ZnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQwMjMwNDcsImV4cCI6MjA4OTU5OTA0N30.2uPg1zu5i_dzWxVlxsZuHAoropwcb9GC1C-BHhbrXPI'
     const supabase = createClient(supabaseUrl, supabaseKey)
 
     const { data } = await supabase.from('theme_settings').select('*').eq('id', 1).single()
