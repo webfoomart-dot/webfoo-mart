@@ -1,3 +1,22 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  /* Ye default colors hain, jo database se overwrite honge */
+  :root {
+    --bg-color: #050505;
+    --text-color: #ffffff;
+    --primary-color: #00FFFF;
+    --btn-color: #CCFF00;
+  }
+
+  /* Ye line forcefully teri website ka base color change karegi */
+  body {
+    background-color: var(--bg-color) !important;
+    color: var(--text-color) !important;
+  }
+}
 @import 'tailwindcss';
 @import 'tw-animate-css';
 
