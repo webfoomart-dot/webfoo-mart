@@ -9,8 +9,9 @@ import {
   MapPin, Phone, Truck, XCircle, Plus, UploadCloud, Trash2, Edit, PowerOff, Power,
   Star, Ban, MessageCircle, FileText, Send, CheckSquare, Square, Smartphone,
   TrendingUp, Target, BarChart, ShieldAlert, LockKeyhole, Calendar, Settings, AlertTriangle, MoonStar, LayoutGrid,
-  ArrowUp, ArrowDown 
+  ArrowUp, ArrowDown, Palette // 🔥 PALETTE ICON ADD KIYA
 } from "lucide-react"
+import { createClient } from '@supabase/supabase-js' // 🔥 SUPABASE IMPORT
 
 import { useAppStore } from "@/lib/store"
 import { Button } from "@/components/ui/button"
@@ -41,6 +42,11 @@ const ADMIN_CATEGORIES = [
 
 const ADMIN_SECRET_PASSCODE = "WEBFOO99"
 
+// ⚠️ WARNING: YAHAN APNA ASLI SUPABASE URL AUR ANON KEY DAALNA ⚠️
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'TERA_SUPABASE_URL_YAHAN_DAAL'
+const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'TERA_SUPABASE_ANON_KEY_YAHAN_DAAL'
+const supabase = createClient(supabaseUrl, supabaseKey)
+
 export default function AdminDashboard() {
   const [isMounted, setIsMounted] = React.useState(false)
   
@@ -56,7 +62,7 @@ export default function AdminDashboard() {
     promoCodes, addPromoCode, togglePromoStatus, deletePromo,
     storeConfig, fetchStoreConfig, updateStoreConfig, 
     fetchData,
-    categories, addCategory, updateCategory, deleteCategory, reorderCategory // 🔥 FETCHED updateCategory
+    categories, addCategory, updateCategory, deleteCategory, reorderCategory 
   } = useAppStore() as any
   
   const [activeTab, setActiveTab] = React.useState('live_orders')
@@ -74,7 +80,6 @@ export default function AdminDashboard() {
   const [selectedCustomers, setSelectedCustomers] = React.useState<string[]>([])
   const [messageText, setMessageText] = React.useState('')
 
-  // 🔥 Categories State
   const [editingCategoryId, setEditingCategoryId] = React.useState<string | null>(null)
   const [newCategoryName, setNewCategoryName] = React.useState('')
   const [newCategoryImage, setNewCategoryImage] = React.useState('')
@@ -86,6 +91,12 @@ export default function AdminDashboard() {
   const [isSettingsSaving, setIsSettingsSaving] = React.useState(false)
   const [globalMinOrder, setGlobalMinOrder] = React.useState(0)
 
+  // 🔥 THEME COLORS STATE 
+  const [themeColorData, setThemeColorData] = React.useState({
+    primary_color: '#00FFFF', background_color: '#050505', text_color: '#ffffff', button_color: '#CCFF00'
+  })
+  const [isThemeSaving, setIsThemeSaving] = React.useState(false)
+
   React.useEffect(() => { 
     setIsMounted(true) 
     if (fetchData) fetchData()
@@ -95,6 +106,13 @@ export default function AdminDashboard() {
     if (sessionAuth === 'true') {
       setIsAuthorized(true)
     }
+
+    // 🔥 LOAD THEME FROM SUPABASE ON MOUNT
+    async function loadTheme() {
+      const { data } = await supabase.from('theme_settings').select('*').eq('id', 1).single()
+      if (data) setThemeColorData(data)
+    }
+    loadTheme()
   }, [fetchData, fetchStoreConfig])
 
   React.useEffect(() => {
@@ -181,6 +199,24 @@ export default function AdminDashboard() {
     setIsSettingsSaving(false);
   }
 
+  // 🔥 SAVE THEME TO SUPABASE FUNCTION
+  const handleSaveTheme = async () => {
+    setIsThemeSaving(true)
+    const { error } = await supabase.from('theme_settings').update({
+      primary_color: themeColorData.primary_color,
+      background_color: themeColorData.background_color,
+      text_color: themeColorData.text_color,
+      button_color: themeColorData.button_color
+    }).eq('id', 1)
+    
+    setIsThemeSaving(false)
+    if (error) {
+      alert("⚠️ Color update nahi hua: " + error.message)
+    } else {
+      alert("✅ Website Colors Successfully Updated! \nRefresh the website tab to see new colors.")
+    }
+  }
+
   const handleSaveGlobalMinOrder = async () => {
     if (!updateStoreConfig) return;
     try {
@@ -201,7 +237,6 @@ export default function AdminDashboard() {
     }
   }
 
-  // 🔥 TITANIUM: Handle Save OR Update Category
   const handleSaveCategory = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!newCategoryName.trim()) return;
@@ -221,7 +256,7 @@ export default function AdminDashboard() {
     setEditingCategoryId(cat.id);
     setNewCategoryName(cat.name);
     setNewCategoryImage(cat.image || '');
-    window.scrollTo({ top: 0, behavior: 'smooth' }); // Scroll to top to see form
+    window.scrollTo({ top: 0, behavior: 'smooth' }); 
   }
 
   const resetCategoryForm = () => {
@@ -401,7 +436,7 @@ export default function AdminDashboard() {
 
         <AnimatePresence mode="wait">
 
-          {/* 🔥 🗂️ CATEGORIES MANAGEMENT TAB (NOW WITH EDIT) */}
+          {/* 🗂️ CATEGORIES MANAGEMENT TAB */}
           {activeTab === 'categories' && (
              <motion.div key="categories" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="space-y-6 max-w-2xl">
                 <Card className="glass-strong border-white/10">
@@ -417,7 +452,6 @@ export default function AdminDashboard() {
                         <div className="relative w-full h-24 rounded-xl border-2 border-dashed border-[#00FFFF]/40 bg-[#00FFFF]/5 flex items-center justify-center overflow-hidden cursor-pointer group">
                           <input type="file" accept="image/*" onChange={handleCategoryImgUpload} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" />
                           {newCategoryImage && newCategoryImage.startsWith('data:') ? (
-                            // eslint-disable-next-line @next/next/no-img-element
                             <img src={newCategoryImage} alt="Preview" className="w-full h-full object-cover" />
                           ) : (
                             <div className="text-center group-hover:scale-105 transition-transform"><UploadCloud className="w-6 h-6 text-[#00FFFF] mx-auto mb-1" /><span className="text-[10px] font-bold text-[#00FFFF]">Upload from Device</span></div>
@@ -429,7 +463,6 @@ export default function AdminDashboard() {
                           <Input type="url" placeholder="https://..." value={newCategoryImage && !newCategoryImage.startsWith('data:') ? newCategoryImage : ''} onChange={(e) => setNewCategoryImage(e.target.value)} className="bg-black/50 border-white/20 text-xs focus-visible:border-[#00FFFF] h-10" />
                           {newCategoryImage && !newCategoryImage.startsWith('data:') && (
                             <div className="mt-2 relative w-full h-20 rounded-lg overflow-hidden border border-white/10 bg-black/50">
-                              {/* eslint-disable-next-line @next/next/no-img-element */}
                               <img src={newCategoryImage} alt="URL Preview" className="w-full h-full object-cover" onError={(e) => { e.currentTarget.src = '' }} />
                             </div>
                           )}
@@ -460,7 +493,6 @@ export default function AdminDashboard() {
                           <div className="flex items-center gap-3">
                              <span className="text-xs text-muted-foreground font-mono">{idx + 1}.</span>
                              {cat.image ? (
-                               // eslint-disable-next-line @next/next/no-img-element
                                <img src={cat.image} alt={cat.name} className="w-8 h-8 rounded-md object-cover border border-white/10" />
                              ) : (
                                <div className="w-8 h-8 rounded-md bg-white/10 flex items-center justify-center border border-white/10"><PackageIcon className="w-4 h-4 text-white/50" /></div>
@@ -488,9 +520,57 @@ export default function AdminDashboard() {
              </motion.div>
           )}
 
-          {/* 🔥 ⚙️ SETTINGS TAB */}
+          {/* 🔥 ⚙️ SETTINGS TAB (YAHAN THEME KA FEATURE BHI AAGAYA) */}
           {activeTab === 'settings' && (
              <motion.div key="settings" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="space-y-6 max-w-3xl">
+                
+                {/* 🎨 NAYA: THEME COLORS CARD - DIRECT COPY PASTE */}
+                <Card className="glass-strong border-white/10 mb-8 border-[#00FFFF]/30">
+                  <CardContent className="p-6 sm:p-8 space-y-6">
+                    <div className="flex items-center gap-3 border-b border-[#00FFFF]/30 pb-4">
+                      <Palette className="w-6 h-6 text-[#00FFFF]" />
+                      <h3 className="text-xl font-black uppercase text-white">Website Theme Colors</h3>
+                    </div>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div className="space-y-2">
+                        <Label className="text-xs uppercase font-bold text-muted-foreground">Background Color</Label>
+                        <div className="flex gap-3 items-center">
+                          <input type="color" value={themeColorData.background_color} onChange={(e) => setThemeColorData({...themeColorData, background_color: e.target.value})} className="w-12 h-12 rounded cursor-pointer border-0 bg-transparent" />
+                          <Input value={themeColorData.background_color} onChange={(e) => setThemeColorData({...themeColorData, background_color: e.target.value})} className="font-mono bg-black/50 border-white/10 uppercase" />
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-xs uppercase font-bold text-muted-foreground">Main Text Color</Label>
+                        <div className="flex gap-3 items-center">
+                          <input type="color" value={themeColorData.text_color} onChange={(e) => setThemeColorData({...themeColorData, text_color: e.target.value})} className="w-12 h-12 rounded cursor-pointer border-0 bg-transparent" />
+                          <Input value={themeColorData.text_color} onChange={(e) => setThemeColorData({...themeColorData, text_color: e.target.value})} className="font-mono bg-black/50 border-white/10 uppercase" />
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-xs uppercase font-bold text-muted-foreground">Primary Accent (Icons/Lines)</Label>
+                        <div className="flex gap-3 items-center">
+                          <input type="color" value={themeColorData.primary_color} onChange={(e) => setThemeColorData({...themeColorData, primary_color: e.target.value})} className="w-12 h-12 rounded cursor-pointer border-0 bg-transparent" />
+                          <Input value={themeColorData.primary_color} onChange={(e) => setThemeColorData({...themeColorData, primary_color: e.target.value})} className="font-mono bg-black/50 border-white/10 uppercase" />
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-xs uppercase font-bold text-muted-foreground">Button Color</Label>
+                        <div className="flex gap-3 items-center">
+                          <input type="color" value={themeColorData.button_color} onChange={(e) => setThemeColorData({...themeColorData, button_color: e.target.value})} className="w-12 h-12 rounded cursor-pointer border-0 bg-transparent" />
+                          <Input value={themeColorData.button_color} onChange={(e) => setThemeColorData({...themeColorData, button_color: e.target.value})} className="font-mono bg-black/50 border-white/10 uppercase" />
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="flex justify-end pt-4 border-t border-[#00FFFF]/20">
+                      <Button onClick={handleSaveTheme} disabled={isThemeSaving} className="h-12 bg-[#00FFFF] text-black hover:bg-[#00FFFF]/80 font-black uppercase tracking-widest px-8 rounded-full disabled:opacity-50">
+                        {isThemeSaving ? 'Saving...' : 'Update Colors'}
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+
                 <form onSubmit={handleSaveSettings} className="space-y-6">
                   <Card className="glass-strong border-white/10">
                     <CardContent className="p-6 sm:p-8 space-y-6">
@@ -872,7 +952,6 @@ export default function AdminDashboard() {
                          <div className="relative w-full h-32 rounded-xl border-2 border-dashed border-[#00FFFF]/40 bg-[#00FFFF]/5 flex items-center justify-center overflow-hidden cursor-pointer group">
                            <input type="file" accept="image/*" onChange={handleImageUpload} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" />
                            {formData.image && formData.image.startsWith('data:') ? (
-                             // eslint-disable-next-line @next/next/no-img-element
                              <img src={formData.image} alt="Preview" className="w-full h-full object-cover" />
                            ) : (
                              <div className="text-center group-hover:scale-105 transition-transform"><UploadCloud className="w-6 h-6 text-[#00FFFF] mx-auto mb-2" /><span className="text-xs font-bold text-[#00FFFF]">Upload from Device</span></div>
@@ -884,7 +963,6 @@ export default function AdminDashboard() {
                            <Input type="url" placeholder="https://..." value={formData.image && !formData.image.startsWith('data:') ? formData.image : ''} onChange={(e) => setFormData({...formData, image: e.target.value})} className="bg-black/50 border-white/20 text-xs focus-visible:border-[#00FFFF]" />
                            {formData.image && !formData.image.startsWith('data:') && (
                              <div className="mt-2 relative w-full h-24 rounded-lg overflow-hidden border border-white/10 bg-black/50">
-                               {/* eslint-disable-next-line @next/next/no-img-element */}
                                <img src={formData.image} alt="URL Preview" className="w-full h-full object-cover" onError={(e) => { e.currentTarget.src = '/placeholder.jpg' }} />
                              </div>
                            )}
@@ -919,7 +997,6 @@ export default function AdminDashboard() {
                  {products.map((product: any) => (
                    <Card key={product.id} className={`glass-strong border-white/10 overflow-hidden group transition-all ${!product.inStock ? 'opacity-60 grayscale' : 'hover:border-[#00FFFF]/30'}`}>
                      <div className="relative h-40 w-full bg-white/5">
-                       {/* eslint-disable-next-line @next/next/no-img-element */}
                        <img src={product.image || "/placeholder.jpg"} alt={product.name} className="object-cover w-full h-full" onError={(e) => { e.currentTarget.src = '/placeholder.jpg' }} />
                        {!product.inStock && <div className="absolute inset-0 bg-black/60 flex items-center justify-center z-10"><span className="bg-red-500 text-white font-black text-[10px] px-2 py-1 uppercase rounded">Out of Stock</span></div>}
                        <div className="absolute top-2 right-2 flex gap-2 z-20">
