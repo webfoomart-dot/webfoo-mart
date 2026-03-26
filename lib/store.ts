@@ -6,6 +6,9 @@ export interface Product { id: string; name: string; price: number; mrp: number;
 export interface AppNotification { id: string; phone: string; message: string; time: string; read: boolean }
 export interface PromoCode { id: string; code: string; type: 'flat' | 'percent'; value: number; minOrder: number; isActive: boolean }
 
+// 🔥 NAYA: Delivery Zone Interface
+export interface DeliveryZone { id: string | number; areaName: string; fee: number; isActive: boolean }
+
 export interface StoreConfig {
   id: number;
   isStoreOpen: boolean;
@@ -60,6 +63,13 @@ interface AppState {
   updateCategory: (id: string, catData: {name: string, image: string}) => Promise<void>
   deleteCategory: (id: string) => Promise<void>
   reorderCategory: (id: string, direction: 'up' | 'down') => Promise<void>
+  
+  // 🔥 NAYA: Delivery Zones State aur Functions
+  deliveryZones: DeliveryZone[]
+  addDeliveryZone: (zone: Omit<DeliveryZone, 'id'>) => Promise<void>
+  updateDeliveryZone: (id: string | number, zone: Partial<DeliveryZone>) => Promise<void>
+  deleteDeliveryZone: (id: string | number) => Promise<void>
+  toggleDeliveryZoneStatus: (id: string | number) => Promise<void>
 }
 
 const defaultProducts: Product[] = [
@@ -155,10 +165,16 @@ export const useAppStore = create<AppState>()(
         const { data: cats } = await supabase.from('webfoo_categories').select('*').order('sort_order', { ascending: true })
         if (cats) set({ categories: cats.map(c => ({ id: c.id, name: c.name, sortOrder: c.sort_order || 0, image: c.image })) })
 
-        // 🔥 NAYA: USER NOTIFICATIONS FETCH LOGIC
+        // FETCH USER NOTIFICATIONS
         const { data: notifs } = await supabase.from('user_notifications').select('*').order('created_at', { ascending: false })
         if (notifs) {
           set({ notifications: notifs.map(n => ({ id: String(n.id), phone: n.phone, message: n.message, time: new Date(n.created_at).toLocaleString(), read: n.is_read })) })
+        }
+
+        // 🔥 NAYA: FETCH DELIVERY ZONES
+        const { data: zones } = await supabase.from('delivery_zones').select('*').order('created_at', { ascending: true })
+        if (zones) {
+          set({ deliveryZones: zones.map(z => ({ id: z.id, areaName: z.area_name, fee: z.fee, isActive: z.is_active })) })
         }
       },
 
@@ -231,7 +247,6 @@ export const useAppStore = create<AppState>()(
       },
 
       notifications: [],
-      // 🔥 NAYA: ADMIN PANEL SE NOTIFICATION DB MEIN SAVE KARNA
       addNotification: async (phone, message) => {
         const tempId = Date.now().toString()
         const time = new Date().toLocaleString()
@@ -239,7 +254,6 @@ export const useAppStore = create<AppState>()(
         const { data } = await supabase.from('user_notifications').insert({ phone, message, is_read: false }).select().single()
         if (data) set((state) => ({ notifications: state.notifications.map(n => n.id === tempId ? { ...n, id: String(data.id) } : n) }))
       },
-      // 🔥 NAYA: NOTIFICATION READ MARK KARNA
       markNotificationRead: async (id) => {
         set((state) => ({ notifications: state.notifications.map(n => n.id === id ? { ...n, read: true } : n) }))
         await supabase.from('user_notifications').update({ is_read: true }).eq('id', parseInt(id))
@@ -313,6 +327,34 @@ export const useAppStore = create<AppState>()(
         set({ categories: updated });
         for (const c of updated) { await supabase.from('webfoo_categories').update({ sort_order: c.sortOrder }).eq('id', c.id); }
       },
+
+      // 🔥 NAYA: Delivery Zones Logic (Admin aur Data Fetch ke liye)
+      deliveryZones: [],
+      addDeliveryZone: async (zone) => {
+        const tempId = Date.now().toString()
+        set((state) => ({ deliveryZones: [...state.deliveryZones, { ...zone, id: tempId }] }))
+        const { data } = await supabase.from('delivery_zones').insert({ area_name: zone.areaName, fee: zone.fee, is_active: zone.isActive }).select().single()
+        if (data) set((state) => ({ deliveryZones: state.deliveryZones.map(z => z.id === tempId ? { id: data.id, areaName: data.area_name, fee: data.fee, isActive: data.is_active } : z) }))
+      },
+      updateDeliveryZone: async (id, zone) => {
+        set((state) => ({ deliveryZones: state.deliveryZones.map(z => z.id === id ? { ...z, ...zone } : z) }))
+        const updateData: any = {}
+        if (zone.areaName !== undefined) updateData.area_name = zone.areaName
+        if (zone.fee !== undefined) updateData.fee = zone.fee
+        if (zone.isActive !== undefined) updateData.is_active = zone.isActive
+        await supabase.from('delivery_zones').update(updateData).eq('id', id)
+      },
+      deleteDeliveryZone: async (id) => {
+        set((state) => ({ deliveryZones: state.deliveryZones.filter(z => z.id !== id) }))
+        await supabase.from('delivery_zones').delete().eq('id', id)
+      },
+      toggleDeliveryZoneStatus: async (id) => {
+        const zone = get().deliveryZones.find(z => z.id === id)
+        if (!zone) return
+        set((state) => ({ deliveryZones: state.deliveryZones.map(z => z.id === id ? { ...z, isActive: !z.isActive } : z) }))
+        await supabase.from('delivery_zones').update({ is_active: !zone.isActive }).eq('id', id)
+      },
+
     }),
     { name: 'webfoo-storage' }
   )
