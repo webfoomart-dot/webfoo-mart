@@ -39,7 +39,7 @@ export function Header() {
                 className="rounded-full object-cover shadow-[0_0_15px_rgba(0,255,255,0.3)] shrink-0" /* 🔥 shrink-0 add kiya taaki logo daba na jaye */
               />
               {/* 🔥 NAYA TEXT ADD KIYA EKDUM MAST STYLE MEIN */}
-              <span className="text-xl sm:text-2xl font-black italic uppercase tracking-tighter text-white whitespace-nowrap">
+              <span className="text-xl sm:text-2xl font-black uppercase tracking-tighter text-white whitespace-nowrap">
                 WebFoo <span className="text-[#00FFFF]">Mart</span>
               </span>
             </motion.div>
