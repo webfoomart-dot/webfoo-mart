@@ -348,13 +348,22 @@ export default function AdminDashboard() {
 
   const handleSelectCustomer = (phone: string) => { setSelectedCustomers(prev => prev.includes(phone) ? prev.filter(p => p !== phone) : [...prev, phone]) }
   const handleSelectAll = () => { if (selectedCustomers.length === customersList.length) setSelectedCustomers([]); else setSelectedCustomers(customersList.map(c => c.phone)) }
-  const handleSendToApp = () => {
+  
+  // 🔥 SIRF YE EK FUNCTION FIX KIYA HAI (Async/Await Lagaya Hai Supabase Ke Liye) 🔥
+  const handleSendToApp = async () => {
     if (selectedCustomers.length === 0) return alert("Select at least one customer!")
     if (!messageText.trim()) return alert("Message is empty!")
-    selectedCustomers.forEach(phone => { addNotification(phone, messageText) })
-    alert(`✅ Notification pushed to ${selectedCustomers.length} app(s) successfully!`)
-    setSelectedCustomers([]); setMessageText('')
+    
+    try {
+      await Promise.all(selectedCustomers.map(phone => addNotification(phone, messageText)))
+      alert(`✅ Notification pushed to ${selectedCustomers.length} app(s) successfully!`)
+      setSelectedCustomers([]); setMessageText('')
+    } catch (error) {
+      console.error(error)
+      alert("⚠️ Error: Message bhejne mein problem hui. Check Console & Supabase RLS.")
+    }
   }
+
   const handleSendToWhatsApp = () => {
     if (selectedCustomers.length === 0) return alert("Select at least one customer!")
     if (!messageText.trim()) return alert("Message is empty!")
