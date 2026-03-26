@@ -28,7 +28,7 @@ export default function CheckoutPage() {
   
   // 🔥 DELIVERY ZONE STATE
   const [selectedZoneId, setSelectedZoneId] = React.useState<string>('')
-  const [isZoneDropdownOpen, setIsZoneDropdownOpen] = React.useState(false) // Naya state custom dropdown ke liye
+  const [isZoneDropdownOpen, setIsZoneDropdownOpen] = React.useState(false) 
   
   const [isSuccess, setIsSuccess] = React.useState(false)
   const [placedOrderDetails, setPlacedOrderDetails] = React.useState<any>(null)
@@ -204,7 +204,7 @@ export default function CheckoutPage() {
                 <div className="bg-[#CCFF00]/10 px-6 py-3 border-b border-[#CCFF00]/20"><h3 className="font-black text-[#CCFF00] uppercase tracking-widest text-sm flex items-center gap-2"><MapPin className="w-4 h-4" /> Drop Coordinates</h3></div>
                 <CardContent className="p-6 space-y-6">
                   
-                  {/* 🔥 NAYA: CUSTOM GLASSMORPHIC DROPDOWN BINA PRICE KE */}
+                  {/* 🔥 NAYA: CUSTOM GLASSMORPHIC DROPDOWN */}
                   {activeZones.length > 0 && (
                     <div className="space-y-3 pb-6 border-b border-white/10 relative z-30">
                       <Label className="text-xs uppercase tracking-widest text-[#00FFFF] font-black flex items-center gap-2"><Truck className="w-4 h-4" /> Select Delivery Area</Label>
@@ -329,7 +329,28 @@ export default function CheckoutPage() {
                       </div>
                     ))}
                   </div>
-                  <div className="mt-6 pt-4 border-t border-white/10 flex justify-between items-center"><span className="font-black text-muted-foreground uppercase text-xs">Final Paid</span><span className="text-2xl font-black text-[#CCFF00] font-mono">₹{placedOrderDetails.total}</span></div>
+                  
+                  {/* 🔥 BILL BREAKDOWN ADDED HERE IN SUCCESS SCREEN */}
+                  <div className="mt-6 pt-4 border-t border-white/10 space-y-2">
+                    <div className="flex justify-between items-center text-[10px] text-muted-foreground uppercase font-bold">
+                      <span>Subtotal</span><span>₹{placedOrderDetails.subtotal}</span>
+                    </div>
+                    {placedOrderDetails.discount > 0 && (
+                      <div className="flex justify-between items-center text-[10px] text-[#CCFF00] uppercase font-bold">
+                        <span>Discount</span><span>-₹{placedOrderDetails.discount}</span>
+                      </div>
+                    )}
+                    {placedOrderDetails.deliveryFee > 0 && (
+                      <div className="flex justify-between items-center text-[10px] text-[#00FFFF] uppercase font-bold">
+                        <span>Delivery Fee</span><span>+₹{placedOrderDetails.deliveryFee}</span>
+                      </div>
+                    )}
+                    <div className="flex justify-between items-center pt-2 border-t border-white/5 mt-2">
+                      <span className="font-black text-white uppercase text-xs tracking-widest">Final Paid</span>
+                      <span className="text-2xl font-black text-[#CCFF00] font-mono">₹{placedOrderDetails.total}</span>
+                    </div>
+                  </div>
+
                 </CardContent>
               </Card>
             )}
