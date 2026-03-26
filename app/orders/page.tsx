@@ -109,6 +109,13 @@ export default function OrdersPage() {
             <div className="space-y-6">
               {filteredOrders.map((order: any, idx) => {
                 const StatusIcon = getStatusConfig(order.status).icon;
+                
+                // 🔥 NAYA: DELIVERY FEE CALCULATION
+                // Agar subtotal nahi hai toh amount ko hi subtotal maan lenge (purane orders ke liye)
+                const safeSubtotal = order.subtotal || order.amount;
+                const safeDiscount = order.discount || 0;
+                const calculatedDeliveryFee = order.amount - safeSubtotal + safeDiscount;
+
                 return (
                   <motion.div key={idx} layout initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
                     <Card className="glass-strong border-white/10 overflow-hidden">
@@ -126,9 +133,27 @@ export default function OrdersPage() {
                             <p className="font-mono text-[#00FFFF] font-bold">₹{item.price * item.quantity}</p>
                           </div>
                         ))}
+                        
+                        {/* 🔥 NAYA: BILL BREAKDOWN SECTION */}
+                        <div className="px-4 py-3 bg-white/5 border-b border-white/5 space-y-1.5">
+                          <div className="flex justify-between text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
+                            <span>Subtotal</span><span>₹{safeSubtotal}</span>
+                          </div>
+                          {safeDiscount > 0 && (
+                            <div className="flex justify-between text-[10px] font-bold text-[#CCFF00] uppercase tracking-widest">
+                              <span>Discount {order.promoCode ? `(${order.promoCode})` : ''}</span><span>-₹{safeDiscount}</span>
+                            </div>
+                          )}
+                          {calculatedDeliveryFee > 0 && (
+                            <div className="flex justify-between text-[10px] font-bold text-[#00FFFF] uppercase tracking-widest">
+                              <span>Delivery Fee</span><span>+₹{calculatedDeliveryFee}</span>
+                            </div>
+                          )}
+                        </div>
+
                         <div className="p-4 bg-black/40 flex justify-between items-center">
                           <div className="flex items-start gap-2 text-xs text-muted-foreground max-w-[200px]"><MapPin className="w-3.5 h-3.5 text-[#00FFFF]" /><span className="truncate">{order.landmark}</span></div>
-                          <div className="text-right"><p className="text-[10px] font-black text-muted-foreground uppercase">Total</p><p className="text-xl font-black text-[#CCFF00] font-mono">₹{order.amount}</p></div>
+                          <div className="text-right"><p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Final Paid</p><p className="text-xl font-black text-[#CCFF00] font-mono">₹{order.amount}</p></div>
                         </div>
                       </CardContent>
                     </Card>
