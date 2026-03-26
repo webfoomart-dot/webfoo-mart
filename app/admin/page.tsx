@@ -9,7 +9,7 @@ import {
   MapPin, Phone, Truck, XCircle, Plus, UploadCloud, Trash2, Edit, PowerOff, Power,
   Star, Ban, MessageCircle, FileText, Send, CheckSquare, Square, Smartphone,
   TrendingUp, Target, BarChart, ShieldAlert, LockKeyhole, Calendar, Settings, AlertTriangle, MoonStar, LayoutGrid,
-  ArrowUp, ArrowDown, Palette 
+  ArrowUp, ArrowDown, Palette, Volume2 // 🔥 VOLUME ICON ADD KIYA
 } from "lucide-react"
 import { createClient } from '@supabase/supabase-js' 
 
@@ -54,8 +54,9 @@ export default function AdminDashboard() {
   const [passcode, setPasscode] = React.useState('')
   const [authError, setAuthError] = React.useState('')
 
-  // 🔥 ALERT SOUND KE LIYE PURANE ORDERS COUNT TRACK KARNE KA VARIABLE
   const prevOrderCountRef = React.useRef(0)
+  // 🔥 NAYA: AUDIO ELEMENT KA REF 🔥
+  const alertAudioRef = React.useRef<HTMLAudioElement>(null)
 
   const { 
     orders, updateOrderStatus, 
@@ -116,14 +117,14 @@ export default function AdminDashboard() {
     }
     loadTheme()
 
-    // 🔥 NAYA: BACKGROUND AUTO-REFRESH (HAR 10 SECOND ME NAYE ORDERS LAAYEGA) 🔥
+    // BACKGROUND AUTO-REFRESH (HAR 10 SECOND)
     const syncInterval = setInterval(() => {
       if (sessionStorage.getItem('webfoo_admin_unlocked') === 'true') {
         if (fetchData) fetchData()
       }
-    }, 10000) // 10000 ms = 10 seconds
+    }, 10000)
 
-    return () => clearInterval(syncInterval) // Cleanup
+    return () => clearInterval(syncInterval) 
   }, [fetchData, fetchStoreConfig])
 
   React.useEffect(() => {
@@ -275,22 +276,17 @@ export default function AdminDashboard() {
     setNewCategoryImage('');
   }
 
-  // Live orders aur order history calculation
   const liveOrders = orders.filter((o: any) => o.status === 'Pending' || o.status === 'In Transit').reverse()
   const orderHistory = orders.filter((o: any) => o.status === 'Delivered' || o.status === 'Cancelled').reverse()
   
-  // 🔥 ALERT SOUND LOGIC 🔥
+  // 🔥 ALERT SOUND LOGIC (FIXED) 🔥
   React.useEffect(() => {
     if (isMounted && isAuthorized) {
-      // Check agar naye live orders aaye hain (matlab length badh gayi hai)
       if (liveOrders.length > prevOrderCountRef.current && prevOrderCountRef.current !== 0) {
-        try {
-          // Google ki choti notification beep bajayega
-          const audio = new Audio('https://actions.google.com/sounds/v1/alarms/beep_short.ogg')
-          audio.play().catch((err) => console.log("Sound autoplay blocked by browser. Click anywhere on page first.", err))
-        } catch(e) {}
+        if (alertAudioRef.current) {
+          alertAudioRef.current.play().catch(e => console.error("Sound blocked by browser:", e))
+        }
       }
-      // Naye count ko save kar lo taaki baar baar sound na baje
       prevOrderCountRef.current = liveOrders.length
     }
   }, [liveOrders.length, isMounted, isAuthorized])
@@ -450,6 +446,9 @@ export default function AdminDashboard() {
 
   return (
     <div className="flex min-h-screen bg-[#050505] text-foreground font-sans selection:bg-[#00FFFF]/30">
+      {/* 🔥 HIDDEN AUDIO TAG JO BROWSER ACCEPT KAREGA 🔥 */}
+      <audio ref={alertAudioRef} src="https://actions.google.com/sounds/v1/alarms/beep_short.ogg" preload="auto" />
+
       <aside className="hidden md:flex flex-col w-72 glass-strong border-r border-white/10 fixed top-0 bottom-0 left-0 z-40"><SidebarNav /></aside>
 
       <header className="md:hidden fixed top-0 left-0 right-0 h-16 glass-strong border-b border-white/10 z-40 flex items-center px-4 justify-between">
@@ -460,6 +459,10 @@ export default function AdminDashboard() {
           </Sheet>
           <span className="text-xl font-black italic uppercase text-white">Admin <span className="text-[#CCFF00]">Panel</span></span>
         </div>
+        {/* MOBILE AUDIO TEST BUTTON */}
+        <Button variant="ghost" size="icon" onClick={() => alertAudioRef.current?.play()} className="text-[#CCFF00] hover:bg-[#CCFF00]/10">
+          <Volume2 className="w-5 h-5" />
+        </Button>
       </header>
 
       <main className="flex-1 md:ml-72 pt-20 md:pt-8 p-4 md:p-8 overflow-y-auto min-h-screen">
@@ -468,6 +471,11 @@ export default function AdminDashboard() {
             {MENU_ITEMS.find(m => m.id === activeTab)?.label}
             {activeTab === 'live_orders' && liveOrders.length > 0 && <span className="w-3 h-3 rounded-full bg-[#FF0055] animate-pulse ml-2" />}
           </h2>
+          
+          {/* 🔥 DESKTOP AUDIO TEST BUTTON 🔥 */}
+          <Button variant="outline" onClick={() => { alertAudioRef.current?.play(); alert("✅ Alert Sound Enabled! Ab background me tab chhod de, naye order par aawaz aayegi."); }} className="border-[#CCFF00]/30 text-[#CCFF00] hover:bg-[#CCFF00] hover:text-black font-black tracking-widest uppercase">
+            <Volume2 className="w-4 h-4 mr-2" /> 🔔 Enable Sound
+          </Button>
         </div>
 
         <AnimatePresence mode="wait">
