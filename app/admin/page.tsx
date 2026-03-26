@@ -62,7 +62,9 @@ export default function AdminDashboard() {
     promoCodes, addPromoCode, togglePromoStatus, deletePromo,
     storeConfig, fetchStoreConfig, updateStoreConfig, 
     fetchData,
-    categories, addCategory, updateCategory, deleteCategory, reorderCategory 
+    categories, addCategory, updateCategory, deleteCategory, reorderCategory,
+    // 🔥 NAYA: DELIVERY ZONES FETCH KIYA
+    deliveryZones, addDeliveryZone, deleteDeliveryZone, toggleDeliveryZoneStatus
   } = useAppStore() as any
   
   const [activeTab, setActiveTab] = React.useState('live_orders')
@@ -529,11 +531,10 @@ export default function AdminDashboard() {
              </motion.div>
           )}
 
-          {/* 🔥 ⚙️ SETTINGS TAB (YAHAN THEME KA FEATURE BHI AAGAYA) */}
+          {/* 🔥 ⚙️ SETTINGS TAB */}
           {activeTab === 'settings' && (
              <motion.div key="settings" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="space-y-6 max-w-3xl">
                 
-                {/* 🎨 NAYA: THEME COLORS CARD - DIRECT COPY PASTE */}
                 <Card className="glass-strong border-white/10 mb-8 border-[#00FFFF]/30">
                   <CardContent className="p-6 sm:p-8 space-y-6">
                     <div className="flex items-center gap-3 border-b border-[#00FFFF]/30 pb-4">
@@ -811,6 +812,7 @@ export default function AdminDashboard() {
           {/* 🏷️ OFFERS & PROMO CODES VIEW */}
           {activeTab === 'offers' && (
             <motion.div key="offers" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="space-y-6">
+              
               <Card className="glass-strong border-[#CCFF00]/30 hover:border-[#CCFF00]/50 transition-all mb-6">
                 <CardContent className="p-6 flex flex-col sm:flex-row items-center gap-4 justify-between">
                   <div>
@@ -823,7 +825,62 @@ export default function AdminDashboard() {
                   </div>
                 </CardContent>
               </Card>
+
+              {/* 🔥 NAYA: DELIVERY ZONES SECTION */}
               <div className="flex justify-between items-center gap-4 pt-4 border-t border-white/10">
+                <div>
+                  <h3 className="text-lg font-black text-[#00FFFF] uppercase flex items-center gap-2"><Truck className="w-5 h-5"/> Delivery Areas & Fees</h3>
+                  <p className="text-muted-foreground font-mono text-xs">Set delivery charges for different locations.</p>
+                </div>
+                <Sheet>
+                  <SheetTrigger asChild>
+                    <Button className="bg-[#00FFFF] text-black font-black hover:bg-[#00FFFF]/90 shadow-[0_0_15px_rgba(0,255,255,0.3)] h-12 rounded-xl px-6">
+                      <Plus className="w-5 h-5 mr-2" /> NEW AREA
+                    </Button>
+                  </SheetTrigger>
+                  <SheetContent className="bg-black/95 backdrop-blur-2xl border-l border-[#00FFFF]/30 sm:max-w-md w-full overflow-y-auto">
+                    <SheetHeader className="text-left mb-8 mt-6"><SheetTitle className="text-3xl font-black italic uppercase text-[#00FFFF]">Add Delivery Area</SheetTitle></SheetHeader>
+                    <form onSubmit={(e: any) => {
+                      e.preventDefault(); const data = new FormData(e.target);
+                      addDeliveryZone({ areaName: data.get('areaName')?.toString().toUpperCase() || '', fee: Number(data.get('fee')), isActive: true });
+                      e.target.reset();
+                    }} className="flex flex-col gap-6">
+                      <div className="space-y-2"><Label>Area / Location Name (e.g. West Bokaro)</Label><Input name="areaName" required className="bg-white/5 border-white/10 uppercase font-mono text-[#00FFFF]" placeholder="WEST BOKARO" /></div>
+                      <div className="space-y-2"><Label>Delivery Fee (₹)</Label><Input name="fee" type="number" required min="0" className="bg-white/5 border-white/10" placeholder="e.g. 30" /></div>
+                      <Button type="submit" className="w-full h-14 bg-[#00FFFF] text-black font-black hover:bg-[#00FFFF]/80">SAVE AREA</Button>
+                    </form>
+                  </SheetContent>
+                </Sheet>
+              </div>
+              
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-6">
+                {(!deliveryZones || deliveryZones.length === 0) ? (
+                  <div className="col-span-full py-10 text-center opacity-30"><Truck className="w-12 h-12 mx-auto mb-4" /><p className="font-black uppercase tracking-widest text-xl">No Delivery Zones</p></div>
+                ) : (
+                  deliveryZones.map((zone: any) => (
+                    <Card key={zone.id} className={`glass-strong border-white/10 transition-all ${!zone.isActive ? 'opacity-50 grayscale' : 'hover:border-[#00FFFF]/30'}`}>
+                      <CardContent className="p-5">
+                        <div className="flex justify-between items-start mb-4">
+                          <div className="flex items-center gap-2">
+                            <p className="text-xl font-black text-[#00FFFF] font-mono tracking-widest">{zone.areaName}</p>
+                          </div>
+                          <Badge variant={zone.isActive ? "outline" : "secondary"} className={`text-[10px] font-black uppercase tracking-widest ${zone.isActive ? 'text-[#CCFF00] border-[#CCFF00]/30' : ''}`}>{zone.isActive ? 'ACTIVE' : 'OFF'}</Badge>
+                        </div>
+                        <div className="space-y-1 mb-6">
+                          <p className="font-bold text-white text-sm">Delivery Fee: <span className="text-[#CCFF00] font-mono">₹{zone.fee}</span></p>
+                        </div>
+                        <div className="flex gap-2 pt-4 border-t border-white/10">
+                          <Button variant="ghost" className={`flex-1 text-xs font-black border ${zone.isActive ? 'border-white/10 text-white hover:bg-white/10' : 'border-[#CCFF00]/30 text-[#CCFF00] hover:bg-[#CCFF00] hover:text-black'}`} onClick={() => toggleDeliveryZoneStatus(zone.id)}>{zone.isActive ? <PowerOff className="w-4 h-4 mr-2" /> : <Power className="w-4 h-4 mr-2" />}{zone.isActive ? 'TURN OFF' : 'ACTIVATE'}</Button>
+                          <Button variant="ghost" size="icon" className="border border-red-500/30 text-red-500 hover:bg-red-500 hover:text-white" onClick={() => { if(confirm("Delete this delivery zone?")) deleteDeliveryZone(zone.id) }}><Trash2 className="w-4 h-4" /></Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))
+                )}
+              </div>
+
+              {/* PROMO CODES SECTION */}
+              <div className="flex justify-between items-center gap-4 pt-8 border-t border-white/10">
                 <div><p className="text-muted-foreground font-mono">Manage discount coupons for your customers.</p></div>
                 <Sheet>
                   <SheetTrigger asChild>
