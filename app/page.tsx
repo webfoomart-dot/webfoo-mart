@@ -136,12 +136,6 @@ export default function HomePage() {
       <Header />
 
       <main className="p-4 sm:p-6 space-y-6 max-w-7xl mx-auto">
-        
-        {/* 🔥 STATIC WEBFOO MART TEXT - AB BANNER KE UPAR AAGAYA */}
-        <div className="mb-2 pl-2">
-          <h2 className="text-3xl font-black uppercase tracking-widest text-white not-italic drop-shadow-[0_0_10px_rgba(255,255,255,0.2)]">WebFoo Mart</h2>
-          <p className="text-[11px] font-black uppercase tracking-[0.3em] text-[#00FFFF] mt-1 not-italic drop-shadow-[0_0_8px_rgba(0,255,255,0.4)]">Delivering Desires</p>
-        </div>
 
         <AnimatePresence mode="wait">
           {!storeConfig ? (
