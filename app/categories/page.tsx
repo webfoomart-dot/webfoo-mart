@@ -124,15 +124,15 @@ export default function CategoriesPage() {
                   {filteredCategories.map((category, index) => (
                     <motion.div key={category.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: index * 0.05 }}>
                       <Card onClick={() => setSelectedCategory(category)} className="group glass-strong border-white/10 overflow-hidden cursor-pointer transition-all hover:border-[#00FFFF]/30 hover:-translate-y-1">
-                        {/* 🔥 Yahan p-5 ko p-3 kiya taaki jagah bache */}
-                        <CardContent className="p-3 flex flex-col items-center justify-between text-center h-full aspect-square relative">
+                        {/* 🔥 Card ko lamba kar diya (aspect-[4/5]) taaki text naa kate */}
+                        <CardContent className="p-3 flex flex-col items-center justify-between text-center h-full aspect-[4/5] relative">
                           {category.image ? (
-                            // 🔥 Yahan w-20 h-20 ko w-[85%] aspect-square kar diya
-                            <div className="w-[85%] aspect-square rounded-2xl overflow-hidden border border-white/10 mb-2 mt-1 transition-transform group-hover:scale-110 shadow-lg">
+                            // 🔥 Image ko 95% width de di taaki bada dikhe aur aspect-square rakha taaki photo chapti naa ho
+                            <div className="w-[95%] aspect-square rounded-2xl overflow-hidden border border-white/10 mb-2 mt-1 transition-transform group-hover:scale-110 shadow-lg">
                               <img src={category.image} alt={category.name} className="w-full h-full object-cover" />
                             </div>
                           ) : (
-                            <div className="w-[85%] aspect-square rounded-2xl bg-white/5 border border-white/5 flex items-center justify-center mb-2 mt-1 transition-transform group-hover:scale-110">
+                            <div className="w-[95%] aspect-square rounded-2xl bg-white/5 border border-white/5 flex items-center justify-center mb-2 mt-1 transition-transform group-hover:scale-110">
                               <ShoppingBasket className="w-12 h-12 text-[#00FFFF]" />
                             </div>
                           )}
@@ -159,7 +159,6 @@ export default function CategoriesPage() {
                 </div>
               </div>
               
-              {/* 🔥 EXACT HOME PAGE STYLE PRODUCT GRID */}
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-5">
                 {categoryProducts.map((product: any) => {
                   const cartItem = getCartItem(product.id)
