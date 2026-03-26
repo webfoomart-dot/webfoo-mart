@@ -9,9 +9,9 @@ import {
   MapPin, Phone, Truck, XCircle, Plus, UploadCloud, Trash2, Edit, PowerOff, Power,
   Star, Ban, MessageCircle, FileText, Send, CheckSquare, Square, Smartphone,
   TrendingUp, Target, BarChart, ShieldAlert, LockKeyhole, Calendar, Settings, AlertTriangle, MoonStar, LayoutGrid,
-  ArrowUp, ArrowDown, Palette // 🔥 PALETTE ICON ADD KIYA
+  ArrowUp, ArrowDown, Palette 
 } from "lucide-react"
-import { createClient } from '@supabase/supabase-js' // 🔥 SUPABASE IMPORT
+import { createClient } from '@supabase/supabase-js' 
 
 import { useAppStore } from "@/lib/store"
 import { Button } from "@/components/ui/button"
@@ -54,6 +54,9 @@ export default function AdminDashboard() {
   const [passcode, setPasscode] = React.useState('')
   const [authError, setAuthError] = React.useState('')
 
+  // 🔥 NAYA: ALERT SOUND KE LIYE PURANE ORDERS COUNT TRACK KARNE KA VARIABLE
+  const prevOrderCountRef = React.useRef(0)
+
   const { 
     orders, updateOrderStatus, 
     products, addProduct, updateProduct, deleteProduct, toggleStock,
@@ -63,7 +66,6 @@ export default function AdminDashboard() {
     storeConfig, fetchStoreConfig, updateStoreConfig, 
     fetchData,
     categories, addCategory, updateCategory, deleteCategory, reorderCategory,
-    // 🔥 NAYA: DELIVERY ZONES FETCH KIYA
     deliveryZones, addDeliveryZone, deleteDeliveryZone, toggleDeliveryZoneStatus
   } = useAppStore() as any
   
@@ -93,7 +95,6 @@ export default function AdminDashboard() {
   const [isSettingsSaving, setIsSettingsSaving] = React.useState(false)
   const [globalMinOrder, setGlobalMinOrder] = React.useState(0)
 
-  // 🔥 THEME COLORS STATE 
   const [themeColorData, setThemeColorData] = React.useState({
     primary_color: '#00FFFF', background_color: '#050505', text_color: '#ffffff', button_color: '#CCFF00'
   })
@@ -109,7 +110,6 @@ export default function AdminDashboard() {
       setIsAuthorized(true)
     }
 
-    // 🔥 LOAD THEME FROM SUPABASE ON MOUNT
     async function loadTheme() {
       const { data } = await supabase.from('theme_settings').select('*').eq('id', 1).single()
       if (data) setThemeColorData(data)
@@ -201,7 +201,6 @@ export default function AdminDashboard() {
     setIsSettingsSaving(false);
   }
 
-  // 🔥 SAVE THEME TO SUPABASE FUNCTION
   const handleSaveTheme = async () => {
     setIsThemeSaving(true)
     const { error } = await supabase.from('theme_settings').update({
@@ -267,6 +266,26 @@ export default function AdminDashboard() {
     setNewCategoryImage('');
   }
 
+  // Live orders aur order history calculation
+  const liveOrders = orders.filter((o: any) => o.status === 'Pending' || o.status === 'In Transit').reverse()
+  const orderHistory = orders.filter((o: any) => o.status === 'Delivered' || o.status === 'Cancelled').reverse()
+  
+  // 🔥 NAYA: ALERT SOUND LOGIC 🔥
+  React.useEffect(() => {
+    if (isMounted && isAuthorized) {
+      // Check agar naye live orders aaye hain (matlab length badh gayi hai)
+      if (liveOrders.length > prevOrderCountRef.current) {
+        try {
+          // Google ki choti notification beep bajayega
+          const audio = new Audio('https://actions.google.com/sounds/v1/alarms/beep_short.ogg')
+          audio.play().catch((err) => console.log("Sound autoplay blocked by browser. Click anywhere on page first.", err))
+        } catch(e) {}
+      }
+      // Naye count ko save kar lo taaki baar baar sound na baje
+      prevOrderCountRef.current = liveOrders.length
+    }
+  }, [liveOrders.length, isMounted, isAuthorized])
+
   if (!isMounted) return null
 
   if (!isAuthorized) {
@@ -294,8 +313,6 @@ export default function AdminDashboard() {
     )
   }
 
-  const liveOrders = orders.filter((o: any) => o.status === 'Pending' || o.status === 'In Transit').reverse()
-  const orderHistory = orders.filter((o: any) => o.status === 'Delivered' || o.status === 'Cancelled').reverse()
   const analyticsDelivered = filteredAnalyticsOrders.filter((o: any) => o.status === 'Delivered')
   const analyticsCancelled = filteredAnalyticsOrders.filter((o: any) => o.status === 'Cancelled')
   const analyticsPending = filteredAnalyticsOrders.filter((o: any) => o.status === 'Pending' || o.status === 'In Transit')
@@ -351,7 +368,6 @@ export default function AdminDashboard() {
   const handleSelectCustomer = (phone: string) => { setSelectedCustomers(prev => prev.includes(phone) ? prev.filter(p => p !== phone) : [...prev, phone]) }
   const handleSelectAll = () => { if (selectedCustomers.length === customersList.length) setSelectedCustomers([]); else setSelectedCustomers(customersList.map(c => c.phone)) }
   
-  // 🔥 SIRF YE EK FUNCTION FIX KIYA HAI (Async/Await Lagaya Hai Supabase Ke Liye) 🔥
   const handleSendToApp = async () => {
     if (selectedCustomers.length === 0) return alert("Select at least one customer!")
     if (!messageText.trim()) return alert("Message is empty!")
