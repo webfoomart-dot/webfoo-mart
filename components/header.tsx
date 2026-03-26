@@ -25,19 +25,23 @@ export function Header() {
       <div className="max-w-7xl mx-auto px-4 py-4">
         <div className="flex items-center justify-between">
           
-          <Link href="/" className="flex items-center gap-2">
+          <Link href="/" className="flex items-center gap-3"> {/* 🔥 Gap badhaya taaki logo aur text me space rahe */}
             <motion.div
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
-              className="flex items-center"
+              className="flex items-center gap-3" /* 🔥 Yahan gap-3 diya jisse logo aur text ek line me rahenge */
             >
               <Image 
                 src="/logo.png" 
                 alt="WebFoo Mart" 
                 width={44} 
                 height={44} 
-                className="rounded-full object-cover shadow-[0_0_15px_rgba(0,255,255,0.3)]" 
+                className="rounded-full object-cover shadow-[0_0_15px_rgba(0,255,255,0.3)] shrink-0" /* 🔥 shrink-0 add kiya taaki logo daba na jaye */
               />
+              {/* 🔥 NAYA TEXT ADD KIYA EKDUM MAST STYLE MEIN */}
+              <span className="text-xl sm:text-2xl font-black italic uppercase tracking-tighter text-white whitespace-nowrap">
+                WebFoo <span className="text-[#00FFFF]">Mart</span>
+              </span>
             </motion.div>
           </Link>
 
