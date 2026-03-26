@@ -4,7 +4,7 @@ import * as React from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { motion, AnimatePresence } from "framer-motion"
-import { ArrowLeft, User, MapPin, Banknote, CheckCircle, Package, FileText, Plus, Truck } from "lucide-react"
+import { ArrowLeft, User, MapPin, Banknote, CheckCircle, Package, FileText, Plus, Truck, ChevronDown } from "lucide-react"
 
 import { useAppStore } from "@/lib/store"
 import { Header } from "@/components/header"
@@ -28,6 +28,7 @@ export default function CheckoutPage() {
   
   // 🔥 DELIVERY ZONE STATE
   const [selectedZoneId, setSelectedZoneId] = React.useState<string>('')
+  const [isZoneDropdownOpen, setIsZoneDropdownOpen] = React.useState(false) // Naya state custom dropdown ke liye
   
   const [isSuccess, setIsSuccess] = React.useState(false)
   const [placedOrderDetails, setPlacedOrderDetails] = React.useState<any>(null)
@@ -42,6 +43,11 @@ export default function CheckoutPage() {
   const deliveryFee = React.useMemo(() => {
     const zone = activeZones.find((z: any) => String(z.id) === String(selectedZoneId))
     return zone ? zone.fee : 0
+  }, [activeZones, selectedZoneId])
+
+  const displayZoneName = React.useMemo(() => {
+    const zone = activeZones.find((z: any) => String(z.id) === String(selectedZoneId))
+    return zone ? zone.areaName : "-- Choose your area --"
   }, [activeZones, selectedZoneId])
 
   React.useEffect(() => {
@@ -70,7 +76,6 @@ export default function CheckoutPage() {
       if (myOrders.length > 0) {
         const myLastOrder = myOrders[myOrders.length - 1]
         if (myLastOrder && myLastOrder.landmark) {
-          // Naye address format me [Zone: XYZ] laga hoga, usko ignore karke purana logic rakhte hain
           foundAddr = myLastOrder.landmark.split(' | Note:')[0].replace(/\[Zone:.*?\]\s*/g, '')
         }
       }
@@ -131,7 +136,6 @@ export default function CheckoutPage() {
       return
     }
 
-    // 🔥 ADMIN KE LIYE ADDRESS ME ZONE NAAM JOD RAHA HOON
     const selectedZoneName = activeZones.find((z: any) => String(z.id) === String(selectedZoneId))?.areaName || 'Local'
     const fullLandmark = `[Zone: ${selectedZoneName}] ${finalAddress} ${specialNote.trim() !== '' ? `| Note: ${specialNote}` : ''}`
 
@@ -196,27 +200,49 @@ export default function CheckoutPage() {
 
             <form onSubmit={handleConfirmOrder} className="space-y-6">
               
-              <Card className="glass-strong border-white/10 rounded-2xl overflow-hidden">
+              <Card className="glass-strong border-white/10 rounded-2xl overflow-hidden relative">
                 <div className="bg-[#CCFF00]/10 px-6 py-3 border-b border-[#CCFF00]/20"><h3 className="font-black text-[#CCFF00] uppercase tracking-widest text-sm flex items-center gap-2"><MapPin className="w-4 h-4" /> Drop Coordinates</h3></div>
                 <CardContent className="p-6 space-y-6">
                   
-                  {/* 🔥 NAYA: DELIVERY ZONE DROPDOWN */}
+                  {/* 🔥 NAYA: CUSTOM GLASSMORPHIC DROPDOWN BINA PRICE KE */}
                   {activeZones.length > 0 && (
-                    <div className="space-y-3 pb-6 border-b border-white/10">
+                    <div className="space-y-3 pb-6 border-b border-white/10 relative z-30">
                       <Label className="text-xs uppercase tracking-widest text-[#00FFFF] font-black flex items-center gap-2"><Truck className="w-4 h-4" /> Select Delivery Area</Label>
-                      <select
-                        required
-                        value={selectedZoneId}
-                        onChange={(e) => setSelectedZoneId(e.target.value)}
-                        className="w-full bg-black/50 border border-white/20 text-white h-14 rounded-xl px-4 font-bold focus:border-[#00FFFF] focus:outline-none uppercase text-sm tracking-wider cursor-pointer"
-                      >
-                        <option value="" disabled className="bg-black text-white/50">-- Choose your area --</option>
-                        {activeZones.map((zone: any) => (
-                          <option key={zone.id} value={zone.id} className="bg-black text-white">
-                            {zone.areaName} (+₹{zone.fee})
-                          </option>
-                        ))}
-                      </select>
+                      
+                      <div className="relative">
+                        <div 
+                          onClick={() => setIsZoneDropdownOpen(!isZoneDropdownOpen)}
+                          className="w-full bg-black/50 border border-white/20 text-white h-14 rounded-xl px-4 font-bold flex items-center justify-between uppercase text-sm tracking-wider cursor-pointer hover:border-[#00FFFF]/50 transition-colors"
+                        >
+                          <span className={selectedZoneId ? "text-white" : "text-white/50"}>{displayZoneName}</span>
+                          <ChevronDown className={`w-5 h-5 transition-transform ${isZoneDropdownOpen ? "rotate-180 text-[#00FFFF]" : "text-white/50"}`} />
+                        </div>
+                        
+                        <AnimatePresence>
+                          {isZoneDropdownOpen && (
+                            <motion.div 
+                              initial={{ opacity: 0, y: -10 }} 
+                              animate={{ opacity: 1, y: 0 }} 
+                              exit={{ opacity: 0, y: -10 }}
+                              transition={{ duration: 0.2 }}
+                              className="absolute top-full left-0 w-full mt-2 p-2 bg-black/90 backdrop-blur-2xl border border-[#00FFFF]/30 rounded-xl shadow-[0_10px_30px_rgba(0,255,255,0.15)] max-h-60 overflow-y-auto z-50 glass-strong"
+                            >
+                              {activeZones.map((zone: any) => (
+                                <div
+                                  key={zone.id}
+                                  onClick={() => {
+                                    setSelectedZoneId(zone.id);
+                                    setIsZoneDropdownOpen(false);
+                                  }}
+                                  className={`p-3 rounded-lg cursor-pointer uppercase text-sm font-bold tracking-wider transition-colors ${String(selectedZoneId) === String(zone.id) ? 'bg-[#00FFFF]/20 text-[#00FFFF]' : 'text-white hover:bg-white/10'}`}
+                                >
+                                  {zone.areaName}
+                                </div>
+                              ))}
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
+                      </div>
                     </div>
                   )}
 
@@ -255,19 +281,19 @@ export default function CheckoutPage() {
               </Card>
 
               {/* Special Note */}
-              <div className="space-y-2">
+              <div className="space-y-2 relative z-10">
                 <Label className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground flex items-center gap-2 ml-1 font-black"><FileText className="w-4 h-4 text-[#00FFFF]" /> Special Note</Label>
                 <textarea placeholder="Any delivery instructions..." value={specialNote} onChange={e => setSpecialNote(e.target.value)} className="w-full bg-black/50 border border-white/10 rounded-xl p-4 text-sm text-white focus:outline-none focus:border-[#00FFFF] h-24 glass-strong resize-none" />
               </div>
 
               {/* Payment Info */}
-              <div className="p-4 rounded-xl border border-white/10 bg-white/5 flex items-start gap-4">
+              <div className="p-4 rounded-xl border border-white/10 bg-white/5 flex items-start gap-4 relative z-10">
                 <Banknote className="w-6 h-6 text-[#CCFF00]" />
                 <div><h4 className="font-black uppercase tracking-wider text-sm text-white">Cash On Delivery</h4><p className="text-xs text-muted-foreground mt-1">Payment will be collected at your door.</p></div>
               </div>
 
               {/* Totals */}
-              <div className="pt-6 mt-6 border-t border-white/10 space-y-3">
+              <div className="pt-6 mt-6 border-t border-white/10 space-y-3 relative z-10">
                 <div className="flex justify-between items-center px-2 font-bold uppercase tracking-widest text-[10px] text-muted-foreground"><span>Subtotal</span><span className="text-sm font-mono text-white">₹{totalAmount}</span></div>
                 {appliedPromo && <div className="flex justify-between items-center px-2 font-bold uppercase tracking-widest text-[10px] text-[#CCFF00]"><span>Discount</span><span className="text-sm font-mono">-₹{discountAmt}</span></div>}
                 
