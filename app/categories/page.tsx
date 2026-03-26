@@ -124,17 +124,19 @@ export default function CategoriesPage() {
                   {filteredCategories.map((category, index) => (
                     <motion.div key={category.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: index * 0.05 }}>
                       <Card onClick={() => setSelectedCategory(category)} className="group glass-strong border-white/10 overflow-hidden cursor-pointer transition-all hover:border-[#00FFFF]/30 hover:-translate-y-1">
-                        <CardContent className="p-5 flex flex-col items-center justify-center text-center h-full aspect-square relative">
+                        {/* 🔥 Yahan p-5 ko p-3 kiya taaki jagah bache */}
+                        <CardContent className="p-3 flex flex-col items-center justify-between text-center h-full aspect-square relative">
                           {category.image ? (
-                            <div className="w-20 h-20 rounded-2xl overflow-hidden border border-white/10 mb-4 transition-transform group-hover:scale-110 shadow-lg">
+                            // 🔥 Yahan w-20 h-20 ko w-[85%] aspect-square kar diya
+                            <div className="w-[85%] aspect-square rounded-2xl overflow-hidden border border-white/10 mb-2 mt-1 transition-transform group-hover:scale-110 shadow-lg">
                               <img src={category.image} alt={category.name} className="w-full h-full object-cover" />
                             </div>
                           ) : (
-                            <div className="w-20 h-20 rounded-2xl bg-white/5 border border-white/5 flex items-center justify-center mb-4 transition-transform group-hover:scale-110">
-                              <ShoppingBasket className="w-10 h-10 text-[#00FFFF]" />
+                            <div className="w-[85%] aspect-square rounded-2xl bg-white/5 border border-white/5 flex items-center justify-center mb-2 mt-1 transition-transform group-hover:scale-110">
+                              <ShoppingBasket className="w-12 h-12 text-[#00FFFF]" />
                             </div>
                           )}
-                          <h3 className="font-black text-white uppercase tracking-wider text-sm line-clamp-2">{category.name}</h3>
+                          <h3 className="font-black text-white uppercase tracking-wider text-xs sm:text-sm line-clamp-2 mt-auto">{category.name}</h3>
                         </CardContent>
                       </Card>
                     </motion.div>
