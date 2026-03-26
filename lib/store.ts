@@ -45,8 +45,8 @@ interface AppState {
   customerMeta: Record<string, any>
   updateCustomerMeta: (phone: string, meta: any) => void
   notifications: AppNotification[]
-  addNotification: (phone: string, message: string) => void
-  markNotificationRead: (id: string) => void
+  addNotification: (phone: string, message: string) => Promise<void>
+  markNotificationRead: (id: string) => Promise<void>
   promoCodes: PromoCode[]
   addPromoCode: (promo: Omit<PromoCode, 'id'>) => void
   togglePromoStatus: (id: string) => void
@@ -154,6 +154,12 @@ export const useAppStore = create<AppState>()(
 
         const { data: cats } = await supabase.from('webfoo_categories').select('*').order('sort_order', { ascending: true })
         if (cats) set({ categories: cats.map(c => ({ id: c.id, name: c.name, sortOrder: c.sort_order || 0, image: c.image })) })
+
+        // 🔥 NAYA: USER NOTIFICATIONS FETCH LOGIC
+        const { data: notifs } = await supabase.from('user_notifications').select('*').order('created_at', { ascending: false })
+        if (notifs) {
+          set({ notifications: notifs.map(n => ({ id: String(n.id), phone: n.phone, message: n.message, time: new Date(n.created_at).toLocaleString(), read: n.is_read })) })
+        }
       },
 
       products: defaultProducts,
@@ -225,8 +231,19 @@ export const useAppStore = create<AppState>()(
       },
 
       notifications: [],
-      addNotification: (phone, message) => set((state) => ({ notifications: [{ id: Date.now().toString(), phone, message, time: new Date().toLocaleString(), read: false }, ...state.notifications] })),
-      markNotificationRead: (id) => set((state) => ({ notifications: state.notifications.map(n => n.id === id ? { ...n, read: true } : n) })),
+      // 🔥 NAYA: ADMIN PANEL SE NOTIFICATION DB MEIN SAVE KARNA
+      addNotification: async (phone, message) => {
+        const tempId = Date.now().toString()
+        const time = new Date().toLocaleString()
+        set((state) => ({ notifications: [{ id: tempId, phone, message, time, read: false }, ...state.notifications] }))
+        const { data } = await supabase.from('user_notifications').insert({ phone, message, is_read: false }).select().single()
+        if (data) set((state) => ({ notifications: state.notifications.map(n => n.id === tempId ? { ...n, id: String(data.id) } : n) }))
+      },
+      // 🔥 NAYA: NOTIFICATION READ MARK KARNA
+      markNotificationRead: async (id) => {
+        set((state) => ({ notifications: state.notifications.map(n => n.id === id ? { ...n, read: true } : n) }))
+        await supabase.from('user_notifications').update({ is_read: true }).eq('id', parseInt(id))
+      },
 
       promoCodes: [],
       addPromoCode: async (promo) => {
@@ -263,7 +280,6 @@ export const useAppStore = create<AppState>()(
       logout: () => set({ user: null, cart: [] }),
 
       categories: [],
-      // 🔥 TITANIUM FIXED: Full Data insertion
       addCategory: async (catData) => {
         const tempId = Date.now().toString();
         const current = get().categories;
