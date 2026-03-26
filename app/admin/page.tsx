@@ -54,7 +54,7 @@ export default function AdminDashboard() {
   const [passcode, setPasscode] = React.useState('')
   const [authError, setAuthError] = React.useState('')
 
-  // 🔥 NAYA: ALERT SOUND KE LIYE PURANE ORDERS COUNT TRACK KARNE KA VARIABLE
+  // 🔥 ALERT SOUND KE LIYE PURANE ORDERS COUNT TRACK KARNE KA VARIABLE
   const prevOrderCountRef = React.useRef(0)
 
   const { 
@@ -115,6 +115,15 @@ export default function AdminDashboard() {
       if (data) setThemeColorData(data)
     }
     loadTheme()
+
+    // 🔥 NAYA: BACKGROUND AUTO-REFRESH (HAR 10 SECOND ME NAYE ORDERS LAAYEGA) 🔥
+    const syncInterval = setInterval(() => {
+      if (sessionStorage.getItem('webfoo_admin_unlocked') === 'true') {
+        if (fetchData) fetchData()
+      }
+    }, 10000) // 10000 ms = 10 seconds
+
+    return () => clearInterval(syncInterval) // Cleanup
   }, [fetchData, fetchStoreConfig])
 
   React.useEffect(() => {
@@ -270,11 +279,11 @@ export default function AdminDashboard() {
   const liveOrders = orders.filter((o: any) => o.status === 'Pending' || o.status === 'In Transit').reverse()
   const orderHistory = orders.filter((o: any) => o.status === 'Delivered' || o.status === 'Cancelled').reverse()
   
-  // 🔥 NAYA: ALERT SOUND LOGIC 🔥
+  // 🔥 ALERT SOUND LOGIC 🔥
   React.useEffect(() => {
     if (isMounted && isAuthorized) {
       // Check agar naye live orders aaye hain (matlab length badh gayi hai)
-      if (liveOrders.length > prevOrderCountRef.current) {
+      if (liveOrders.length > prevOrderCountRef.current && prevOrderCountRef.current !== 0) {
         try {
           // Google ki choti notification beep bajayega
           const audio = new Audio('https://actions.google.com/sounds/v1/alarms/beep_short.ogg')
