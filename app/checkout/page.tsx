@@ -4,7 +4,7 @@ import * as React from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { motion, AnimatePresence } from "framer-motion"
-import { ArrowLeft, User, MapPin, Banknote, CheckCircle, Package, FileText, Plus } from "lucide-react"
+import { ArrowLeft, User, MapPin, Banknote, CheckCircle, Package, FileText, Plus, Truck } from "lucide-react"
 
 import { useAppStore } from "@/lib/store"
 import { Header } from "@/components/header"
@@ -15,7 +15,8 @@ import { Card, CardContent } from "@/components/ui/card"
 
 export default function CheckoutPage() {
   const router = useRouter()
-  const { cart, getCartTotal, addOrder, removeFromCart, user, orders, customerMeta } = useAppStore() as any
+  // 🔥 FETCH DELIVERY ZONES FROM STORE
+  const { cart, getCartTotal, addOrder, removeFromCart, user, orders, customerMeta, deliveryZones } = useAppStore() as any
   const totalAmount = getCartTotal()
   const [isMounted, setIsMounted] = React.useState(false)
 
@@ -25,6 +26,9 @@ export default function CheckoutPage() {
   const [savedAddressState, setSavedAddressState] = React.useState('')
   const [specialNote, setSpecialNote] = React.useState('')
   
+  // 🔥 DELIVERY ZONE STATE
+  const [selectedZoneId, setSelectedZoneId] = React.useState<string>('')
+  
   const [isSuccess, setIsSuccess] = React.useState(false)
   const [placedOrderDetails, setPlacedOrderDetails] = React.useState<any>(null)
 
@@ -33,47 +37,45 @@ export default function CheckoutPage() {
   const [discountAmt, setDiscountAmt] = React.useState(0)
   const [finalTotal, setFinalTotal] = React.useState(totalAmount)
 
-  // 🔥 1. CART SE AANE PE PAGE UPAR KHULNE WALA FIX (Naya Engine)
+  // Get active zones and calculate delivery fee
+  const activeZones = React.useMemo(() => (deliveryZones || []).filter((z: any) => z.isActive), [deliveryZones])
+  const deliveryFee = React.useMemo(() => {
+    const zone = activeZones.find((z: any) => String(z.id) === String(selectedZoneId))
+    return zone ? zone.fee : 0
+  }, [activeZones, selectedZoneId])
+
   React.useEffect(() => {
     window.scrollTo(0, 0)
   }, [])
 
-  // 🔥 2. ORDER CONFIRM HONE KE BAAD UPAR JANE WALA FIX (Jo pehle lagaya tha)
   React.useEffect(() => {
     if (isSuccess) {
       window.scrollTo({ top: 0, behavior: 'smooth' })
     }
   }, [isSuccess])
 
-  // 🔥 TITANIUM STRICT ADDRESS CATCHER (String Matching Fix)
   React.useEffect(() => {
     setIsMounted(true)
     if (!user || !user.phone) return;
 
     let foundAddr = ""
-    // ZABARDASTI STRING MEIN CONVERT KAR RAHE HAIN TAARI MATCH FAIL NA HO
     const myPhoneStr = String(user.phone).trim()
 
-    // Step 1: Sabse pehle customerMeta (Database Profile) check karo
     if (customerMeta && customerMeta[myPhoneStr] && customerMeta[myPhoneStr].address) {
       foundAddr = customerMeta[myPhoneStr].address
     }
     
-    // Step 2: Agar Profile mein nahi hai, toh SIRF USI CUSTOMER ke orders check karo
     if (!foundAddr && orders && Array.isArray(orders)) {
-      // DHYAN DE: Yahan dono side String convert karke match kar rahe hain
       const myOrders = orders.filter((o: any) => String(o.phone).trim() === myPhoneStr)
-      
       if (myOrders.length > 0) {
-        // Sirf is bande ka sabse aakhri order lo
         const myLastOrder = myOrders[myOrders.length - 1]
         if (myLastOrder && myLastOrder.landmark) {
-          foundAddr = myLastOrder.landmark.split(' | Note:')[0]
+          // Naye address format me [Zone: XYZ] laga hoga, usko ignore karke purana logic rakhte hain
+          foundAddr = myLastOrder.landmark.split(' | Note:')[0].replace(/\[Zone:.*?\]\s*/g, '')
         }
       }
     }
 
-    // Step 3: Local Storage (Browser memory) ka ultimate fallback, sirf uske number par
     if (!foundAddr) {
       try {
         const localProfile = JSON.parse(localStorage.getItem('webfoo_profile') || '{}')
@@ -83,7 +85,6 @@ export default function CheckoutPage() {
       } catch (e) {}
     }
 
-    // Address Set karna
     if (foundAddr && savedAddressState === '') {
       setSavedAddressState(foundAddr)
       setAddressMode('saved')
@@ -92,23 +93,22 @@ export default function CheckoutPage() {
     }
   }, [user, orders, customerMeta, savedAddressState])
 
-  // Promo Code Logic
+  // Promo Code & Final Total Logic (🔥 Includes Delivery Fee)
   React.useEffect(() => {
     const storedPromo = localStorage.getItem('webfoo_applied_promo')
+    let discount = 0
     if (storedPromo) {
       try {
         const parsedPromo = JSON.parse(storedPromo)
         setAppliedPromo(parsedPromo)
-        const discount = parsedPromo.type === 'flat' ? parsedPromo.value : Math.round((totalAmount * parsedPromo.value) / 100)
-        setDiscountAmt(discount)
-        setFinalTotal(totalAmount - discount)
+        discount = parsedPromo.type === 'flat' ? parsedPromo.value : Math.round((totalAmount * parsedPromo.value) / 100)
       } catch (e) {}
-    } else {
-      setFinalTotal(totalAmount)
     }
-  }, [totalAmount])
+    setDiscountAmt(discount)
+    // FINAL TOTAL = KHAANA - DISCOUNT + DELIVERY FEE
+    setFinalTotal(totalAmount - discount + deliveryFee)
+  }, [totalAmount, deliveryFee])
 
-  // Security Check
   React.useEffect(() => {
     if (isMounted) {
       if (!user) router.push('/profile')
@@ -119,19 +119,28 @@ export default function CheckoutPage() {
   const handleConfirmOrder = (e: React.FormEvent) => {
     e.preventDefault()
 
+    // 🔥 ZONE SELECTION VALIDATION
+    if (activeZones.length > 0 && !selectedZoneId) {
+      alert("Please select a Delivery Area!")
+      return
+    }
+
     const finalAddress = addressMode === 'saved' ? savedAddressState : newAddress
     if (!finalAddress || finalAddress.trim() === '') {
       alert("Please provide a delivery address!")
       return
     }
 
-    const fullLandmark = specialNote.trim() !== '' ? `${finalAddress} | Note: ${specialNote}` : finalAddress
+    // 🔥 ADMIN KE LIYE ADDRESS ME ZONE NAAM JOD RAHA HOON
+    const selectedZoneName = activeZones.find((z: any) => String(z.id) === String(selectedZoneId))?.areaName || 'Local'
+    const fullLandmark = `[Zone: ${selectedZoneName}] ${finalAddress} ${specialNote.trim() !== '' ? `| Note: ${specialNote}` : ''}`
 
     const orderSnapshot = {
       items: [...cart],
       total: finalTotal,
       subtotal: totalAmount,
       discount: discountAmt,
+      deliveryFee: deliveryFee,
       date: new Date().toLocaleTimeString()
     }
     setPlacedOrderDetails(orderSnapshot)
@@ -189,8 +198,28 @@ export default function CheckoutPage() {
               
               <Card className="glass-strong border-white/10 rounded-2xl overflow-hidden">
                 <div className="bg-[#CCFF00]/10 px-6 py-3 border-b border-[#CCFF00]/20"><h3 className="font-black text-[#CCFF00] uppercase tracking-widest text-sm flex items-center gap-2"><MapPin className="w-4 h-4" /> Drop Coordinates</h3></div>
-                <CardContent className="p-6 space-y-4">
+                <CardContent className="p-6 space-y-6">
                   
+                  {/* 🔥 NAYA: DELIVERY ZONE DROPDOWN */}
+                  {activeZones.length > 0 && (
+                    <div className="space-y-3 pb-6 border-b border-white/10">
+                      <Label className="text-xs uppercase tracking-widest text-[#00FFFF] font-black flex items-center gap-2"><Truck className="w-4 h-4" /> Select Delivery Area</Label>
+                      <select
+                        required
+                        value={selectedZoneId}
+                        onChange={(e) => setSelectedZoneId(e.target.value)}
+                        className="w-full bg-black/50 border border-white/20 text-white h-14 rounded-xl px-4 font-bold focus:border-[#00FFFF] focus:outline-none uppercase text-sm tracking-wider cursor-pointer"
+                      >
+                        <option value="" disabled className="bg-black text-white/50">-- Choose your area --</option>
+                        {activeZones.map((zone: any) => (
+                          <option key={zone.id} value={zone.id} className="bg-black text-white">
+                            {zone.areaName} (+₹{zone.fee})
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+
                   {/* Saved Address Block */}
                   {savedAddressState && (
                     <div onClick={() => setAddressMode('saved')} className={`p-4 rounded-xl border-2 cursor-pointer transition-all ${addressMode === 'saved' ? 'border-[#CCFF00] bg-[#CCFF00]/10 shadow-[0_0_15px_rgba(204,255,0,0.1)]' : 'border-white/10 hover:border-white/30'}`}>
@@ -238,11 +267,15 @@ export default function CheckoutPage() {
               </div>
 
               {/* Totals */}
-              <div className="pt-6 mt-6 border-t border-white/10">
-                <div className="flex justify-between items-center mb-2 px-2 font-bold uppercase tracking-widest text-[10px] text-muted-foreground"><span>Subtotal</span><span className="text-sm font-mono text-white">₹{totalAmount}</span></div>
-                {appliedPromo && <div className="flex justify-between items-center mb-4 px-2 font-bold uppercase tracking-widest text-[10px] text-[#CCFF00]"><span>Discount</span><span className="text-sm font-mono">-₹{discountAmt}</span></div>}
-                <div className="flex justify-between items-center mb-6 px-2 pt-4 border-t border-white/10"><span className="text-white font-black uppercase tracking-tighter text-xl">Total Amount</span><span className="text-3xl font-black text-[#00FFFF] font-mono shadow-[0_0_20px_rgba(0,255,255,0.2)]">₹{finalTotal}</span></div>
-                <Button type="submit" className="w-full h-16 rounded-2xl bg-[#00FFFF] text-black font-black text-xl hover:bg-[#00FFFF]/90 shadow-[0_0_20px_rgba(0,255,255,0.4)] transition-all uppercase tracking-tighter">CONFIRM ORDER</Button>
+              <div className="pt-6 mt-6 border-t border-white/10 space-y-3">
+                <div className="flex justify-between items-center px-2 font-bold uppercase tracking-widest text-[10px] text-muted-foreground"><span>Subtotal</span><span className="text-sm font-mono text-white">₹{totalAmount}</span></div>
+                {appliedPromo && <div className="flex justify-between items-center px-2 font-bold uppercase tracking-widest text-[10px] text-[#CCFF00]"><span>Discount</span><span className="text-sm font-mono">-₹{discountAmt}</span></div>}
+                
+                {/* 🔥 DELIVERY FEE ROW */}
+                {deliveryFee > 0 && <div className="flex justify-between items-center px-2 font-bold uppercase tracking-widest text-[10px] text-[#00FFFF]"><span>Delivery Fee</span><span className="text-sm font-mono">+₹{deliveryFee}</span></div>}
+
+                <div className="flex justify-between items-center pb-2 px-2 pt-4 border-t border-white/10"><span className="text-white font-black uppercase tracking-tighter text-xl">Final Total</span><span className="text-3xl font-black text-[#00FFFF] font-mono shadow-[0_0_20px_rgba(0,255,255,0.2)]">₹{finalTotal}</span></div>
+                <Button type="submit" className="w-full h-16 rounded-2xl bg-[#00FFFF] text-black font-black text-xl hover:bg-[#00FFFF]/90 shadow-[0_0_20px_rgba(0,255,255,0.4)] transition-all uppercase tracking-tighter mt-4">CONFIRM ORDER</Button>
               </div>
             </form>
           </motion.div>
@@ -251,7 +284,7 @@ export default function CheckoutPage() {
           <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="flex flex-col items-center justify-center text-center space-y-6 mt-10 font-sans">
             <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: "spring" as const, stiffness: 200, damping: 10, delay: 0.2 }}><CheckCircle className="w-32 h-32 text-[#CCFF00] drop-shadow-[0_0_30px_rgba(204,255,0,0.6)]" /></motion.div>
             <h2 className="text-3xl font-black uppercase text-white">Order <span className="text-[#CCFF00]">Confirmed!</span></h2>
-            <p className="text-[#00FFFF] font-bold text-lg bg-[#00FFFF]/10 px-6 py-2 rounded-full border border-[#00FFFF]/30 shadow-[0_0_15px_rgba(0,255,255,0.1)] uppercase">Arriving In 60 Mins</p>
+            <p className="text-[#00FFFF] font-bold text-lg bg-[#00FFFF]/10 px-6 py-2 rounded-full border border-[#00FFFF]/30 shadow-[0_0_15px_rgba(0,255,255,0.1)] uppercase">Arriving Soon</p>
 
             {placedOrderDetails && (
               <Card className="w-full glass-strong border-white/10 mt-8 text-left">
