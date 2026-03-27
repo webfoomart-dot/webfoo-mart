@@ -9,7 +9,7 @@ import {
   MapPin, Phone, Truck, XCircle, Plus, UploadCloud, Trash2, Edit, PowerOff, Power,
   Star, Ban, MessageCircle, FileText, Send, CheckSquare, Square, Smartphone,
   TrendingUp, Target, BarChart, ShieldAlert, LockKeyhole, Calendar, Settings, AlertTriangle, MoonStar, LayoutGrid,
-  ArrowUp, ArrowDown, Palette, Volume2 // 🔥 VOLUME ICON ADD KIYA
+  ArrowUp, ArrowDown, Palette, Volume2
 } from "lucide-react"
 import { createClient } from '@supabase/supabase-js' 
 
@@ -55,7 +55,6 @@ export default function AdminDashboard() {
   const [authError, setAuthError] = React.useState('')
 
   const prevOrderCountRef = React.useRef(0)
-  // 🔥 NAYA: AUDIO ELEMENT KA REF 🔥
   const alertAudioRef = React.useRef<HTMLAudioElement>(null)
 
   const { 
@@ -78,9 +77,14 @@ export default function AdminDashboard() {
 
   const [isProductSheetOpen, setIsProductSheetOpen] = React.useState(false)
   const [editingId, setEditingId] = React.useState<string | null>(null)
+  
+  // 🔥 NAYA: Form Data me Naye Columns Add Kiye
   const [formData, setFormData] = React.useState({
-    name: '', price: '', mrp: '', category: '', image: '', inStock: true
+    name: '', price: '', mrp: '', category: '', image: '', inStock: true,
+    description: '', galleryImages: [] as string[], foodPref: 'none' as 'veg' | 'non-veg' | 'none'
   })
+
+  const [newGalleryUrl, setNewGalleryUrl] = React.useState('') // Gallery ke liye extra state
 
   const [selectedCustomers, setSelectedCustomers] = React.useState<string[]>([])
   const [messageText, setMessageText] = React.useState('')
@@ -117,7 +121,6 @@ export default function AdminDashboard() {
     }
     loadTheme()
 
-    // BACKGROUND AUTO-REFRESH (HAR 10 SECOND)
     const syncInterval = setInterval(() => {
       if (sessionStorage.getItem('webfoo_admin_unlocked') === 'true') {
         if (fetchData) fetchData()
@@ -279,7 +282,6 @@ export default function AdminDashboard() {
   const liveOrders = orders.filter((o: any) => o.status === 'Pending' || o.status === 'In Transit').reverse()
   const orderHistory = orders.filter((o: any) => o.status === 'Delivered' || o.status === 'Cancelled').reverse()
   
-  // 🔥 ALERT SOUND LOGIC (FIXED) 🔥
   React.useEffect(() => {
     if (isMounted && isAuthorized) {
       if (liveOrders.length > prevOrderCountRef.current && prevOrderCountRef.current !== 0) {
@@ -396,18 +398,64 @@ export default function AdminDashboard() {
     } else { alert(`⚠️ WhatsApp Bulk Send requires Business API integration.\nFor now, select 1 customer at a time to open WhatsApp Web.`) }
   }
 
+  // 🔥 NAYA: Naye columns ko payload me pass kiya
   const handleSaveProduct = (e: React.FormEvent) => {
     e.preventDefault()
-    const productPayload = { name: formData.name, price: Number(formData.price), mrp: Number(formData.mrp), category: formData.category, image: formData.image || '/placeholder.jpg', inStock: formData.inStock }
+    const productPayload = { 
+      name: formData.name, price: Number(formData.price), mrp: Number(formData.mrp), category: formData.category, image: formData.image || '/placeholder.jpg', inStock: formData.inStock,
+      description: formData.description, galleryImages: formData.galleryImages, foodPref: formData.foodPref
+    }
     if (editingId) updateProduct(editingId, productPayload)
     else addProduct(productPayload)
     setIsProductSheetOpen(false); resetForm()
   }
-  const openEdit = (product: any) => { setEditingId(product.id); setFormData({ name: product.name, price: product.price.toString(), mrp: product.mrp.toString(), category: product.category, image: product.image, inStock: product.inStock }); setIsProductSheetOpen(true) }
-  const resetForm = () => { setEditingId(null); setFormData({ name: '', price: '', mrp: '', category: displayCategories[0], image: '', inStock: true }) }
+
+  // 🔥 NAYA: Naye columns fetch kiye edit mode me
+  const openEdit = (product: any) => { 
+    setEditingId(product.id); 
+    setFormData({ 
+      name: product.name, price: product.price.toString(), mrp: product.mrp.toString(), category: product.category, image: product.image, inStock: product.inStock,
+      description: product.description || '', galleryImages: product.galleryImages || [], foodPref: product.foodPref || 'none'
+    }); 
+    setIsProductSheetOpen(true) 
+  }
+
+  // 🔥 NAYA: Reset function me naye fields empty kiye
+  const resetForm = () => { 
+    setEditingId(null); 
+    setFormData({ name: '', price: '', mrp: '', category: displayCategories[0], image: '', inStock: true, description: '', galleryImages: [], foodPref: 'none' });
+    setNewGalleryUrl(''); 
+  }
+
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (file) { const reader = new FileReader(); reader.onloadend = () => setFormData({ ...formData, image: reader.result as string }); reader.readAsDataURL(file) }
+  }
+
+  // 🔥 NAYA: Gallery Multiple Images Upload Logic
+  const handleGalleryUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || [])
+    const readers = files.map(file => {
+      return new Promise<string>((resolve) => {
+        const reader = new FileReader()
+        reader.onloadend = () => resolve(reader.result as string)
+        reader.readAsDataURL(file)
+      })
+    })
+    Promise.all(readers).then(images => {
+      setFormData(prev => ({ ...prev, galleryImages: [...prev.galleryImages, ...images] }))
+    })
+  }
+
+  const addGalleryUrl = () => {
+    if(newGalleryUrl.trim() !== '') {
+      setFormData(prev => ({ ...prev, galleryImages: [...prev.galleryImages, newGalleryUrl.trim()] }))
+      setNewGalleryUrl('')
+    }
+  }
+
+  const removeGalleryImage = (index: number) => {
+    setFormData(prev => ({ ...prev, galleryImages: prev.galleryImages.filter((_, i) => i !== index) }))
   }
 
   const generateAIDesc = async () => {
@@ -415,7 +463,9 @@ export default function AdminDashboard() {
     try {
       const res = await fetch('/api/ai', { method: 'POST', body: JSON.stringify({ productName: formData.name }) });
       const data = await res.json();
-      alert(`AI Suggestion:\n${data.description}`);
+      // 🔥 NAYA: AI description seedha form me set kar do instead of alert
+      setFormData(prev => ({ ...prev, description: data.description }));
+      alert("AI Description Generated and Added!");
     } catch(e) { alert("Groq API error. Check backend!") }
   };
 
@@ -446,7 +496,6 @@ export default function AdminDashboard() {
 
   return (
     <div className="flex min-h-screen bg-[#050505] text-foreground font-sans selection:bg-[#00FFFF]/30">
-      {/* 🔥 HIDDEN AUDIO TAG JO BROWSER ACCEPT KAREGA 🔥 */}
       <audio ref={alertAudioRef} src="https://actions.google.com/sounds/v1/alarms/beep_short.ogg" preload="auto" />
 
       <aside className="hidden md:flex flex-col w-72 glass-strong border-r border-white/10 fixed top-0 bottom-0 left-0 z-40"><SidebarNav /></aside>
@@ -459,7 +508,6 @@ export default function AdminDashboard() {
           </Sheet>
           <span className="text-xl font-black italic uppercase text-white">Admin <span className="text-[#CCFF00]">Panel</span></span>
         </div>
-        {/* MOBILE AUDIO TEST BUTTON */}
         <Button variant="ghost" size="icon" onClick={() => alertAudioRef.current?.play()} className="text-[#CCFF00] hover:bg-[#CCFF00]/10">
           <Volume2 className="w-5 h-5" />
         </Button>
@@ -472,7 +520,6 @@ export default function AdminDashboard() {
             {activeTab === 'live_orders' && liveOrders.length > 0 && <span className="w-3 h-3 rounded-full bg-[#FF0055] animate-pulse ml-2" />}
           </h2>
           
-          {/* 🔥 DESKTOP AUDIO TEST BUTTON 🔥 */}
           <Button variant="outline" onClick={() => { alertAudioRef.current?.play(); alert("✅ Alert Sound Enabled! Ab background me tab chhod de, naye order par aawaz aayegi."); }} className="border-[#CCFF00]/30 text-[#CCFF00] hover:bg-[#CCFF00] hover:text-black font-black tracking-widest uppercase">
             <Volume2 className="w-4 h-4 mr-2" /> 🔔 Enable Sound
           </Button>
@@ -859,7 +906,6 @@ export default function AdminDashboard() {
                 </CardContent>
               </Card>
 
-              {/* 🔥 NAYA: DELIVERY ZONES SECTION */}
               <div className="flex justify-between items-center gap-4 pt-4 border-t border-white/10">
                 <div>
                   <h3 className="text-lg font-black text-[#00FFFF] uppercase flex items-center gap-2"><Truck className="w-5 h-5"/> Delivery Areas & Fees</h3>
@@ -912,7 +958,6 @@ export default function AdminDashboard() {
                 )}
               </div>
 
-              {/* PROMO CODES SECTION */}
               <div className="flex justify-between items-center gap-4 pt-8 border-t border-white/10">
                 <div><p className="text-muted-foreground font-mono">Manage discount coupons for your customers.</p></div>
                 <Sheet>
@@ -1042,12 +1087,16 @@ export default function AdminDashboard() {
                  <p className="text-muted-foreground font-mono">Live Sync: Changes reflect instantly on the website.</p>
                  <Sheet open={isProductSheetOpen} onOpenChange={(open) => { setIsProductSheetOpen(open); if(!open) resetForm() }}>
                    <SheetTrigger asChild><Button onClick={resetForm} className="bg-[#CCFF00] text-black font-black hover:bg-[#CCFF00]/90 shadow-[0_0_15px_rgba(204,255,0,0.3)] h-12 rounded-xl px-6"><Plus className="w-5 h-5 mr-2" /> ADD PRODUCT</Button></SheetTrigger>
-                   <SheetContent className="bg-black/95 backdrop-blur-2xl border-l border-[#00FFFF]/30 sm:max-w-md w-full overflow-y-auto">
+                   
+                   {/* ADD PRODUCT FORM */}
+                   <SheetContent className="bg-black/95 backdrop-blur-2xl border-l border-[#00FFFF]/30 sm:max-w-xl w-full overflow-y-auto">
                      <SheetHeader className="text-left mb-8 mt-6"><SheetTitle className="text-3xl font-black italic uppercase text-[#00FFFF]">{editingId ? 'Edit Product' : 'New Product'}</SheetTitle></SheetHeader>
                      
-                     <form onSubmit={handleSaveProduct} className="flex flex-col gap-6">
+                     <form onSubmit={handleSaveProduct} className="flex flex-col gap-6 pb-20">
+                       
+                       {/* MAIN IMAGE */}
                        <div className="space-y-4 bg-white/5 p-4 rounded-xl border border-white/10">
-                         <Label className="text-xs font-black uppercase tracking-widest text-[#00FFFF]">Product Image</Label>
+                         <Label className="text-xs font-black uppercase tracking-widest text-[#00FFFF]">Main Product Image (Thumbnail)</Label>
                          <div className="relative w-full h-32 rounded-xl border-2 border-dashed border-[#00FFFF]/40 bg-[#00FFFF]/5 flex items-center justify-center overflow-hidden cursor-pointer group">
                            <input type="file" accept="image/*" onChange={handleImageUpload} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" />
                            {formData.image && formData.image.startsWith('data:') ? (
@@ -1058,7 +1107,7 @@ export default function AdminDashboard() {
                          </div>
                          <div className="flex items-center gap-4"><div className="h-px bg-white/10 flex-1"></div><span className="text-[10px] text-muted-foreground uppercase font-black tracking-widest">OR</span><div className="h-px bg-white/10 flex-1"></div></div>
                          <div className="space-y-2">
-                           <Label className="text-[10px] text-white/70">Paste Image Link (URL)</Label>
+                           <Label className="text-[10px] text-white/70">Paste Main Image Link (URL)</Label>
                            <Input type="url" placeholder="https://..." value={formData.image && !formData.image.startsWith('data:') ? formData.image : ''} onChange={(e) => setFormData({...formData, image: e.target.value})} className="bg-black/50 border-white/20 text-xs focus-visible:border-[#00FFFF]" />
                            {formData.image && !formData.image.startsWith('data:') && (
                              <div className="mt-2 relative w-full h-24 rounded-lg overflow-hidden border border-white/10 bg-black/50">
@@ -1068,6 +1117,35 @@ export default function AdminDashboard() {
                          </div>
                        </div>
 
+                       {/* 🔥 NAYA: EXTRA GALLERY IMAGES */}
+                       <div className="space-y-4 bg-white/5 p-4 rounded-xl border border-white/10">
+                         <Label className="text-xs font-black uppercase tracking-widest text-[#CCFF00]">Extra Photos (For Details Page)</Label>
+                         
+                         {/* Show existing gallery images */}
+                         {formData.galleryImages.length > 0 && (
+                           <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
+                             {formData.galleryImages.map((img, i) => (
+                               <div key={i} className="relative w-20 h-20 shrink-0 rounded-lg overflow-hidden border border-white/20">
+                                 <img src={img} alt={`Gallery ${i}`} className="w-full h-full object-cover" />
+                                 <button type="button" onClick={() => removeGalleryImage(i)} className="absolute top-1 right-1 bg-red-500 rounded-full p-1 text-white hover:scale-110"><XCircle className="w-3 h-3" /></button>
+                               </div>
+                             ))}
+                           </div>
+                         )}
+
+                         <div className="flex gap-2">
+                           <div className="relative flex-1 h-10 rounded-md border border-[#CCFF00]/40 bg-[#CCFF00]/5 flex items-center justify-center overflow-hidden cursor-pointer hover:bg-[#CCFF00]/10 transition-colors">
+                             <input type="file" multiple accept="image/*" onChange={handleGalleryUpload} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" />
+                             <span className="text-xs font-bold text-[#CCFF00] flex items-center gap-2"><UploadCloud className="w-4 h-4"/> Upload Multiple</span>
+                           </div>
+                         </div>
+                         <div className="flex gap-2">
+                           <Input type="url" placeholder="Paste extra image URL..." value={newGalleryUrl} onChange={(e) => setNewGalleryUrl(e.target.value)} className="bg-black/50 border-white/20 text-xs focus-visible:border-[#CCFF00] h-10 flex-1" />
+                           <Button type="button" onClick={addGalleryUrl} className="h-10 bg-white/10 text-white hover:bg-white/20 border border-white/20 px-3">Add URL</Button>
+                         </div>
+                       </div>
+
+                       {/* BASIC DETAILS */}
                        <div className="space-y-4">
                          <div className="flex gap-2 items-end">
                            <div className="flex-1 space-y-2">
@@ -1076,17 +1154,45 @@ export default function AdminDashboard() {
                            </div>
                            <Button type="button" onClick={generateAIDesc} className="bg-[#CCFF00] text-black h-10 px-3"><Zap className="w-4 h-4" /></Button>
                          </div>
-                         <div className="grid grid-cols-2 gap-4"><div className="space-y-2"><Label>Selling Price (₹)</Label><Input required type="number" value={formData.price} onChange={e => setFormData({...formData, price: e.target.value})} className="bg-white/5 border-white/10" /></div><div className="space-y-2"><Label>MRP / Cut Price (₹)</Label><Input required type="number" value={formData.mrp} onChange={e => setFormData({...formData, mrp: e.target.value})} className="bg-white/5 border-white/10" /></div></div>
+
+                         {/* 🔥 NAYA: DESCRIPTION BOX */}
                          <div className="space-y-2">
-                           <Label>Category</Label>
-                           <select required value={formData.category} onChange={e => setFormData({...formData, category: e.target.value})} className="w-full h-10 bg-white/5 border border-white/10 rounded-md px-3 text-sm text-white focus:outline-none focus:border-[#00FFFF]">
-                             {displayCategories.map((catName: string, idx: number) => (
-                               <option key={idx} value={catName} className="bg-black text-white">{catName}</option>
-                             ))}
-                           </select>
+                           <Label>Description / Specifications</Label>
+                           <textarea 
+                             value={formData.description} 
+                             onChange={e => setFormData({...formData, description: e.target.value})} 
+                             placeholder="Write details, ingredients, or specs here..." 
+                             className="w-full bg-white/5 border border-white/10 focus-visible:border-[#00FFFF] rounded-xl p-3 min-h-[100px] text-sm text-white resize-y"
+                           />
+                         </div>
+
+                         <div className="grid grid-cols-2 gap-4">
+                           <div className="space-y-2"><Label>Selling Price (₹)</Label><Input required type="number" value={formData.price} onChange={e => setFormData({...formData, price: e.target.value})} className="bg-white/5 border-white/10" /></div>
+                           <div className="space-y-2"><Label>MRP / Cut Price (₹)</Label><Input required type="number" value={formData.mrp} onChange={e => setFormData({...formData, mrp: e.target.value})} className="bg-white/5 border-white/10" /></div>
+                         </div>
+                         
+                         <div className="grid grid-cols-2 gap-4">
+                           <div className="space-y-2">
+                             <Label>Category</Label>
+                             <select required value={formData.category} onChange={e => setFormData({...formData, category: e.target.value})} className="w-full h-10 bg-white/5 border border-white/10 rounded-md px-3 text-sm text-white focus:outline-none focus:border-[#00FFFF]">
+                               {displayCategories.map((catName: string, idx: number) => (
+                                 <option key={idx} value={catName} className="bg-black text-white">{catName}</option>
+                               ))}
+                             </select>
+                           </div>
+                           
+                           {/* 🔥 NAYA: VEG/NON-VEG SELECTOR */}
+                           <div className="space-y-2">
+                             <Label>Food Type</Label>
+                             <select required value={formData.foodPref} onChange={e => setFormData({...formData, foodPref: e.target.value as any})} className="w-full h-10 bg-white/5 border border-white/10 rounded-md px-3 text-sm text-white focus:outline-none focus:border-[#00FFFF]">
+                               <option value="none" className="bg-black text-white">None (Gadgets)</option>
+                               <option value="veg" className="bg-black text-green-400">Vegetarian 🟢</option>
+                               <option value="non-veg" className="bg-black text-red-400">Non-Veg 🔴</option>
+                             </select>
+                           </div>
                          </div>
                        </div>
-                       <Button type="submit" className="w-full h-14 bg-[#00FFFF] text-black font-black hover:bg-[#00FFFF]/80">{editingId ? 'UPDATE PRODUCT' : 'SAVE TO INVENTORY'}</Button>
+                       <Button type="submit" className="w-full h-14 bg-[#00FFFF] text-black font-black hover:bg-[#00FFFF]/80 mt-4">{editingId ? 'UPDATE PRODUCT' : 'SAVE TO INVENTORY'}</Button>
                      </form>
                    </SheetContent>
                  </Sheet>
@@ -1097,6 +1203,11 @@ export default function AdminDashboard() {
                    <Card key={product.id} className={`glass-strong border-white/10 overflow-hidden group transition-all ${!product.inStock ? 'opacity-60 grayscale' : 'hover:border-[#00FFFF]/30'}`}>
                      <div className="relative h-40 w-full bg-white/5">
                        <img src={product.image || "/placeholder.jpg"} alt={product.name} className="object-cover w-full h-full" onError={(e) => { e.currentTarget.src = '/placeholder.jpg' }} />
+                       
+                       {/* 🔥 NAYA: VEG/NON-VEG BADGE IN ADMIN PANEL */}
+                       {product.foodPref === 'veg' && <div className="absolute top-2 left-2 bg-white rounded-sm p-0.5"><div className="w-3 h-3 border-2 border-green-600 flex items-center justify-center"><div className="w-1.5 h-1.5 bg-green-600 rounded-full"></div></div></div>}
+                       {product.foodPref === 'non-veg' && <div className="absolute top-2 left-2 bg-white rounded-sm p-0.5"><div className="w-3 h-3 border-2 border-red-600 flex items-center justify-center"><div className="w-1.5 h-1.5 bg-red-600 rounded-full"></div></div></div>}
+
                        {!product.inStock && <div className="absolute inset-0 bg-black/60 flex items-center justify-center z-10"><span className="bg-red-500 text-white font-black text-[10px] px-2 py-1 uppercase rounded">Out of Stock</span></div>}
                        <div className="absolute top-2 right-2 flex gap-2 z-20">
                          <button onClick={() => openEdit(product)} className="w-8 h-8 rounded-full bg-black/90 border border-[#00FFFF]/50 flex items-center justify-center text-[#00FFFF] shadow-[0_0_10px_rgba(0,255,255,0.2)] hover:bg-[#00FFFF] hover:text-black transition-all"><Edit className="w-4 h-4" /></button>
