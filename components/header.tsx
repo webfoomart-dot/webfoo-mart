@@ -25,20 +25,21 @@ export function Header() {
       <div className="max-w-7xl mx-auto px-4 py-4">
         <div className="flex items-center justify-between">
           
-          <Link href="/" className="flex items-center gap-3"> {/* 🔥 Gap badhaya taaki logo aur text me space rahe */}
+          <Link href="/" className="flex items-center gap-3">
             <motion.div
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
-              className="flex items-center gap-3" /* 🔥 Yahan gap-3 diya jisse logo aur text ek line me rahenge */
+              className="flex items-center gap-3"
             >
+              {/* 🔥 PRIORITY ADD KIYA HAI TAAKI BINA LOAD HUE CRACK NA HO */}
               <Image 
                 src="/logo.png" 
                 alt="WebFoo Mart" 
                 width={44} 
                 height={44} 
-                className="rounded-full object-cover shadow-[0_0_15px_rgba(0,255,255,0.3)] shrink-0" /* 🔥 shrink-0 add kiya taaki logo daba na jaye */
+                priority
+                className="rounded-full object-cover shadow-[0_0_15px_rgba(0,255,255,0.3)] shrink-0 bg-[#00FFFF]/10" 
               />
-              {/* 🔥 NAYA TEXT ADD KIYA EKDUM MAST STYLE MEIN */}
               <span className="text-xl sm:text-2xl font-black uppercase tracking-tighter text-white whitespace-nowrap">
                 WebFoo <span className="text-[#00FFFF]">Mart</span>
               </span>
