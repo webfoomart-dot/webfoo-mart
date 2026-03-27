@@ -3,7 +3,7 @@
 import * as React from "react"
 import Link from "next/link"
 import Image from "next/image"
-import { useRouter } from "next/navigation" // 🔥 Router import page change karne ke liye
+import { useRouter } from "next/navigation" 
 import { motion, AnimatePresence } from "framer-motion"
 import { 
   ArrowLeft, Search, ShoppingBasket, Plus, Lock, Zap, 
@@ -19,7 +19,7 @@ import { Input } from "@/components/ui/input"
 
 export default function CategoriesPage() {
   const [isMounted, setIsMounted] = React.useState(false)
-  const router = useRouter() // 🔥 Router initialize kiya
+  const router = useRouter() 
   
   const { 
     products, cart, addToCart, updateQuantity, user, login, register,
@@ -78,7 +78,6 @@ export default function CategoriesPage() {
     ? products.filter((p: any) => p.category.toLowerCase() === selectedCategory.name.toLowerCase())
     : []
 
-  // 🔥 Event 'e' aur stopPropagation add kiya
   const handleCartClick = (e: React.MouseEvent, product: any) => {
     e.stopPropagation()
     if (!isStoreOpen) { triggerStoreClosedAlert(); return; }
@@ -86,14 +85,12 @@ export default function CategoriesPage() {
     addToCart(product)
   }
 
-  // 🔥 Event 'e' aur stopPropagation add kiya
   const handlePlusClick = (e: React.MouseEvent, productId: string, currentQuantity: number) => {
     e.stopPropagation()
     if (!isStoreOpen) { triggerStoreClosedAlert(); return; }
     updateQuantity(productId, currentQuantity + 1);
   }
 
-  // 🔥 Minus button ke liye bhi alag function with stopPropagation
   const handleMinusClick = (e: React.MouseEvent, productId: string, currentQuantity: number) => {
     e.stopPropagation()
     updateQuantity(productId, currentQuantity - 1);
@@ -178,7 +175,7 @@ export default function CategoriesPage() {
                       layout 
                       initial={{ opacity: 0 }} 
                       animate={{ opacity: 1 }} 
-                      onClick={() => router.push(`/product/${product.id}`)} // 🔥 NAYA: Pura card clickable kar diya
+                      onClick={() => router.push(`/product/${product.id}`)} 
                       className={`cursor-pointer bg-white/5 p-3 rounded-[1.5rem] border border-white/10 flex flex-col gap-3 relative transition-all duration-300 hover:border-[#00FFFF]/40 hover:bg-white/10 group ${!product.inStock ? 'opacity-60 grayscale' : ''}`}
                     >
                       <div className="relative h-36 sm:h-44 w-full rounded-xl overflow-hidden flex items-center justify-center p-0 border border-white/5 bg-black/20">
@@ -201,28 +198,27 @@ export default function CategoriesPage() {
                         <p className="text-[#00FFFF] font-bold text-[9px] uppercase tracking-widest opacity-80">{product.category}</p>
                         <p className="font-bold text-white text-xs leading-tight line-clamp-2">{product.name}</p>
                         
-                        {/* 🔥 NAYA: Asli FSSAI Logos (Official rectangular frames) */}
+                        {/* 🔥 ERROR FIXED: Style string ko React props me change kar diya */}
                         <div className="pt-0.5">
                           {product.foodPref === 'veg' && (
                             <div className="bg-white p-[2px] rounded-sm shadow-sm w-fit">
-                              <svg xmlns="http://www.w3.org/2000/svg" version="1.1" width="14" height="14" viewBox="0 0 16 16">
-                                <path style="stroke:#008000; stroke-width:1.5; fill:none;" d="M 0.5,0.5 H 15.5 V 15.5 H 0.5 Z" />
-                                <circle style="stroke:none; fill:#008000;" cx="8" cy="8" r="4.5" />
+                              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 16 16">
+                                <path stroke="#008000" strokeWidth="1.5" fill="none" d="M 0.5,0.5 H 15.5 V 15.5 H 0.5 Z" />
+                                <circle fill="#008000" cx="8" cy="8" r="4.5" />
                               </svg>
                             </div>
                           )}
                           {product.foodPref === 'non-veg' && (
                             <div className="bg-white p-[2px] rounded-sm shadow-sm w-fit">
-                              <svg xmlns="http://www.w3.org/2000/svg" version="1.1" width="14" height="14" viewBox="0 0 16 16">
-                                <path style="stroke:#8B4513; stroke-width:1.5; fill:none;" d="M 0.5,0.5 H 15.5 V 15.5 H 0.5 Z" />
-                                <path style="stroke:none; fill:#8B4513;" d="M 8,3 L 13.5,12.5 H 2.5 Z" />
+                              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 16 16">
+                                <path stroke="#8B4513" strokeWidth="1.5" fill="none" d="M 0.5,0.5 H 15.5 V 15.5 H 0.5 Z" />
+                                <path fill="#8B4513" d="M 8,3 L 13.5,12.5 H 2.5 Z" />
                               </svg>
                             </div>
                           )}
                         </div>
                       </div>
 
-                      {/* 🔥 UPDATE: is div pe stopPropagation lagaya */}
                       <div className="flex items-center justify-between mt-1 pt-3 border-t border-white/10" onClick={(e) => e.stopPropagation()}>
                         <div className="flex flex-col">
                           <span className="font-mono font-black text-[#00FFFF] text-base">₹{product.price}</span>
