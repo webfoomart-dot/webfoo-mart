@@ -3,7 +3,7 @@
 import * as React from "react"
 import Image from "next/image"
 import Link from "next/link"
-import { useRouter } from "next/navigation" // 🔥 NAYA: Page change karne ke liye
+import { useRouter } from "next/navigation"
 import { motion, AnimatePresence } from "framer-motion"
 import { Search, Zap, MoonStar, TicketPercent, Plus, Minus } from "lucide-react"
 
@@ -21,7 +21,7 @@ const HOME_CATEGORIES = ["HK Fast Food", "Fast Food", "Cold Drink"]
 
 export default function HomePage() {
   const [isMounted, setIsMounted] = React.useState(false)
-  const router = useRouter() // 🔥 NAYA: Router initialize kiya
+  const router = useRouter() 
 
   const { 
     products, cart, addToCart, removeFromCart, updateQuantity,
@@ -59,7 +59,7 @@ export default function HomePage() {
   })
 
   const handleAddToCart = (e: React.MouseEvent, product: any) => {
-    e.stopPropagation() // 🔥 NAYA: Click ko card pe failne se rokne ke liye
+    e.stopPropagation() 
     if (!isStoreOpen) {
       triggerStoreClosedAlert();
       return;
@@ -68,7 +68,7 @@ export default function HomePage() {
   }
 
   const handlePlusClick = (e: React.MouseEvent, productId: string, currentQuantity: number) => {
-    e.stopPropagation() // 🔥 NAYA: Click ko rokne ke liye
+    e.stopPropagation() 
     if (!isStoreOpen) {
       triggerStoreClosedAlert();
       return;
@@ -77,7 +77,7 @@ export default function HomePage() {
   }
 
   const handleMinusClick = (e: React.MouseEvent, productId: string, currentQuantity: number) => {
-    e.stopPropagation() // 🔥 NAYA: Click ko rokne ke liye
+    e.stopPropagation() 
     updateQuantity(productId, currentQuantity - 1);
   }
 
@@ -90,7 +90,7 @@ export default function HomePage() {
         layout 
         initial={{ opacity: 0 }} 
         animate={{ opacity: 1 }} 
-        onClick={() => router.push(`/product/${product.id}`)} // 🔥 NAYA: Pura card clickable ban gaya!
+        onClick={() => router.push(`/product/${product.id}`)} 
         className={`cursor-pointer bg-white/5 p-3 rounded-[1.5rem] border border-white/10 flex flex-col gap-3 relative transition-all duration-300 hover:border-[#00FFFF]/40 hover:bg-white/10 group ${!product.inStock ? 'opacity-60 grayscale' : ''} ${isHorizontalMode ? 'min-w-[160px] max-w-[160px] sm:min-w-[190px] sm:max-w-[190px] snap-start shrink-0' : ''}`}
       >
         <div className="relative h-36 sm:h-44 w-full rounded-xl overflow-hidden flex items-center justify-center p-0 border border-white/5 bg-black/20">
@@ -101,22 +101,6 @@ export default function HomePage() {
             className="object-cover group-hover:scale-110 transition-transform duration-500" 
           />
           
-          {/* 🔥 NAYA: VEG / NON-VEG TAG */}
-          {product.foodPref === 'veg' && (
-            <div className="absolute top-2 left-2 z-20 bg-white p-0.5 rounded-sm shadow-sm">
-              <div className="w-3.5 h-3.5 border-2 border-green-600 flex items-center justify-center">
-                <div className="w-1.5 h-1.5 bg-green-600 rounded-full"></div>
-              </div>
-            </div>
-          )}
-          {product.foodPref === 'non-veg' && (
-            <div className="absolute top-2 left-2 z-20 bg-white p-0.5 rounded-sm shadow-sm">
-              <div className="w-3.5 h-3.5 border-2 border-red-600 flex items-center justify-center">
-                <div className="w-1.5 h-1.5 bg-red-600 rounded-full"></div>
-              </div>
-            </div>
-          )}
-
           {!product.inStock && (
             <div className="absolute inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-10">
               <span className="bg-red-500 text-white font-black text-[10px] px-3 py-1.5 uppercase tracking-widest rounded-md shadow-lg">
@@ -129,9 +113,28 @@ export default function HomePage() {
         <div className="mt-1 flex-1 flex flex-col justify-start space-y-1">
           <p className="text-[#00FFFF] font-bold text-[9px] uppercase tracking-widest opacity-80">{product.category}</p>
           <p className="font-bold text-white text-xs leading-tight line-clamp-2">{product.name}</p>
+          
+          {/* 🔥 NAYA LOCATION: NAME KE THEEK NEECHE (Proper FSSAI SVG) */}
+          <div className="pt-0.5">
+            {product.foodPref === 'veg' && (
+              <div className="bg-white p-[2px] rounded-sm shadow-sm w-fit">
+                <svg width="12" height="12" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <rect x="1" y="1" width="14" height="14" stroke="#008000" strokeWidth="1.5"/>
+                  <circle cx="8" cy="8" r="4" fill="#008000"/>
+                </svg>
+              </div>
+            )}
+            {product.foodPref === 'non-veg' && (
+              <div className="bg-white p-[2px] rounded-sm shadow-sm w-fit">
+                <svg width="12" height="12" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <rect x="1" y="1" width="14" height="14" stroke="#8B4513" strokeWidth="1.5"/>
+                  <path d="M8 4L12 10H4L8 4Z" fill="#8B4513"/>
+                </svg>
+              </div>
+            )}
+          </div>
         </div>
 
-        {/* 🔥 Yahan bhi stopPropagation lagaya hai safety ke liye */}
         <div className="flex items-center justify-between mt-1 pt-3 border-t border-white/10" onClick={(e) => e.stopPropagation()}>
           <div className="flex flex-col">
             <span className="font-mono font-black text-[#00FFFF] text-base">₹{product.price}</span>
@@ -264,7 +267,7 @@ export default function HomePage() {
                 )
               })}
 
-              {/* VIEW ALL CATEGORIES BUTTON - Scroll Fix Added Here */}
+              {/* VIEW ALL CATEGORIES BUTTON */}
               <div className="pt-6 pb-4">
                 <Button asChild className="w-full h-14 bg-white/5 text-white border border-white/20 font-black uppercase tracking-widest text-lg rounded-xl hover:bg-[#00FFFF] hover:text-black hover:border-[#00FFFF] transition-all">
                   <Link href="/categories" onClick={() => window.scrollTo(0, 0)}>View All Categories</Link>
