@@ -16,9 +16,6 @@ import { Badge } from "@/components/ui/badge"
 import { Header } from "@/components/header"
 import { BottomNav } from "@/components/bottom-nav"
 
-// EXACT WAHI 3 CATEGORY JO TUNE BOLI
-const HOME_CATEGORIES = ["HK Fast Food", "Fast Food", "Cold Drink"]
-
 export default function HomePage() {
   const [isMounted, setIsMounted] = React.useState(false)
   const router = useRouter() 
@@ -26,7 +23,7 @@ export default function HomePage() {
   const { 
     products, cart, addToCart, removeFromCart, updateQuantity,
     fetchData, storeConfig, fetchStoreConfig, checkIfStoreOpen,
-    triggerStoreClosedAlert 
+    triggerStoreClosedAlert, categories // 🔥 NAYA: Categories bhi fetch kar li backend se
   } = useAppStore() as any
 
   const [searchQuery, setSearchQuery] = React.useState("") 
@@ -53,10 +50,21 @@ export default function HomePage() {
 
   const getCartItem = (id: string) => cart.find((item: any) => item.id === id)
 
-  // Sirf search ke liye filter, category button wala logic hata diya
+  // Search Filter
   const filteredProducts = products.filter((p: any) => {
     return p.name.toLowerCase().includes(searchQuery.toLowerCase());
   })
+
+  // 🔥 NAYA: Dynamic Categories Engine (Jo bhi product me category hogi, sab aayegi)
+  const uniqueCategories = Array.from(new Set(products.map((p: any) => p.category)))
+    .sort((a: any, b: any) => {
+      // Admin panel ki sorting rank ke hisaab se categories set hongi
+      const catA = (categories || []).find((c: any) => c.name.toLowerCase() === a.toLowerCase());
+      const catB = (categories || []).find((c: any) => c.name.toLowerCase() === b.toLowerCase());
+      const orderA = catA ? (catA.sortOrder || 0) : 999;
+      const orderB = catB ? (catB.sortOrder || 0) : 999;
+      return orderA - orderB;
+    });
 
   const handleAddToCart = (e: React.MouseEvent, product: any) => {
     e.stopPropagation() 
@@ -114,21 +122,21 @@ export default function HomePage() {
           <p className="text-[#00FFFF] font-bold text-[9px] uppercase tracking-widest opacity-80">{product.category}</p>
           <p className="font-bold text-white text-xs leading-tight line-clamp-2">{product.name}</p>
           
-          {/* 🔥 NAYA LOCATION: NAME KE THEEK NEECHE (Proper FSSAI SVG) */}
+          {/* 🔥 ORIGINAL FSSAI LOGOS: Perfect Rectangle Frames */}
           <div className="pt-0.5">
             {product.foodPref === 'veg' && (
               <div className="bg-white p-[2px] rounded-sm shadow-sm w-fit">
-                <svg width="12" height="12" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <rect x="1" y="1" width="14" height="14" stroke="#008000" strokeWidth="1.5"/>
-                  <circle cx="8" cy="8" r="4" fill="#008000"/>
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 16 16">
+                  <path stroke="#008000" strokeWidth="1.5" fill="none" d="M 0.5,0.5 H 15.5 V 15.5 H 0.5 Z" />
+                  <circle fill="#008000" cx="8" cy="8" r="4.5" />
                 </svg>
               </div>
             )}
             {product.foodPref === 'non-veg' && (
               <div className="bg-white p-[2px] rounded-sm shadow-sm w-fit">
-                <svg width="12" height="12" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <rect x="1" y="1" width="14" height="14" stroke="#8B4513" strokeWidth="1.5"/>
-                  <path d="M8 4L12 10H4L8 4Z" fill="#8B4513"/>
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 16 16">
+                  <path stroke="#8B4513" strokeWidth="1.5" fill="none" d="M 0.5,0.5 H 15.5 V 15.5 H 0.5 Z" />
+                  <path fill="#8B4513" d="M 8,3 L 13.5,12.5 H 2.5 Z" />
                 </svg>
               </div>
             )}
@@ -241,22 +249,20 @@ export default function HomePage() {
               {filteredProducts.map((product: any) => renderProductCard(product, false))}
             </div>
           ) : (
-            // SWIPE VIEW: Sirf wo 3 categories jo tune maangi
+            // 🔥 NAYA: SWIPE VIEW - SAARI DYNAMIC CATEGORIES AAYENGI
             <div className="space-y-8 pt-2">
-              {HOME_CATEGORIES.map((category: string) => {
-                // Case-insensitive match taaki "Cold Drink" aur "Cold Drinks" dono chal jayein
+              {uniqueCategories.map((categoryName: string) => {
                 const categoryProducts = products.filter((p: any) => 
-                  String(p.category).toLowerCase() === category.toLowerCase() || 
-                  String(p.category).toLowerCase() === category.toLowerCase() + 's'
+                  String(p.category).toLowerCase() === categoryName.toLowerCase()
                 );
                 
                 if (categoryProducts.length === 0) return null;
                 
                 return (
-                  <div key={category} className="space-y-4">
+                  <div key={categoryName} className="space-y-4">
                     <div className="flex items-center justify-between">
                       <h3 className="text-xl font-black uppercase tracking-widest text-white pl-3 border-l-4 border-[#CCFF00] leading-none">
-                        {category}
+                        {categoryName}
                       </h3>
                     </div>
                     {/* Horizontal Scroll Container */}
@@ -266,13 +272,6 @@ export default function HomePage() {
                   </div>
                 )
               })}
-
-              {/* VIEW ALL CATEGORIES BUTTON */}
-              <div className="pt-6 pb-4">
-                <Button asChild className="w-full h-14 bg-white/5 text-white border border-white/20 font-black uppercase tracking-widest text-lg rounded-xl hover:bg-[#00FFFF] hover:text-black hover:border-[#00FFFF] transition-all">
-                  <Link href="/categories" onClick={() => window.scrollTo(0, 0)}>View All Categories</Link>
-                </Button>
-              </div>
             </div>
           )
         )}
