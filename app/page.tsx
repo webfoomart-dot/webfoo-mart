@@ -55,9 +55,9 @@ export default function HomePage() {
     return p.name.toLowerCase().includes(searchQuery.toLowerCase());
   })
 
-  // 🔥 ERROR FIXED: TypeScript ko explicitly bata diya ki ye 'string' ki array hai
-  const rawCategories = products.map((p: any) => String(p.category || ''));
-  const uniqueCategories: string[] = Array.from(new Set(rawCategories)).sort((a: string, b: string) => {
+  // 🔥 ERROR FIXED: TypeScript ke 'unknown' error ko hatane ke liye spread operator [...] use kiya
+  const rawCategories: string[] = products.map((p: any) => String(p.category || ''));
+  const uniqueCategories: string[] = [...new Set(rawCategories)].sort((a: string, b: string) => {
     const catA = (categories || []).find((c: any) => c.name.toLowerCase() === a.toLowerCase());
     const catB = (categories || []).find((c: any) => c.name.toLowerCase() === b.toLowerCase());
     const orderA = catA ? (catA.sortOrder || 0) : 999;
