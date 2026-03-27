@@ -3,6 +3,7 @@
 import * as React from "react"
 import Image from "next/image"
 import Link from "next/link"
+import { useRouter } from "next/navigation" // 🔥 NAYA: Page change karne ke liye
 import { motion, AnimatePresence } from "framer-motion"
 import { Search, Zap, MoonStar, TicketPercent, Plus, Minus } from "lucide-react"
 
@@ -20,6 +21,8 @@ const HOME_CATEGORIES = ["HK Fast Food", "Fast Food", "Cold Drink"]
 
 export default function HomePage() {
   const [isMounted, setIsMounted] = React.useState(false)
+  const router = useRouter() // 🔥 NAYA: Router initialize kiya
+
   const { 
     products, cart, addToCart, removeFromCart, updateQuantity,
     fetchData, storeConfig, fetchStoreConfig, checkIfStoreOpen,
@@ -55,7 +58,8 @@ export default function HomePage() {
     return p.name.toLowerCase().includes(searchQuery.toLowerCase());
   })
 
-  const handleAddToCart = (product: any) => {
+  const handleAddToCart = (e: React.MouseEvent, product: any) => {
+    e.stopPropagation() // 🔥 NAYA: Click ko card pe failne se rokne ke liye
     if (!isStoreOpen) {
       triggerStoreClosedAlert();
       return;
@@ -63,12 +67,18 @@ export default function HomePage() {
     addToCart(product);
   }
 
-  const handlePlusClick = (productId: string, currentQuantity: number) => {
+  const handlePlusClick = (e: React.MouseEvent, productId: string, currentQuantity: number) => {
+    e.stopPropagation() // 🔥 NAYA: Click ko rokne ke liye
     if (!isStoreOpen) {
       triggerStoreClosedAlert();
       return;
     }
     updateQuantity(productId, currentQuantity + 1);
+  }
+
+  const handleMinusClick = (e: React.MouseEvent, productId: string, currentQuantity: number) => {
+    e.stopPropagation() // 🔥 NAYA: Click ko rokne ke liye
+    updateQuantity(productId, currentQuantity - 1);
   }
 
   // PRODUCT CARD ENGINE
@@ -80,7 +90,8 @@ export default function HomePage() {
         layout 
         initial={{ opacity: 0 }} 
         animate={{ opacity: 1 }} 
-        className={`bg-white/5 p-3 rounded-[1.5rem] border border-white/10 flex flex-col gap-3 relative transition-all duration-300 hover:border-[#00FFFF]/40 hover:bg-white/10 group ${!product.inStock ? 'opacity-60 grayscale' : ''} ${isHorizontalMode ? 'min-w-[160px] max-w-[160px] sm:min-w-[190px] sm:max-w-[190px] snap-start shrink-0' : ''}`}
+        onClick={() => router.push(`/product/${product.id}`)} // 🔥 NAYA: Pura card clickable ban gaya!
+        className={`cursor-pointer bg-white/5 p-3 rounded-[1.5rem] border border-white/10 flex flex-col gap-3 relative transition-all duration-300 hover:border-[#00FFFF]/40 hover:bg-white/10 group ${!product.inStock ? 'opacity-60 grayscale' : ''} ${isHorizontalMode ? 'min-w-[160px] max-w-[160px] sm:min-w-[190px] sm:max-w-[190px] snap-start shrink-0' : ''}`}
       >
         <div className="relative h-36 sm:h-44 w-full rounded-xl overflow-hidden flex items-center justify-center p-0 border border-white/5 bg-black/20">
           <Image 
@@ -89,6 +100,23 @@ export default function HomePage() {
             fill 
             className="object-cover group-hover:scale-110 transition-transform duration-500" 
           />
+          
+          {/* 🔥 NAYA: VEG / NON-VEG TAG */}
+          {product.foodPref === 'veg' && (
+            <div className="absolute top-2 left-2 z-20 bg-white p-0.5 rounded-sm shadow-sm">
+              <div className="w-3.5 h-3.5 border-2 border-green-600 flex items-center justify-center">
+                <div className="w-1.5 h-1.5 bg-green-600 rounded-full"></div>
+              </div>
+            </div>
+          )}
+          {product.foodPref === 'non-veg' && (
+            <div className="absolute top-2 left-2 z-20 bg-white p-0.5 rounded-sm shadow-sm">
+              <div className="w-3.5 h-3.5 border-2 border-red-600 flex items-center justify-center">
+                <div className="w-1.5 h-1.5 bg-red-600 rounded-full"></div>
+              </div>
+            </div>
+          )}
+
           {!product.inStock && (
             <div className="absolute inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-10">
               <span className="bg-red-500 text-white font-black text-[10px] px-3 py-1.5 uppercase tracking-widest rounded-md shadow-lg">
@@ -103,7 +131,8 @@ export default function HomePage() {
           <p className="font-bold text-white text-xs leading-tight line-clamp-2">{product.name}</p>
         </div>
 
-        <div className="flex items-center justify-between mt-1 pt-3 border-t border-white/10">
+        {/* 🔥 Yahan bhi stopPropagation lagaya hai safety ke liye */}
+        <div className="flex items-center justify-between mt-1 pt-3 border-t border-white/10" onClick={(e) => e.stopPropagation()}>
           <div className="flex flex-col">
             <span className="font-mono font-black text-[#00FFFF] text-base">₹{product.price}</span>
             {product.mrp > product.price && <span className="text-[10px] text-muted-foreground line-through font-mono">₹{product.mrp}</span>}
@@ -111,14 +140,14 @@ export default function HomePage() {
           
           {cartItem ? (
             <div className="flex items-center gap-2 bg-[#00FFFF]/10 border border-[#00FFFF]/30 rounded-lg p-1">
-              <button onClick={() => updateQuantity(product.id, cartItem.quantity - 1)} className="w-7 h-7 flex items-center justify-center text-[#00FFFF] hover:bg-[#00FFFF]/20 rounded-md transition-colors"><Minus className="w-3 h-3" /></button>
+              <button onClick={(e) => handleMinusClick(e, product.id, cartItem.quantity)} className="w-7 h-7 flex items-center justify-center text-[#00FFFF] hover:bg-[#00FFFF]/20 rounded-md transition-colors"><Minus className="w-3 h-3" /></button>
               <span className="text-sm font-black w-4 text-center text-white">{cartItem.quantity}</span>
-              <button onClick={() => handlePlusClick(product.id, cartItem.quantity)} className="w-7 h-7 flex items-center justify-center text-[#00FFFF] hover:bg-[#00FFFF]/20 rounded-md transition-colors"><Plus className="w-3 h-3" /></button>
+              <button onClick={(e) => handlePlusClick(e, product.id, cartItem.quantity)} className="w-7 h-7 flex items-center justify-center text-[#00FFFF] hover:bg-[#00FFFF]/20 rounded-md transition-colors"><Plus className="w-3 h-3" /></button>
             </div>
           ) : (
             <Button 
               disabled={!product.inStock} 
-              onClick={() => handleAddToCart(product)} 
+              onClick={(e) => handleAddToCart(e, product)} 
               size="sm"
               className="h-9 bg-[#CCFF00] text-black font-black text-[11px] uppercase tracking-widest rounded-lg px-4 hover:bg-[#CCFF00]/80 disabled:bg-white/10 disabled:text-white/30 shadow-[0_0_15px_rgba(204,255,0,0.15)] hover:shadow-[0_0_20px_rgba(204,255,0,0.3)]"
             >
