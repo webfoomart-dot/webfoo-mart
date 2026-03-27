@@ -353,4 +353,20 @@ export default function CheckoutPage() {
                       </div>
                     )}
                     <div className="flex justify-between items-center pt-2 border-t border-white/5 mt-2">
-                      <span className="font-black text-white uppercase text-xs tracking-wid
+                      <span className="font-black text-white uppercase text-xs tracking-widest">Final Paid</span>
+                      <span className="text-2xl font-black text-[#CCFF00] font-mono">₹{placedOrderDetails.total}</span>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+            
+            <div className="w-full pt-4">
+              <Button onClick={() => router.push('/')} className="w-full h-14 bg-white/5 text-white hover:bg-white/10 border border-white/10 font-black uppercase tracking-widest rounded-xl transition-all">Back to Home</Button>
+            </div>
+          </motion.div>
+        )}
+      </main>
+    </div>
+  )
+}
