@@ -1,4 +1,3 @@
-
 "use client"
 
 import * as React from "react"
@@ -166,15 +165,22 @@ export default function ProductDetailsPage() {
               <span className="text-[#00FFFF] font-bold text-[10px] uppercase tracking-widest border border-[#00FFFF]/30 px-2 py-0.5 rounded bg-[#00FFFF]/5">
                 {product.category}
               </span>
-              {/* VEG / NON-VEG TAG */}
+              
+              {/* 🔥 FIXED FSSAI VEG / NON-VEG TAGS */}
               {product.foodPref === 'veg' && (
-                <div className="bg-white p-0.5 rounded-sm shadow-sm">
-                  <div className="w-3.5 h-3.5 border-2 border-green-600 flex items-center justify-center"><div className="w-1.5 h-1.5 bg-green-600 rounded-full"></div></div>
+                <div className="bg-white p-[2px] rounded-sm shadow-sm flex items-center justify-center">
+                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <rect x="1" y="1" width="14" height="14" stroke="#008000" strokeWidth="1.5"/>
+                    <circle cx="8" cy="8" r="4" fill="#008000"/>
+                  </svg>
                 </div>
               )}
               {product.foodPref === 'non-veg' && (
-                <div className="bg-white p-0.5 rounded-sm shadow-sm">
-                  <div className="w-3.5 h-3.5 border-2 border-red-600 flex items-center justify-center"><div className="w-1.5 h-1.5 bg-red-600 rounded-full"></div></div>
+                <div className="bg-white p-[2px] rounded-sm shadow-sm flex items-center justify-center">
+                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <rect x="1" y="1" width="14" height="14" stroke="#8B4513" strokeWidth="1.5"/>
+                    <path d="M8 4L12 10H4L8 4Z" fill="#8B4513"/>
+                  </svg>
                 </div>
               )}
             </div>
