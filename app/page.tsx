@@ -23,7 +23,7 @@ export default function HomePage() {
   const { 
     products, cart, addToCart, removeFromCart, updateQuantity,
     fetchData, storeConfig, fetchStoreConfig, checkIfStoreOpen,
-    triggerStoreClosedAlert, categories // 🔥 NAYA: Categories bhi fetch kar li backend se
+    triggerStoreClosedAlert, categories
   } = useAppStore() as any
 
   const [searchQuery, setSearchQuery] = React.useState("") 
@@ -55,16 +55,15 @@ export default function HomePage() {
     return p.name.toLowerCase().includes(searchQuery.toLowerCase());
   })
 
-  // 🔥 NAYA: Dynamic Categories Engine (Jo bhi product me category hogi, sab aayegi)
-  const uniqueCategories = Array.from(new Set(products.map((p: any) => p.category)))
-    .sort((a: any, b: any) => {
-      // Admin panel ki sorting rank ke hisaab se categories set hongi
-      const catA = (categories || []).find((c: any) => c.name.toLowerCase() === a.toLowerCase());
-      const catB = (categories || []).find((c: any) => c.name.toLowerCase() === b.toLowerCase());
-      const orderA = catA ? (catA.sortOrder || 0) : 999;
-      const orderB = catB ? (catB.sortOrder || 0) : 999;
-      return orderA - orderB;
-    });
+  // 🔥 ERROR FIXED: TypeScript ko explicitly bata diya ki ye 'string' ki array hai
+  const rawCategories = products.map((p: any) => String(p.category || ''));
+  const uniqueCategories: string[] = Array.from(new Set(rawCategories)).sort((a: string, b: string) => {
+    const catA = (categories || []).find((c: any) => c.name.toLowerCase() === a.toLowerCase());
+    const catB = (categories || []).find((c: any) => c.name.toLowerCase() === b.toLowerCase());
+    const orderA = catA ? (catA.sortOrder || 0) : 999;
+    const orderB = catB ? (catB.sortOrder || 0) : 999;
+    return orderA - orderB;
+  });
 
   const handleAddToCart = (e: React.MouseEvent, product: any) => {
     e.stopPropagation() 
@@ -122,7 +121,7 @@ export default function HomePage() {
           <p className="text-[#00FFFF] font-bold text-[9px] uppercase tracking-widest opacity-80">{product.category}</p>
           <p className="font-bold text-white text-xs leading-tight line-clamp-2">{product.name}</p>
           
-          {/* 🔥 ORIGINAL FSSAI LOGOS: Perfect Rectangle Frames */}
+          {/* ORIGINAL FSSAI LOGOS: Perfect Rectangle Frames */}
           <div className="pt-0.5">
             {product.foodPref === 'veg' && (
               <div className="bg-white p-[2px] rounded-sm shadow-sm w-fit">
@@ -249,7 +248,7 @@ export default function HomePage() {
               {filteredProducts.map((product: any) => renderProductCard(product, false))}
             </div>
           ) : (
-            // 🔥 NAYA: SWIPE VIEW - SAARI DYNAMIC CATEGORIES AAYENGI
+            // SWIPE VIEW: SAARI DYNAMIC CATEGORIES AAYENGI
             <div className="space-y-8 pt-2">
               {uniqueCategories.map((categoryName: string) => {
                 const categoryProducts = products.filter((p: any) => 
