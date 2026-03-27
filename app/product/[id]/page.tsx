@@ -106,26 +106,26 @@ export default function ProductDetailsPage() {
       </header>
 
       <main>
-        {/* BIG HERO IMAGE SECTION */}
-        <div className="relative w-full h-[50vh] sm:h-[60vh] bg-black/40 rounded-b-[2rem] overflow-hidden border-b border-white/5">
+        {/* BIG HERO IMAGE SECTION - Rounded Bottom */}
+        <div className="relative w-full h-[50vh] sm:h-[60vh] bg-black rounded-b-[2rem] overflow-hidden border-b border-white/5">
           <AnimatePresence mode="wait">
             <motion.img 
               key={activeImage}
-              initial={{ opacity: 0, scale: 1.05 }}
-              animate={{ opacity: 1, scale: 1 }}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              transition={{ duration: 0.3 }}
+              transition={{ duration: 0.2 }}
               src={activeImage} 
               alt={product.name} 
-              className="absolute inset-0 w-full h-full object-cover"
+              className="absolute inset-0 w-full h-full object-cover z-0"
             />
           </AnimatePresence>
           
-          {/* GRADIENT OVERLAY FOR TEXT READABILITY */}
-          <div className="absolute inset-0 bg-gradient-to-t from-[#050505] via-[#050505]/40 to-transparent"></div>
+          {/* 🔥 FIXED GRADIENT OVERLAY - Only slightly at bottom now, keeping main image crystal clear 🔥 */}
+          <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-[#050505] via-[#050505]/60 to-transparent z-10 rounded-b-[2rem]"></div>
 
-          {/* TAGS ON IMAGE */}
-          <div className="absolute bottom-6 left-4 flex gap-2">
+          {/* TAGS ON IMAGE (Now in front of gradient) */}
+          <div className="absolute bottom-6 left-4 flex gap-2 z-20">
             {discountPercent > 0 && (
               <Badge className="bg-[#FF0055] text-white border-none font-black px-3 py-1 text-xs uppercase tracking-widest shadow-[0_0_15px_rgba(255,0,85,0.4)]">
                 {discountPercent}% OFF
@@ -134,7 +134,7 @@ export default function ProductDetailsPage() {
           </div>
 
           {!product.inStock && (
-            <div className="absolute inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-10">
+            <div className="absolute inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-30">
               <span className="bg-red-500 text-white font-black text-xl px-6 py-2 uppercase tracking-widest rounded-xl shadow-[0_0_30px_rgba(255,0,0,0.5)] border border-red-400/50">
                 Out of Stock
               </span>
@@ -166,20 +166,20 @@ export default function ProductDetailsPage() {
                 {product.category}
               </span>
               
-              {/* 🔥 FIXED FSSAI VEG / NON-VEG TAGS */}
+              {/* ORIGINAL FSSAI LOGOS (Official rectangular frames) */}
               {product.foodPref === 'veg' && (
                 <div className="bg-white p-[2px] rounded-sm shadow-sm flex items-center justify-center">
-                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <rect x="1" y="1" width="14" height="14" stroke="#008000" strokeWidth="1.5"/>
-                    <circle cx="8" cy="8" r="4" fill="#008000"/>
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16">
+                    <path stroke="#008000" strokeWidth="1.5" fill="none" d="M 0.5,0.5 H 15.5 V 15.5 H 0.5 Z" />
+                    <circle fill="#008000" cx="8" cy="8" r="4.5" />
                   </svg>
                 </div>
               )}
               {product.foodPref === 'non-veg' && (
                 <div className="bg-white p-[2px] rounded-sm shadow-sm flex items-center justify-center">
-                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <rect x="1" y="1" width="14" height="14" stroke="#8B4513" strokeWidth="1.5"/>
-                    <path d="M8 4L12 10H4L8 4Z" fill="#8B4513"/>
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16">
+                    <path stroke="#8B4513" strokeWidth="1.5" fill="none" d="M 0.5,0.5 H 15.5 V 15.5 H 0.5 Z" />
+                    <path fill="#8B4513" d="M 8,3 L 13.5,12.5 H 2.5 Z" />
                   </svg>
                 </div>
               )}
