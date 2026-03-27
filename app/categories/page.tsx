@@ -3,7 +3,7 @@
 import * as React from "react"
 import Link from "next/link"
 import Image from "next/image"
-import { useRouter } from "next/navigation" // 🔥 NAYA: Router import kiya page change karne ke liye
+import { useRouter } from "next/navigation" // 🔥 Router import page change karne ke liye
 import { motion, AnimatePresence } from "framer-motion"
 import { 
   ArrowLeft, Search, ShoppingBasket, Plus, Lock, Zap, 
@@ -19,7 +19,7 @@ import { Input } from "@/components/ui/input"
 
 export default function CategoriesPage() {
   const [isMounted, setIsMounted] = React.useState(false)
-  const router = useRouter() // 🔥 NAYA: Router initialize kiya
+  const router = useRouter() // 🔥 Router initialize kiya
   
   const { 
     products, cart, addToCart, updateQuantity, user, login, register,
@@ -78,7 +78,7 @@ export default function CategoriesPage() {
     ? products.filter((p: any) => p.category.toLowerCase() === selectedCategory.name.toLowerCase())
     : []
 
-  // 🔥 UPDATE: Event 'e' aur stopPropagation add kiya
+  // 🔥 Event 'e' aur stopPropagation add kiya
   const handleCartClick = (e: React.MouseEvent, product: any) => {
     e.stopPropagation()
     if (!isStoreOpen) { triggerStoreClosedAlert(); return; }
@@ -86,14 +86,14 @@ export default function CategoriesPage() {
     addToCart(product)
   }
 
-  // 🔥 UPDATE: Event 'e' aur stopPropagation add kiya
+  // 🔥 Event 'e' aur stopPropagation add kiya
   const handlePlusClick = (e: React.MouseEvent, productId: string, currentQuantity: number) => {
     e.stopPropagation()
     if (!isStoreOpen) { triggerStoreClosedAlert(); return; }
     updateQuantity(productId, currentQuantity + 1);
   }
 
-  // 🔥 NAYA: Minus button ke liye bhi alag function with stopPropagation
+  // 🔥 Minus button ke liye bhi alag function with stopPropagation
   const handleMinusClick = (e: React.MouseEvent, productId: string, currentQuantity: number) => {
     e.stopPropagation()
     updateQuantity(productId, currentQuantity - 1);
@@ -115,9 +115,9 @@ export default function CategoriesPage() {
   if (!isMounted) return null
 
   return (
-    <div className="min-h-screen bg-[#050505] text-foreground font-sans selection:bg-[#00FFFF]/30">
+    <div className="min-h-screen bg-[#050505] text-foreground font-sans selection:bg-[#00FFFF]/30 pb-32 pt-24">
       <Header />
-      <main className="container mx-auto pb-40 pt-24 px-4 max-w-7xl">
+      <main className="container mx-auto pb-40 px-4 max-w-7xl">
         <AnimatePresence mode="wait">
           {!selectedCategory ? (
             <motion.div key="categories-view" initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="max-w-2xl mx-auto">
@@ -201,21 +201,21 @@ export default function CategoriesPage() {
                         <p className="text-[#00FFFF] font-bold text-[9px] uppercase tracking-widest opacity-80">{product.category}</p>
                         <p className="font-bold text-white text-xs leading-tight line-clamp-2">{product.name}</p>
                         
-                        {/* 🔥 NAYA: Asli FSSAI Logo, theek naam ke neeche */}
+                        {/* 🔥 NAYA: Asli FSSAI Logos (Official rectangular frames) */}
                         <div className="pt-0.5">
                           {product.foodPref === 'veg' && (
                             <div className="bg-white p-[2px] rounded-sm shadow-sm w-fit">
-                              <svg width="12" height="12" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <rect x="1" y="1" width="14" height="14" stroke="#008000" strokeWidth="1.5"/>
-                                <circle cx="8" cy="8" r="4" fill="#008000"/>
+                              <svg xmlns="http://www.w3.org/2000/svg" version="1.1" width="14" height="14" viewBox="0 0 16 16">
+                                <path style="stroke:#008000; stroke-width:1.5; fill:none;" d="M 0.5,0.5 H 15.5 V 15.5 H 0.5 Z" />
+                                <circle style="stroke:none; fill:#008000;" cx="8" cy="8" r="4.5" />
                               </svg>
                             </div>
                           )}
                           {product.foodPref === 'non-veg' && (
                             <div className="bg-white p-[2px] rounded-sm shadow-sm w-fit">
-                              <svg width="12" height="12" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <rect x="1" y="1" width="14" height="14" stroke="#8B4513" strokeWidth="1.5"/>
-                                <path d="M8 4L12 10H4L8 4Z" fill="#8B4513"/>
+                              <svg xmlns="http://www.w3.org/2000/svg" version="1.1" width="14" height="14" viewBox="0 0 16 16">
+                                <path style="stroke:#8B4513; stroke-width:1.5; fill:none;" d="M 0.5,0.5 H 15.5 V 15.5 H 0.5 Z" />
+                                <path style="stroke:none; fill:#8B4513;" d="M 8,3 L 13.5,12.5 H 2.5 Z" />
                               </svg>
                             </div>
                           )}
