@@ -67,20 +67,23 @@ export default function CheckoutPage() {
     let foundAddr = ""
     const myPhoneStr = String(user.phone).trim()
 
+    // 1. Check Customer Meta
     if (customerMeta && customerMeta[myPhoneStr] && customerMeta[myPhoneStr].address) {
       foundAddr = customerMeta[myPhoneStr].address
     }
     
+    // 2. Check Previous Orders
     if (!foundAddr && orders && Array.isArray(orders)) {
       const myOrders = orders.filter((o: any) => String(o.phone).trim() === myPhoneStr)
       if (myOrders.length > 0) {
         const myLastOrder = myOrders[myOrders.length - 1]
         if (myLastOrder && myLastOrder.landmark) {
-          foundAddr = myLastOrder.landmark.split(' | Note:')[0].replace(/\[Zone:.*?\]\s*/g, '')
+          foundAddr = myLastOrder.landmark
         }
       }
     }
 
+    // 3. Check LocalStorage Profile
     if (!foundAddr) {
       try {
         const localProfile = JSON.parse(localStorage.getItem('webfoo_profile') || '{}')
@@ -90,15 +93,25 @@ export default function CheckoutPage() {
       } catch (e) {}
     }
 
+    // 🔥 THE ADDRESS CLEANER (Bug Fix for repeating Zones)
     if (foundAddr && savedAddressState === '') {
-      setSavedAddressState(foundAddr)
+      let cleanAddr = foundAddr
+        // Remove variations like [Zone: XYZ], (zone xyz), or Zone: XYZ
+        .replace(/(?:\[Zone.*?\]|\(Zone.*?\)|Zone.*?\b)\s*/gi, '')
+        // Remove previously appended | Note: XYZ
+        .replace(/\|\s*Note:.*/i, '')
+        // Remove trailing commas, pipes, or spaces left behind
+        .replace(/^[\s,|-]+|[\s,|-]+$/g, '')
+        .trim();
+
+      setSavedAddressState(cleanAddr)
       setAddressMode('saved')
     } else if (!foundAddr && savedAddressState === '') {
       setAddressMode('new')
     }
   }, [user, orders, customerMeta, savedAddressState])
 
-  // Promo Code & Final Total Logic (🔥 Includes Delivery Fee)
+  // Promo Code & Final Total Logic
   React.useEffect(() => {
     const storedPromo = localStorage.getItem('webfoo_applied_promo')
     let discount = 0
@@ -110,7 +123,6 @@ export default function CheckoutPage() {
       } catch (e) {}
     }
     setDiscountAmt(discount)
-    // FINAL TOTAL = KHAANA - DISCOUNT + DELIVERY FEE
     setFinalTotal(totalAmount - discount + deliveryFee)
   }, [totalAmount, deliveryFee])
 
@@ -124,7 +136,6 @@ export default function CheckoutPage() {
   const handleConfirmOrder = (e: React.FormEvent) => {
     e.preventDefault()
 
-    // 🔥 ZONE SELECTION VALIDATION
     if (activeZones.length > 0 && !selectedZoneId) {
       alert("Please select a Delivery Area!")
       return
@@ -204,7 +215,6 @@ export default function CheckoutPage() {
                 <div className="bg-[#CCFF00]/10 px-6 py-3 border-b border-[#CCFF00]/20"><h3 className="font-black text-[#CCFF00] uppercase tracking-widest text-sm flex items-center gap-2"><MapPin className="w-4 h-4" /> Drop Coordinates</h3></div>
                 <CardContent className="p-6 space-y-6">
                   
-                  {/* 🔥 NAYA: CUSTOM GLASSMORPHIC DROPDOWN */}
                   {activeZones.length > 0 && (
                     <div className="space-y-3 pb-6 border-b border-white/10 relative z-30">
                       <Label className="text-xs uppercase tracking-widest text-[#00FFFF] font-black flex items-center gap-2"><Truck className="w-4 h-4" /> Select Delivery Area</Label>
@@ -296,8 +306,6 @@ export default function CheckoutPage() {
               <div className="pt-6 mt-6 border-t border-white/10 space-y-3 relative z-10">
                 <div className="flex justify-between items-center px-2 font-bold uppercase tracking-widest text-[10px] text-muted-foreground"><span>Subtotal</span><span className="text-sm font-mono text-white">₹{totalAmount}</span></div>
                 {appliedPromo && <div className="flex justify-between items-center px-2 font-bold uppercase tracking-widest text-[10px] text-[#CCFF00]"><span>Discount</span><span className="text-sm font-mono">-₹{discountAmt}</span></div>}
-                
-                {/* 🔥 DELIVERY FEE ROW */}
                 {deliveryFee > 0 && <div className="flex justify-between items-center px-2 font-bold uppercase tracking-widest text-[10px] text-[#00FFFF]"><span>Delivery Fee</span><span className="text-sm font-mono">+₹{deliveryFee}</span></div>}
 
                 <div className="flex justify-between items-center pb-2 px-2 pt-4 border-t border-white/10"><span className="text-white font-black uppercase tracking-tighter text-xl">Final Total</span><span className="text-3xl font-black text-[#00FFFF] font-mono shadow-[0_0_20px_rgba(0,255,255,0.2)]">₹{finalTotal}</span></div>
@@ -330,7 +338,6 @@ export default function CheckoutPage() {
                     ))}
                   </div>
                   
-                  {/* 🔥 BILL BREAKDOWN ADDED HERE IN SUCCESS SCREEN */}
                   <div className="mt-6 pt-4 border-t border-white/10 space-y-2">
                     <div className="flex justify-between items-center text-[10px] text-muted-foreground uppercase font-bold">
                       <span>Subtotal</span><span>₹{placedOrderDetails.subtotal}</span>
@@ -346,19 +353,4 @@ export default function CheckoutPage() {
                       </div>
                     )}
                     <div className="flex justify-between items-center pt-2 border-t border-white/5 mt-2">
-                      <span className="font-black text-white uppercase text-xs tracking-widest">Final Paid</span>
-                      <span className="text-2xl font-black text-[#CCFF00] font-mono">₹{placedOrderDetails.total}</span>
-                    </div>
-                  </div>
-
-                </CardContent>
-              </Card>
-            )}
-
-            <Button asChild className="w-full max-w-sm h-14 rounded-xl bg-white/10 text-white font-black text-lg hover:bg-white/20 border border-white/20 mt-8 uppercase tracking-widest transition-all"><Link href="/orders">VIEW ORDERS</Link></Button>
-          </motion.div>
-        )}
-      </main>
-    </div>
-  )
-}
+                      <span className="font-black text-white uppercase text-xs tracking-wid
