@@ -3,6 +3,7 @@
 import * as React from "react"
 import Link from "next/link"
 import Image from "next/image"
+import { useRouter } from "next/navigation" // 🔥 NAYA: Router import kiya page change karne ke liye
 import { motion, AnimatePresence } from "framer-motion"
 import { 
   ArrowLeft, Search, ShoppingBasket, Plus, Lock, Zap, 
@@ -18,6 +19,7 @@ import { Input } from "@/components/ui/input"
 
 export default function CategoriesPage() {
   const [isMounted, setIsMounted] = React.useState(false)
+  const router = useRouter() // 🔥 NAYA: Router initialize kiya
   
   const { 
     products, cart, addToCart, updateQuantity, user, login, register,
@@ -76,15 +78,25 @@ export default function CategoriesPage() {
     ? products.filter((p: any) => p.category.toLowerCase() === selectedCategory.name.toLowerCase())
     : []
 
-  const handleCartClick = (product: any) => {
+  // 🔥 UPDATE: Event 'e' aur stopPropagation add kiya
+  const handleCartClick = (e: React.MouseEvent, product: any) => {
+    e.stopPropagation()
     if (!isStoreOpen) { triggerStoreClosedAlert(); return; }
     if (!user) { setPendingProduct(product); setShowAuthModal(true); return; }
     addToCart(product)
   }
 
-  const handlePlusClick = (productId: string, currentQuantity: number) => {
+  // 🔥 UPDATE: Event 'e' aur stopPropagation add kiya
+  const handlePlusClick = (e: React.MouseEvent, productId: string, currentQuantity: number) => {
+    e.stopPropagation()
     if (!isStoreOpen) { triggerStoreClosedAlert(); return; }
     updateQuantity(productId, currentQuantity + 1);
+  }
+
+  // 🔥 NAYA: Minus button ke liye bhi alag function with stopPropagation
+  const handleMinusClick = (e: React.MouseEvent, productId: string, currentQuantity: number) => {
+    e.stopPropagation()
+    updateQuantity(productId, currentQuantity - 1);
   }
 
   const handleAuthSubmit = async (e: React.FormEvent) => {
@@ -124,10 +136,8 @@ export default function CategoriesPage() {
                   {filteredCategories.map((category, index) => (
                     <motion.div key={category.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: index * 0.05 }}>
                       <Card onClick={() => setSelectedCategory(category)} className="group glass-strong border-white/10 overflow-hidden cursor-pointer transition-all hover:border-[#00FFFF]/30 hover:-translate-y-1">
-                        {/* 🔥 Card ko lamba kar diya (aspect-[4/5]) taaki text naa kate */}
                         <CardContent className="p-3 flex flex-col items-center justify-between text-center h-full aspect-[4/5] relative">
                           {category.image ? (
-                            // 🔥 Image ko 95% width de di taaki bada dikhe aur aspect-square rakha taaki photo chapti naa ho
                             <div className="w-[95%] aspect-square rounded-2xl overflow-hidden border border-white/10 mb-2 mt-1 transition-transform group-hover:scale-110 shadow-lg">
                               <img src={category.image} alt={category.name} className="w-full h-full object-cover" />
                             </div>
@@ -168,7 +178,8 @@ export default function CategoriesPage() {
                       layout 
                       initial={{ opacity: 0 }} 
                       animate={{ opacity: 1 }} 
-                      className={`bg-white/5 p-3 rounded-[1.5rem] border border-white/10 flex flex-col gap-3 relative transition-all duration-300 hover:border-[#00FFFF]/40 hover:bg-white/10 group ${!product.inStock ? 'opacity-60 grayscale' : ''}`}
+                      onClick={() => router.push(`/product/${product.id}`)} // 🔥 NAYA: Pura card clickable kar diya
+                      className={`cursor-pointer bg-white/5 p-3 rounded-[1.5rem] border border-white/10 flex flex-col gap-3 relative transition-all duration-300 hover:border-[#00FFFF]/40 hover:bg-white/10 group ${!product.inStock ? 'opacity-60 grayscale' : ''}`}
                     >
                       <div className="relative h-36 sm:h-44 w-full rounded-xl overflow-hidden flex items-center justify-center p-0 border border-white/5 bg-black/20">
                         <Image 
@@ -189,9 +200,30 @@ export default function CategoriesPage() {
                       <div className="mt-1 flex-1 flex flex-col justify-start space-y-1">
                         <p className="text-[#00FFFF] font-bold text-[9px] uppercase tracking-widest opacity-80">{product.category}</p>
                         <p className="font-bold text-white text-xs leading-tight line-clamp-2">{product.name}</p>
+                        
+                        {/* 🔥 NAYA: Asli FSSAI Logo, theek naam ke neeche */}
+                        <div className="pt-0.5">
+                          {product.foodPref === 'veg' && (
+                            <div className="bg-white p-[2px] rounded-sm shadow-sm w-fit">
+                              <svg width="12" height="12" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <rect x="1" y="1" width="14" height="14" stroke="#008000" strokeWidth="1.5"/>
+                                <circle cx="8" cy="8" r="4" fill="#008000"/>
+                              </svg>
+                            </div>
+                          )}
+                          {product.foodPref === 'non-veg' && (
+                            <div className="bg-white p-[2px] rounded-sm shadow-sm w-fit">
+                              <svg width="12" height="12" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <rect x="1" y="1" width="14" height="14" stroke="#8B4513" strokeWidth="1.5"/>
+                                <path d="M8 4L12 10H4L8 4Z" fill="#8B4513"/>
+                              </svg>
+                            </div>
+                          )}
+                        </div>
                       </div>
 
-                      <div className="flex items-center justify-between mt-1 pt-3 border-t border-white/10">
+                      {/* 🔥 UPDATE: is div pe stopPropagation lagaya */}
+                      <div className="flex items-center justify-between mt-1 pt-3 border-t border-white/10" onClick={(e) => e.stopPropagation()}>
                         <div className="flex flex-col">
                           <span className="font-mono font-black text-[#00FFFF] text-base">₹{product.price}</span>
                           {product.mrp > product.price && <span className="text-[10px] text-muted-foreground line-through font-mono">₹{product.mrp}</span>}
@@ -199,14 +231,14 @@ export default function CategoriesPage() {
                         
                         {cartItem ? (
                           <div className="flex items-center gap-2 bg-[#00FFFF]/10 border border-[#00FFFF]/30 rounded-lg p-1">
-                            <button onClick={() => updateQuantity(product.id, cartItem.quantity - 1)} className="w-7 h-7 flex items-center justify-center text-[#00FFFF] hover:bg-[#00FFFF]/20 rounded-md transition-colors"><Minus className="w-3 h-3" /></button>
+                            <button onClick={(e) => handleMinusClick(e, product.id, cartItem.quantity)} className="w-7 h-7 flex items-center justify-center text-[#00FFFF] hover:bg-[#00FFFF]/20 rounded-md transition-colors"><Minus className="w-3 h-3" /></button>
                             <span className="text-sm font-black w-4 text-center text-white">{cartItem.quantity}</span>
-                            <button onClick={() => handlePlusClick(product.id, cartItem.quantity)} className="w-7 h-7 flex items-center justify-center text-[#00FFFF] hover:bg-[#00FFFF]/20 rounded-md transition-colors"><Plus className="w-3 h-3" /></button>
+                            <button onClick={(e) => handlePlusClick(e, product.id, cartItem.quantity)} className="w-7 h-7 flex items-center justify-center text-[#00FFFF] hover:bg-[#00FFFF]/20 rounded-md transition-colors"><Plus className="w-3 h-3" /></button>
                           </div>
                         ) : (
                           <Button 
                             disabled={!product.inStock} 
-                            onClick={() => handleCartClick(product)} 
+                            onClick={(e) => handleCartClick(e, product)} 
                             size="sm"
                             className="h-9 bg-[#CCFF00] text-black font-black text-[11px] uppercase tracking-widest rounded-lg px-4 hover:bg-[#CCFF00]/80 disabled:bg-white/10 disabled:text-white/30 shadow-[0_0_15px_rgba(204,255,0,0.15)] hover:shadow-[0_0_20px_rgba(204,255,0,0.3)]"
                           >
