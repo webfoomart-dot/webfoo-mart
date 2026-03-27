@@ -121,10 +121,9 @@ export default function ProductDetailsPage() {
             />
           </AnimatePresence>
           
-          {/* 🔥 FIXED GRADIENT OVERLAY - Only slightly at bottom now, keeping main image crystal clear 🔥 */}
-          <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-[#050505] via-[#050505]/60 to-transparent z-10 rounded-b-[2rem]"></div>
+          {/* 🔥 SHADOW POORI TARAH GAYAB KAR DIYA 🔥 */}
 
-          {/* TAGS ON IMAGE (Now in front of gradient) */}
+          {/* TAGS ON IMAGE */}
           <div className="absolute bottom-6 left-4 flex gap-2 z-20">
             {discountPercent > 0 && (
               <Badge className="bg-[#FF0055] text-white border-none font-black px-3 py-1 text-xs uppercase tracking-widest shadow-[0_0_15px_rgba(255,0,85,0.4)]">
