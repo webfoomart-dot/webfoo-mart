@@ -2,8 +2,9 @@ import type { Metadata, Viewport } from "next"
 import { Inter } from "next/font/google"
 import "./globals.css"
 import FloatingCart from "@/components/FloatingCart"
-import { Analytics } from "@vercel/analytics/react" // 🔥 VERCEL ANALYTICS IMPORT
-import { createClient } from '@supabase/supabase-js' // 🔥 SUPABASE IMPORT THEME KE LIYE
+import SplashScreen from "@/components/SplashScreen" // 🔥 YAHAN NAYA SPLASH SCREEN IMPORT KIYA HAI
+import { Analytics } from "@vercel/analytics/react" 
+import { createClient } from '@supabase/supabase-js' 
 
 const inter = Inter({ subsets: ["latin"] })
 
@@ -74,6 +75,10 @@ export default async function RootLayout({
           '--btn-color': themeBtn 
         } as React.CSSProperties} // 🔥 YAHAN SE PURI WEBSITE KA COLOR CONTROL HOGA
       >
+        
+        {/* 🔥 YAHAN LAGA DIYA PREMIUM SPLASH SCREEN 🔥 */}
+        <SplashScreen />
+
         {children}
         
         {/* 🔥 YAHAN ADD KIYA HAI MAGIC CAPSULE */}
