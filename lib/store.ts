@@ -2,11 +2,23 @@ import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { supabase } from '@/lib/supabase'
 
-export interface Product { id: string; name: string; price: number; mrp: number; category: string; image: string; inStock: boolean }
+// 🔥 NAYA: Product interface me 3 nayi cheezein add ki hain
+export interface Product { 
+  id: string; 
+  name: string; 
+  price: number; 
+  mrp: number; 
+  category: string; 
+  image: string; 
+  inStock: boolean;
+  description?: string;
+  galleryImages?: string[];
+  foodPref?: 'veg' | 'non-veg' | 'none';
+}
+
 export interface AppNotification { id: string; phone: string; message: string; time: string; read: boolean }
 export interface PromoCode { id: string; code: string; type: 'flat' | 'percent'; value: number; minOrder: number; isActive: boolean }
 
-// 🔥 NAYA: Delivery Zone Interface
 export interface DeliveryZone { id: string | number; areaName: string; fee: number; isActive: boolean }
 
 export interface StoreConfig {
@@ -63,8 +75,6 @@ interface AppState {
   updateCategory: (id: string, catData: {name: string, image: string}) => Promise<void>
   deleteCategory: (id: string) => Promise<void>
   reorderCategory: (id: string, direction: 'up' | 'down') => Promise<void>
-  
-  // 🔥 NAYA: Delivery Zones State aur Functions
   deliveryZones: DeliveryZone[]
   addDeliveryZone: (zone: Omit<DeliveryZone, 'id'>) => Promise<void>
   updateDeliveryZone: (id: string | number, zone: Partial<DeliveryZone>) => Promise<void>
@@ -73,7 +83,7 @@ interface AppState {
 }
 
 const defaultProducts: Product[] = [
-  { id: '1', name: 'Cyberpunk Energy Drink', price: 99, mrp: 149, category: 'Drinks', image: '/placeholder.jpg', inStock: true }
+  { id: '1', name: 'Cyberpunk Energy Drink', price: 99, mrp: 149, category: 'Drinks', image: '/placeholder.jpg', inStock: true, description: '', galleryImages: [], foodPref: 'veg' }
 ]
 
 export const useAppStore = create<AppState>()(
@@ -137,7 +147,11 @@ export const useAppStore = create<AppState>()(
       fetchData: async () => {
         const { data: prods } = await supabase.from('products').select('*').order('created_at', { ascending: false })
         if (prods && prods.length > 0) {
-          set({ products: prods.map(p => ({ id: p.id, name: p.name, price: p.price, mrp: p.mrp, category: p.category, image: p.image, inStock: p.in_stock })) })
+          // 🔥 NAYA: Naye columns ko fetch karke map kar rahe hain
+          set({ products: prods.map(p => ({ 
+            id: p.id, name: p.name, price: p.price, mrp: p.mrp, category: p.category, image: p.image, inStock: p.in_stock,
+            description: p.description || '', galleryImages: p.gallery_images || [], foodPref: p.food_pref || 'none'
+          })) })
         } else {
           set({ products: defaultProducts }) 
         }
@@ -165,13 +179,11 @@ export const useAppStore = create<AppState>()(
         const { data: cats } = await supabase.from('webfoo_categories').select('*').order('sort_order', { ascending: true })
         if (cats) set({ categories: cats.map(c => ({ id: c.id, name: c.name, sortOrder: c.sort_order || 0, image: c.image })) })
 
-        // FETCH USER NOTIFICATIONS
         const { data: notifs } = await supabase.from('user_notifications').select('*').order('created_at', { ascending: false })
         if (notifs) {
           set({ notifications: notifs.map(n => ({ id: String(n.id), phone: n.phone, message: n.message, time: new Date(n.created_at).toLocaleString(), read: n.is_read })) })
         }
 
-        // 🔥 NAYA: FETCH DELIVERY ZONES
         const { data: zones } = await supabase.from('delivery_zones').select('*').order('created_at', { ascending: true })
         if (zones) {
           set({ deliveryZones: zones.map(z => ({ id: z.id, areaName: z.area_name, fee: z.fee, isActive: z.is_active })) })
@@ -182,12 +194,31 @@ export const useAppStore = create<AppState>()(
       addProduct: async (prod) => {
         const tempId = Date.now().toString()
         set((state) => ({ products: [{ ...prod, id: tempId }, ...state.products] })) 
-        const { data } = await supabase.from('products').insert({ name: prod.name, price: prod.price, mrp: prod.mrp, category: prod.category, image: prod.image, in_stock: prod.inStock }).select().single()
+        
+        // 🔥 NAYA: Naye columns Supabase me insert kar rahe hain
+        const { data } = await supabase.from('products').insert({ 
+          name: prod.name, price: prod.price, mrp: prod.mrp, category: prod.category, image: prod.image, in_stock: prod.inStock,
+          description: prod.description || '', gallery_images: prod.galleryImages || [], food_pref: prod.foodPref || 'none'
+        }).select().single()
+        
         if (data) set((state) => ({ products: state.products.map(p => p.id === tempId ? { ...p, id: data.id } : p) })) 
       },
       updateProduct: async (id, updatedProd) => {
         set((state) => ({ products: state.products.map(p => p.id === id ? { ...p, ...updatedProd } : p) }))
-        await supabase.from('products').update({ name: updatedProd.name, price: updatedProd.price, mrp: updatedProd.mrp, category: updatedProd.category, image: updatedProd.image, in_stock: updatedProd.inStock }).eq('id', id)
+        
+        // 🔥 NAYA: Naye columns Supabase me update kar rahe hain
+        const updatePayload: any = {}
+        if (updatedProd.name !== undefined) updatePayload.name = updatedProd.name
+        if (updatedProd.price !== undefined) updatePayload.price = updatedProd.price
+        if (updatedProd.mrp !== undefined) updatePayload.mrp = updatedProd.mrp
+        if (updatedProd.category !== undefined) updatePayload.category = updatedProd.category
+        if (updatedProd.image !== undefined) updatePayload.image = updatedProd.image
+        if (updatedProd.inStock !== undefined) updatePayload.in_stock = updatedProd.inStock
+        if (updatedProd.description !== undefined) updatePayload.description = updatedProd.description
+        if (updatedProd.galleryImages !== undefined) updatePayload.gallery_images = updatedProd.galleryImages
+        if (updatedProd.foodPref !== undefined) updatePayload.food_pref = updatedProd.foodPref
+
+        await supabase.from('products').update(updatePayload).eq('id', id)
       },
       deleteProduct: async (id) => {
         set((state) => ({ products: state.products.filter(p => p.id !== id) }))
@@ -328,7 +359,6 @@ export const useAppStore = create<AppState>()(
         for (const c of updated) { await supabase.from('webfoo_categories').update({ sort_order: c.sortOrder }).eq('id', c.id); }
       },
 
-      // 🔥 NAYA: Delivery Zones Logic (Admin aur Data Fetch ke liye)
       deliveryZones: [],
       addDeliveryZone: async (zone) => {
         const tempId = Date.now().toString()
