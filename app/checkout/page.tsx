@@ -13,6 +13,29 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent } from "@/components/ui/card"
 
+// 🔥 TELEGRAM ALERT FUNCTION (Yahan add kiya hai)
+const sendTelegramAlert = async (totalAmount: number, address: string, phone: string, name: string, items: any[]) => {
+  const botToken = "8662820225:AAGQJXuOReNQnP5vs8QGI0XVZjr3uszY70o";
+  const chatId = "8512545963";
+
+  // Items ka mast format banaya hai taaki notification me dikh jaye kya order aaya hai
+  let itemsText = "";
+  items.forEach((item) => {
+    itemsText += `▪️ ${item.quantity}x ${item.name}\n`;
+  });
+
+  const message = `🚨 *NAYA ORDER AAYA HAI!* 🚨\n\n👤 *Customer:* ${name}\n📞 *Phone:* ${phone}\n\n🛒 *Items:*\n${itemsText}\n💰 *Final Bill:* ₹${totalAmount}\n📍 *Address:* ${address}\n\nJaldi WebFoo Mart Admin Panel check kar! 🚀`;
+
+  const url = `https://api.telegram.org/bot${botToken}/sendMessage?chat_id=${chatId}&text=${encodeURIComponent(message)}&parse_mode=Markdown`;
+
+  try {
+    // Fire and forget (Customer ko wait nahi karna padega)
+    fetch(url).then(() => console.log("Telegram pe ghanti baj gayi! 🔔")).catch((e) => console.error(e));
+  } catch (error) {
+    console.error("Telegram alert fail ho gaya bhai", error);
+  }
+};
+
 export default function CheckoutPage() {
   const router = useRouter()
   // 🔥 FETCH DELIVERY ZONES FROM STORE
@@ -172,6 +195,9 @@ export default function CheckoutPage() {
       time: new Date().toLocaleTimeString(),
       landmark: fullLandmark
     })
+
+    // 🔥 YAHAN PE TELEGRAM FUNCTION CALL HO RAHA HAI 🔥
+    sendTelegramAlert(finalTotal, fullLandmark, user.phone, user.name, cart);
 
     cart.forEach((item: any) => removeFromCart(item.id))
     localStorage.removeItem('webfoo_applied_promo')
