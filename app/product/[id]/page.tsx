@@ -30,9 +30,9 @@ export default function ProductDetailsPage() {
     window.scrollTo(0, 0)
   }, [])
 
-  // Find the product
-  const product = products.find((p: any) => p.id === productId)
-  const cartItem = cart.find((item: any) => item.id === productId)
+  // 🔥 FIX 1: ID ko strictly String banake match kiya taaki Number/String ka clash na ho
+  const product = products?.find((p: any) => String(p.id) === String(productId))
+  const cartItem = cart?.find((item: any) => String(item.id) === String(productId))
   const cartCount = getCartCount()
 
   // Set default main image when product loads
@@ -61,16 +61,19 @@ export default function ProductDetailsPage() {
   const allImages = [product.image, ...(product.galleryImages || [])].filter(Boolean)
 
   const handleAddToCart = () => {
-    if (!isStoreOpen) {
-      triggerStoreClosedAlert();
+    // 🔥 FIX 2: Strictly check for 'false' taaki undefined pe silent fail na ho
+    if (isStoreOpen === false) {
+      if (triggerStoreClosedAlert) triggerStoreClosedAlert();
+      else alert("Store is currently closed!");
       return;
     }
     addToCart(product);
   }
 
   const handlePlusClick = (currentQuantity: number) => {
-    if (!isStoreOpen) {
-      triggerStoreClosedAlert();
+    if (isStoreOpen === false) {
+      if (triggerStoreClosedAlert) triggerStoreClosedAlert();
+      else alert("Store is currently closed!");
       return;
     }
     updateQuantity(product.id, currentQuantity + 1);
