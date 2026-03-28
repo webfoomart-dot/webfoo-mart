@@ -13,28 +13,8 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent } from "@/components/ui/card"
 
-// 🔥 TELEGRAM ALERT FUNCTION (Yahan add kiya hai)
-const sendTelegramAlert = async (totalAmount: number, address: string, phone: string, name: string, items: any[]) => {
-  const botToken = "8662820225:AAGQJXuOReNQnP5vs8QGI0XVZjr3uszY70o";
-  const chatId = "8512545963";
-
-  // Items ka mast format banaya hai taaki notification me dikh jaye kya order aaya hai
-  let itemsText = "";
-  items.forEach((item) => {
-    itemsText += `▪️ ${item.quantity}x ${item.name}\n`;
-  });
-
-  const message = `🚨 *NAYA ORDER AAYA HAI!* 🚨\n\n👤 *Customer:* ${name}\n📞 *Phone:* ${phone}\n\n🛒 *Items:*\n${itemsText}\n💰 *Final Bill:* ₹${totalAmount}\n📍 *Address:* ${address}\n\nJaldi WebFoo Mart Admin Panel check kar! 🚀`;
-
-  const url = `https://api.telegram.org/bot${botToken}/sendMessage?chat_id=${chatId}&text=${encodeURIComponent(message)}&parse_mode=Markdown`;
-
-  try {
-    // Fire and forget (Customer ko wait nahi karna padega)
-    fetch(url).then(() => console.log("Telegram pe ghanti baj gayi! 🔔")).catch((e) => console.error(e));
-  } catch (error) {
-    console.error("Telegram alert fail ho gaya bhai", error);
-  }
-};
+// 🔥 NAYA SECURE SERVER ACTION IMPORT KIYA 🔥
+import { sendTelegramAlertAction } from "@/app/actions/telegram"
 
 export default function CheckoutPage() {
   const router = useRouter()
@@ -90,12 +70,10 @@ export default function CheckoutPage() {
     let foundAddr = ""
     const myPhoneStr = String(user.phone).trim()
 
-    // 1. Check Customer Meta
     if (customerMeta && customerMeta[myPhoneStr] && customerMeta[myPhoneStr].address) {
       foundAddr = customerMeta[myPhoneStr].address
     }
     
-    // 2. Check Previous Orders
     if (!foundAddr && orders && Array.isArray(orders)) {
       const myOrders = orders.filter((o: any) => String(o.phone).trim() === myPhoneStr)
       if (myOrders.length > 0) {
@@ -106,7 +84,6 @@ export default function CheckoutPage() {
       }
     }
 
-    // 3. Check LocalStorage Profile
     if (!foundAddr) {
       try {
         const localProfile = JSON.parse(localStorage.getItem('webfoo_profile') || '{}')
@@ -116,14 +93,10 @@ export default function CheckoutPage() {
       } catch (e) {}
     }
 
-    // 🔥 THE ADDRESS CLEANER (Bug Fix for repeating Zones)
     if (foundAddr && savedAddressState === '') {
       let cleanAddr = foundAddr
-        // Remove variations like [Zone: XYZ], (zone xyz), or Zone: XYZ
         .replace(/(?:\[Zone.*?\]|\(Zone.*?\)|Zone.*?\b)\s*/gi, '')
-        // Remove previously appended | Note: XYZ
         .replace(/\|\s*Note:.*/i, '')
-        // Remove trailing commas, pipes, or spaces left behind
         .replace(/^[\s,|-]+|[\s,|-]+$/g, '')
         .trim();
 
@@ -134,7 +107,6 @@ export default function CheckoutPage() {
     }
   }, [user, orders, customerMeta, savedAddressState])
 
-  // Promo Code & Final Total Logic
   React.useEffect(() => {
     const storedPromo = localStorage.getItem('webfoo_applied_promo')
     let discount = 0
@@ -156,7 +128,7 @@ export default function CheckoutPage() {
     }
   }, [cart, isSuccess, isMounted, router, user])
 
-  const handleConfirmOrder = (e: React.FormEvent) => {
+  const handleConfirmOrder = async (e: React.FormEvent) => {
     e.preventDefault()
 
     if (activeZones.length > 0 && !selectedZoneId) {
@@ -196,8 +168,8 @@ export default function CheckoutPage() {
       landmark: fullLandmark
     })
 
-    // 🔥 YAHAN PE TELEGRAM FUNCTION CALL HO RAHA HAI 🔥
-    sendTelegramAlert(finalTotal, fullLandmark, user.phone, user.name, cart);
+    // 🔥 BACKEND ACTION KO CALL KIYA (Code mein Token nahi hai!) 🔥
+    await sendTelegramAlertAction(finalTotal, fullLandmark, user.phone, user.name, cart);
 
     cart.forEach((item: any) => removeFromCart(item.id))
     localStorage.removeItem('webfoo_applied_promo')
@@ -218,7 +190,6 @@ export default function CheckoutPage() {
               <h1 className="text-3xl font-black uppercase tracking-tighter">Secure <span className="text-[#00FFFF]">Checkout</span></h1>
             </div>
 
-            {/* User Contact Banner */}
             <div className="flex items-center justify-between p-4 rounded-2xl bg-white/5 border border-white/10 glass-strong">
               <div className="flex items-center gap-4">
                 <div className="w-12 h-12 rounded-xl bg-[#00FFFF]/10 border border-[#00FFFF]/30 flex items-center justify-center text-[#00FFFF]">
@@ -282,7 +253,6 @@ export default function CheckoutPage() {
                     </div>
                   )}
 
-                  {/* Saved Address Block */}
                   {savedAddressState && (
                     <div onClick={() => setAddressMode('saved')} className={`p-4 rounded-xl border-2 cursor-pointer transition-all ${addressMode === 'saved' ? 'border-[#CCFF00] bg-[#CCFF00]/10 shadow-[0_0_15px_rgba(204,255,0,0.1)]' : 'border-white/10 hover:border-white/30'}`}>
                       <div className="flex items-center gap-3">
@@ -297,7 +267,6 @@ export default function CheckoutPage() {
                     </div>
                   )}
 
-                  {/* New Address Option */}
                   <div onClick={() => setAddressMode('new')} className={`p-4 rounded-xl border-2 cursor-pointer transition-all ${addressMode === 'new' ? 'border-[#00FFFF] bg-[#00FFFF]/10 shadow-[0_0_15px_rgba(0,255,255,0.05)]' : 'border-white/10 hover:border-white/30'}`}>
                     <div className="flex items-center gap-3">
                       <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${addressMode === 'new' ? 'border-[#00FFFF]' : 'border-muted-foreground'}`}>
@@ -316,19 +285,16 @@ export default function CheckoutPage() {
                 </CardContent>
               </Card>
 
-              {/* Special Note */}
               <div className="space-y-2 relative z-10">
                 <Label className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground flex items-center gap-2 ml-1 font-black"><FileText className="w-4 h-4 text-[#00FFFF]" /> Special Note</Label>
                 <textarea placeholder="Any delivery instructions..." value={specialNote} onChange={e => setSpecialNote(e.target.value)} className="w-full bg-black/50 border border-white/10 rounded-xl p-4 text-sm text-white focus:outline-none focus:border-[#00FFFF] h-24 glass-strong resize-none" />
               </div>
 
-              {/* Payment Info */}
               <div className="p-4 rounded-xl border border-white/10 bg-white/5 flex items-start gap-4 relative z-10">
                 <Banknote className="w-6 h-6 text-[#CCFF00]" />
                 <div><h4 className="font-black uppercase tracking-wider text-sm text-white">Cash On Delivery</h4><p className="text-xs text-muted-foreground mt-1">Payment will be collected at your door.</p></div>
               </div>
 
-              {/* Totals */}
               <div className="pt-6 mt-6 border-t border-white/10 space-y-3 relative z-10">
                 <div className="flex justify-between items-center px-2 font-bold uppercase tracking-widest text-[10px] text-muted-foreground"><span>Subtotal</span><span className="text-sm font-mono text-white">₹{totalAmount}</span></div>
                 {appliedPromo && <div className="flex justify-between items-center px-2 font-bold uppercase tracking-widest text-[10px] text-[#CCFF00]"><span>Discount</span><span className="text-sm font-mono">-₹{discountAmt}</span></div>}
@@ -340,7 +306,6 @@ export default function CheckoutPage() {
             </form>
           </motion.div>
         ) : (
-          /* --- SUCCESS SCREEN --- */
           <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="flex flex-col items-center justify-center text-center space-y-6 mt-10 font-sans">
             <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: "spring" as const, stiffness: 200, damping: 10, delay: 0.2 }}><CheckCircle className="w-32 h-32 text-[#CCFF00] drop-shadow-[0_0_30px_rgba(204,255,0,0.6)]" /></motion.div>
             <h2 className="text-3xl font-black uppercase text-white">Order <span className="text-[#CCFF00]">Confirmed!</span></h2>
