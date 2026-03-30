@@ -9,7 +9,7 @@ import {
   MapPin, Phone, Truck, XCircle, Plus, UploadCloud, Trash2, Edit, PowerOff, Power,
   Star, Ban, MessageCircle, FileText, Send, CheckSquare, Square, Smartphone,
   TrendingUp, Target, BarChart, ShieldAlert, LockKeyhole, Calendar, Settings, AlertTriangle, MoonStar, LayoutGrid,
-  ArrowUp, ArrowDown, Palette, Volume2
+  ArrowUp, ArrowDown, Palette, Volume2, Search
 } from "lucide-react"
 import { createClient } from '@supabase/supabase-js' 
 
@@ -82,6 +82,10 @@ export default function AdminDashboard() {
     name: '', price: '', mrp: '', category: '', image: '', inStock: true,
     description: '', galleryImages: [] as string[], foodPref: 'none' as 'veg' | 'non-veg' | 'none'
   })
+
+  // 🔥 NAYA: AI Search Auto-Fill State
+  const [aiSearchQuery, setAiSearchQuery] = React.useState('')
+  const [isAILoading, setIsAILoading] = React.useState(false)
 
   const [newGalleryUrl, setNewGalleryUrl] = React.useState('') 
 
@@ -421,6 +425,7 @@ export default function AdminDashboard() {
     setEditingId(null); 
     setFormData({ name: '', price: '', mrp: '', category: displayCategories[0], image: '', inStock: true, description: '', galleryImages: [], foodPref: 'none' });
     setNewGalleryUrl(''); 
+    setAiSearchQuery(''); // Reset search query on close
   }
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -463,31 +468,41 @@ export default function AdminDashboard() {
     } catch(e) { alert("Groq API error. Check backend!") }
   };
 
-  // 🔥 NAYA: MAGIC BULK ADD GROCERY FUNCTION
-  const handleMagicAddGroceries = async () => {
-    const confirmAdd = window.confirm("Bhai, kya sach me top 11 grocery items ek sath add karne hain?")
-    if (!confirmAdd) return
-
-    const magicGroceryList = [
-      { name: "Aashirvaad Whole Wheat Atta 5kg", price: 220, mrp: 250, category: "Groceries & Staples", foodPref: "veg", inStock: true, description: "Premium quality whole wheat atta for soft rotis.", image: "/placeholder.jpg", galleryImages: [] },
-      { name: "Tata Salt Vacuum Evaporated 1kg", price: 25, mrp: 28, category: "Groceries & Staples", foodPref: "veg", inStock: true, description: "Iodised salt for daily cooking.", image: "/placeholder.jpg", galleryImages: [] },
-      { name: "Fortune Sunlite Refined Sunflower Oil 1L", price: 140, mrp: 160, category: "Groceries & Staples", foodPref: "veg", inStock: true, description: "Light and healthy cooking oil.", image: "/placeholder.jpg", galleryImages: [] },
-      { name: "India Gate Basmati Rice Rozana 1kg", price: 85, mrp: 110, category: "Groceries & Staples", foodPref: "veg", inStock: true, description: "Daily use premium basmati rice.", image: "/placeholder.jpg", galleryImages: [] },
-      { name: "Madhur Pure & Hygienic Sugar 1kg", price: 45, mrp: 50, category: "Groceries & Staples", foodPref: "veg", inStock: true, description: "Fine quality white sugar.", image: "/placeholder.jpg", galleryImages: [] },
-      { name: "Tata Sampann Unpolished Toor Dal 1kg", price: 165, mrp: 180, category: "Groceries & Staples", foodPref: "veg", inStock: true, description: "High protein unpolished dal.", image: "/placeholder.jpg", galleryImages: [] },
-      { name: "Everest Turmeric (Haldi) Powder 100g", price: 30, mrp: 32, category: "Groceries & Staples", foodPref: "veg", inStock: true, description: "Pure haldi powder.", image: "/placeholder.jpg", galleryImages: [] },
-      { name: "Maggi 2-Minute Noodles Masala 140g", price: 30, mrp: 30, category: "Fast Food", foodPref: "veg", inStock: true, description: "Instant snack.", image: "/placeholder.jpg", galleryImages: [] },
-      { name: "Amul Taaza Toned Milk 1L (Tetra Pak)", price: 70, mrp: 72, category: "Dairy & Milk", foodPref: "veg", inStock: true, description: "Fresh toned milk.", image: "/placeholder.jpg", galleryImages: [] },
-      { name: "Surf Excel Easy Wash Detergent Powder 1kg", price: 130, mrp: 135, category: "Groceries & Staples", foodPref: "none", inStock: true, description: "Tough stain removal.", image: "/placeholder.jpg", galleryImages: [] },
-      { name: "Premium Chana Sattu 500g", price: 80, mrp: 95, category: "Groceries & Staples", foodPref: "veg", inStock: true, description: "Pure roasted chana sattu, perfect for energy drinks or litti.", image: "/placeholder.jpg", galleryImages: [] }
-    ]
-
-    for (const item of magicGroceryList) {
-      await addProduct(item)
+  // 🔥 NAYA: AI AUTO-FILL FETCH FUNCTION (Raasta 2)
+  const handleAIFetchDetails = async () => {
+    if (!aiSearchQuery.trim()) return alert("Bhai, pehle product ka naam toh likh search box me!")
+    setIsAILoading(true)
+    
+    try {
+      // Backend /api/ai route ko ab JSON structure return karne ke liye bolna padega
+      const res = await fetch('/api/ai', { 
+        method: 'POST', 
+        body: JSON.stringify({ 
+          productName: aiSearchQuery,
+          prompt: "Return a strictly formatted JSON object ONLY with the following keys: 'estimated_mrp' (number), 'category' (string matching standard grocery/electronics categories), 'foodPref' (string: 'veg', 'non-veg', or 'none'), and 'description' (string)."
+        }) 
+      });
+      
+      const data = await res.json();
+      
+      // Update form with AI data
+      setFormData(prev => ({
+        ...prev,
+        name: aiSearchQuery,
+        mrp: data.estimated_mrp ? data.estimated_mrp.toString() : prev.mrp,
+        price: data.estimated_mrp ? Math.round(data.estimated_mrp * 0.95).toString() : prev.price, // Default 5% off
+        category: data.category || prev.category,
+        foodPref: data.foodPref || prev.foodPref,
+        description: data.description || prev.description
+      }));
+      
+      alert("🔥 AI Magic! Form auto-filled. Bas ek baar price aur category check kar le, aur photo daal de!");
+    } catch(e) { 
+      console.error(e)
+      alert("⚠️ Error fetching details! /api/ai backend me check kar ki wo proper JSON return kar raha hai ya nahi.") 
     }
-
-    alert("🔥 Bawal! 11 Superhit Grocery items ek second me add ho gaye! Ab inki photos update kar lena.")
-  }
+    setIsAILoading(false)
+  };
 
   const SidebarNav = () => (
     <div className="flex flex-col h-full bg-black">
@@ -1106,18 +1121,36 @@ export default function AdminDashboard() {
                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                  <p className="text-muted-foreground font-mono text-sm">Live Sync: Changes reflect instantly on the website.</p>
                  <div className="flex items-center gap-2">
-                   {/* 🔥 NAYA: MAGIC BULK ADD GROCERY BUTTON */}
-                   <Button onClick={handleMagicAddGroceries} variant="outline" className="border-[#00FFFF]/50 text-[#00FFFF] hover:bg-[#00FFFF] hover:text-black font-black uppercase tracking-widest h-12 rounded-xl px-4 hidden sm:flex">
-                     <Zap className="w-4 h-4 mr-2" /> MAGIC ADD GROCERY
-                   </Button>
                    
                    <Sheet open={isProductSheetOpen} onOpenChange={(open) => { setIsProductSheetOpen(open); if(!open) resetForm() }}>
                      <SheetTrigger asChild><Button onClick={resetForm} className="bg-[#CCFF00] text-black font-black hover:bg-[#CCFF00]/90 shadow-[0_0_15px_rgba(204,255,0,0.3)] h-12 rounded-xl px-6"><Plus className="w-5 h-5 mr-2" /> ADD PRODUCT</Button></SheetTrigger>
                      
                      {/* ADD PRODUCT FORM */}
                      <SheetContent className="bg-black/95 backdrop-blur-2xl border-l border-[#00FFFF]/30 sm:max-w-xl w-full overflow-y-auto">
-                       <SheetHeader className="text-left mb-8 mt-6"><SheetTitle className="text-3xl font-black italic uppercase text-[#00FFFF]">{editingId ? 'Edit Product' : 'New Product'}</SheetTitle></SheetHeader>
+                       <SheetHeader className="text-left mb-6 mt-6"><SheetTitle className="text-3xl font-black italic uppercase text-[#00FFFF]">{editingId ? 'Edit Product' : 'New Product'}</SheetTitle></SheetHeader>
                        
+                       {/* 🔥 AI AUTO-FILL SEARCH BAR */}
+                       <div className="bg-[#00FFFF]/10 border border-[#00FFFF]/30 p-4 rounded-xl mb-6">
+                         <Label className="text-[10px] font-black uppercase tracking-widest text-[#00FFFF] mb-2 block">AI Auto-Fill (Type any product)</Label>
+                         <div className="flex gap-2">
+                           <Input 
+                             placeholder="e.g. Haldiram Bhujia, Boat Earphones..." 
+                             value={aiSearchQuery} 
+                             onChange={e => setAiSearchQuery(e.target.value)} 
+                             className="bg-black/50 border-[#00FFFF]/30 text-white placeholder:text-white/30 h-12"
+                           />
+                           <Button 
+                             type="button" 
+                             onClick={handleAIFetchDetails} 
+                             disabled={isAILoading}
+                             className="bg-[#00FFFF] text-black font-black uppercase tracking-widest h-12 px-6 hover:bg-[#00FFFF]/80"
+                           >
+                             {isAILoading ? 'FETCHING...' : <><Search className="w-4 h-4 mr-2"/> AUTO FILL</>}
+                           </Button>
+                         </div>
+                         <p className="text-[10px] text-[#00FFFF]/60 mt-2 font-mono">AI will fetch Description, MRP, Category & Food Type. You add the photo!</p>
+                       </div>
+
                        <form onSubmit={handleSaveProduct} className="flex flex-col gap-6 pb-20">
                          
                          {/* MAIN IMAGE */}
@@ -1221,11 +1254,6 @@ export default function AdminDashboard() {
                    </Sheet>
                  </div>
                </div>
-               
-               {/* Mobile Magic Button (Visible only on small screens below ADD PRODUCT) */}
-               <Button onClick={handleMagicAddGroceries} variant="outline" className="w-full border-[#00FFFF]/50 text-[#00FFFF] hover:bg-[#00FFFF] hover:text-black font-black uppercase tracking-widest h-12 rounded-xl px-4 sm:hidden flex mt-4">
-                 <Zap className="w-4 h-4 mr-2" /> MAGIC ADD GROCERY
-               </Button>
                
                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 mt-6">
                  {products.map((product: any) => (
