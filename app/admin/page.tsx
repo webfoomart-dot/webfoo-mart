@@ -78,13 +78,12 @@ export default function AdminDashboard() {
   const [isProductSheetOpen, setIsProductSheetOpen] = React.useState(false)
   const [editingId, setEditingId] = React.useState<string | null>(null)
   
-  // 🔥 NAYA: Form Data me Naye Columns Add Kiye
   const [formData, setFormData] = React.useState({
     name: '', price: '', mrp: '', category: '', image: '', inStock: true,
     description: '', galleryImages: [] as string[], foodPref: 'none' as 'veg' | 'non-veg' | 'none'
   })
 
-  const [newGalleryUrl, setNewGalleryUrl] = React.useState('') // Gallery ke liye extra state
+  const [newGalleryUrl, setNewGalleryUrl] = React.useState('') 
 
   const [selectedCustomers, setSelectedCustomers] = React.useState<string[]>([])
   const [messageText, setMessageText] = React.useState('')
@@ -398,7 +397,6 @@ export default function AdminDashboard() {
     } else { alert(`⚠️ WhatsApp Bulk Send requires Business API integration.\nFor now, select 1 customer at a time to open WhatsApp Web.`) }
   }
 
-  // 🔥 NAYA: Naye columns ko payload me pass kiya
   const handleSaveProduct = (e: React.FormEvent) => {
     e.preventDefault()
     const productPayload = { 
@@ -410,7 +408,6 @@ export default function AdminDashboard() {
     setIsProductSheetOpen(false); resetForm()
   }
 
-  // 🔥 NAYA: Naye columns fetch kiye edit mode me
   const openEdit = (product: any) => { 
     setEditingId(product.id); 
     setFormData({ 
@@ -420,7 +417,6 @@ export default function AdminDashboard() {
     setIsProductSheetOpen(true) 
   }
 
-  // 🔥 NAYA: Reset function me naye fields empty kiye
   const resetForm = () => { 
     setEditingId(null); 
     setFormData({ name: '', price: '', mrp: '', category: displayCategories[0], image: '', inStock: true, description: '', galleryImages: [], foodPref: 'none' });
@@ -432,7 +428,6 @@ export default function AdminDashboard() {
     if (file) { const reader = new FileReader(); reader.onloadend = () => setFormData({ ...formData, image: reader.result as string }); reader.readAsDataURL(file) }
   }
 
-  // 🔥 NAYA: Gallery Multiple Images Upload Logic
   const handleGalleryUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || [])
     const readers = files.map(file => {
@@ -463,11 +458,36 @@ export default function AdminDashboard() {
     try {
       const res = await fetch('/api/ai', { method: 'POST', body: JSON.stringify({ productName: formData.name }) });
       const data = await res.json();
-      // 🔥 NAYA: AI description seedha form me set kar do instead of alert
       setFormData(prev => ({ ...prev, description: data.description }));
       alert("AI Description Generated and Added!");
     } catch(e) { alert("Groq API error. Check backend!") }
   };
+
+  // 🔥 NAYA: MAGIC BULK ADD GROCERY FUNCTION
+  const handleMagicAddGroceries = async () => {
+    const confirmAdd = window.confirm("Bhai, kya sach me top 11 grocery items ek sath add karne hain?")
+    if (!confirmAdd) return
+
+    const magicGroceryList = [
+      { name: "Aashirvaad Whole Wheat Atta 5kg", price: 220, mrp: 250, category: "Groceries & Staples", foodPref: "veg", inStock: true, description: "Premium quality whole wheat atta for soft rotis.", image: "/placeholder.jpg", galleryImages: [] },
+      { name: "Tata Salt Vacuum Evaporated 1kg", price: 25, mrp: 28, category: "Groceries & Staples", foodPref: "veg", inStock: true, description: "Iodised salt for daily cooking.", image: "/placeholder.jpg", galleryImages: [] },
+      { name: "Fortune Sunlite Refined Sunflower Oil 1L", price: 140, mrp: 160, category: "Groceries & Staples", foodPref: "veg", inStock: true, description: "Light and healthy cooking oil.", image: "/placeholder.jpg", galleryImages: [] },
+      { name: "India Gate Basmati Rice Rozana 1kg", price: 85, mrp: 110, category: "Groceries & Staples", foodPref: "veg", inStock: true, description: "Daily use premium basmati rice.", image: "/placeholder.jpg", galleryImages: [] },
+      { name: "Madhur Pure & Hygienic Sugar 1kg", price: 45, mrp: 50, category: "Groceries & Staples", foodPref: "veg", inStock: true, description: "Fine quality white sugar.", image: "/placeholder.jpg", galleryImages: [] },
+      { name: "Tata Sampann Unpolished Toor Dal 1kg", price: 165, mrp: 180, category: "Groceries & Staples", foodPref: "veg", inStock: true, description: "High protein unpolished dal.", image: "/placeholder.jpg", galleryImages: [] },
+      { name: "Everest Turmeric (Haldi) Powder 100g", price: 30, mrp: 32, category: "Groceries & Staples", foodPref: "veg", inStock: true, description: "Pure haldi powder.", image: "/placeholder.jpg", galleryImages: [] },
+      { name: "Maggi 2-Minute Noodles Masala 140g", price: 30, mrp: 30, category: "Fast Food", foodPref: "veg", inStock: true, description: "Instant snack.", image: "/placeholder.jpg", galleryImages: [] },
+      { name: "Amul Taaza Toned Milk 1L (Tetra Pak)", price: 70, mrp: 72, category: "Dairy & Milk", foodPref: "veg", inStock: true, description: "Fresh toned milk.", image: "/placeholder.jpg", galleryImages: [] },
+      { name: "Surf Excel Easy Wash Detergent Powder 1kg", price: 130, mrp: 135, category: "Groceries & Staples", foodPref: "none", inStock: true, description: "Tough stain removal.", image: "/placeholder.jpg", galleryImages: [] },
+      { name: "Premium Chana Sattu 500g", price: 80, mrp: 95, category: "Groceries & Staples", foodPref: "veg", inStock: true, description: "Pure roasted chana sattu, perfect for energy drinks or litti.", image: "/placeholder.jpg", galleryImages: [] }
+    ]
+
+    for (const item of magicGroceryList) {
+      await addProduct(item)
+    }
+
+    alert("🔥 Bawal! 11 Superhit Grocery items ek second me add ho gaye! Ab inki photos update kar lena.")
+  }
 
   const SidebarNav = () => (
     <div className="flex flex-col h-full bg-black">
@@ -1083,120 +1103,129 @@ export default function AdminDashboard() {
           {/* 📦 PRODUCTS INVENTORY VIEW */}
           {activeTab === 'products' && (
              <motion.div key="products" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="space-y-6">
-               <div className="flex justify-between items-center gap-4">
-                 <p className="text-muted-foreground font-mono">Live Sync: Changes reflect instantly on the website.</p>
-                 <Sheet open={isProductSheetOpen} onOpenChange={(open) => { setIsProductSheetOpen(open); if(!open) resetForm() }}>
-                   <SheetTrigger asChild><Button onClick={resetForm} className="bg-[#CCFF00] text-black font-black hover:bg-[#CCFF00]/90 shadow-[0_0_15px_rgba(204,255,0,0.3)] h-12 rounded-xl px-6"><Plus className="w-5 h-5 mr-2" /> ADD PRODUCT</Button></SheetTrigger>
+               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                 <p className="text-muted-foreground font-mono text-sm">Live Sync: Changes reflect instantly on the website.</p>
+                 <div className="flex items-center gap-2">
+                   {/* 🔥 NAYA: MAGIC BULK ADD GROCERY BUTTON */}
+                   <Button onClick={handleMagicAddGroceries} variant="outline" className="border-[#00FFFF]/50 text-[#00FFFF] hover:bg-[#00FFFF] hover:text-black font-black uppercase tracking-widest h-12 rounded-xl px-4 hidden sm:flex">
+                     <Zap className="w-4 h-4 mr-2" /> MAGIC ADD GROCERY
+                   </Button>
                    
-                   {/* ADD PRODUCT FORM */}
-                   <SheetContent className="bg-black/95 backdrop-blur-2xl border-l border-[#00FFFF]/30 sm:max-w-xl w-full overflow-y-auto">
-                     <SheetHeader className="text-left mb-8 mt-6"><SheetTitle className="text-3xl font-black italic uppercase text-[#00FFFF]">{editingId ? 'Edit Product' : 'New Product'}</SheetTitle></SheetHeader>
+                   <Sheet open={isProductSheetOpen} onOpenChange={(open) => { setIsProductSheetOpen(open); if(!open) resetForm() }}>
+                     <SheetTrigger asChild><Button onClick={resetForm} className="bg-[#CCFF00] text-black font-black hover:bg-[#CCFF00]/90 shadow-[0_0_15px_rgba(204,255,0,0.3)] h-12 rounded-xl px-6"><Plus className="w-5 h-5 mr-2" /> ADD PRODUCT</Button></SheetTrigger>
                      
-                     <form onSubmit={handleSaveProduct} className="flex flex-col gap-6 pb-20">
+                     {/* ADD PRODUCT FORM */}
+                     <SheetContent className="bg-black/95 backdrop-blur-2xl border-l border-[#00FFFF]/30 sm:max-w-xl w-full overflow-y-auto">
+                       <SheetHeader className="text-left mb-8 mt-6"><SheetTitle className="text-3xl font-black italic uppercase text-[#00FFFF]">{editingId ? 'Edit Product' : 'New Product'}</SheetTitle></SheetHeader>
                        
-                       {/* MAIN IMAGE */}
-                       <div className="space-y-4 bg-white/5 p-4 rounded-xl border border-white/10">
-                         <Label className="text-xs font-black uppercase tracking-widest text-[#00FFFF]">Main Product Image (Thumbnail)</Label>
-                         <div className="relative w-full h-32 rounded-xl border-2 border-dashed border-[#00FFFF]/40 bg-[#00FFFF]/5 flex items-center justify-center overflow-hidden cursor-pointer group">
-                           <input type="file" accept="image/*" onChange={handleImageUpload} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" />
-                           {formData.image && formData.image.startsWith('data:') ? (
-                             <img src={formData.image} alt="Preview" className="w-full h-full object-cover" />
-                           ) : (
-                             <div className="text-center group-hover:scale-105 transition-transform"><UploadCloud className="w-6 h-6 text-[#00FFFF] mx-auto mb-2" /><span className="text-xs font-bold text-[#00FFFF]">Upload from Device</span></div>
-                           )}
+                       <form onSubmit={handleSaveProduct} className="flex flex-col gap-6 pb-20">
+                         
+                         {/* MAIN IMAGE */}
+                         <div className="space-y-4 bg-white/5 p-4 rounded-xl border border-white/10">
+                           <Label className="text-xs font-black uppercase tracking-widest text-[#00FFFF]">Main Product Image (Thumbnail)</Label>
+                           <div className="relative w-full h-32 rounded-xl border-2 border-dashed border-[#00FFFF]/40 bg-[#00FFFF]/5 flex items-center justify-center overflow-hidden cursor-pointer group">
+                             <input type="file" accept="image/*" onChange={handleImageUpload} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" />
+                             {formData.image && formData.image.startsWith('data:') ? (
+                               <img src={formData.image} alt="Preview" className="w-full h-full object-cover" />
+                             ) : (
+                               <div className="text-center group-hover:scale-105 transition-transform"><UploadCloud className="w-6 h-6 text-[#00FFFF] mx-auto mb-2" /><span className="text-xs font-bold text-[#00FFFF]">Upload from Device</span></div>
+                             )}
+                           </div>
+                           <div className="flex items-center gap-4"><div className="h-px bg-white/10 flex-1"></div><span className="text-[10px] text-muted-foreground uppercase font-black tracking-widest">OR</span><div className="h-px bg-white/10 flex-1"></div></div>
+                           <div className="space-y-2">
+                             <Label className="text-[10px] text-white/70">Paste Main Image Link (URL)</Label>
+                             <Input type="url" placeholder="https://..." value={formData.image && !formData.image.startsWith('data:') ? formData.image : ''} onChange={(e) => setFormData({...formData, image: e.target.value})} className="bg-black/50 border-white/20 text-xs focus-visible:border-[#00FFFF]" />
+                             {formData.image && !formData.image.startsWith('data:') && (
+                               <div className="mt-2 relative w-full h-24 rounded-lg overflow-hidden border border-white/10 bg-black/50">
+                                 <img src={formData.image} alt="URL Preview" className="w-full h-full object-cover" onError={(e) => { e.currentTarget.src = '/placeholder.jpg' }} />
+                               </div>
+                             )}
+                           </div>
                          </div>
-                         <div className="flex items-center gap-4"><div className="h-px bg-white/10 flex-1"></div><span className="text-[10px] text-muted-foreground uppercase font-black tracking-widest">OR</span><div className="h-px bg-white/10 flex-1"></div></div>
-                         <div className="space-y-2">
-                           <Label className="text-[10px] text-white/70">Paste Main Image Link (URL)</Label>
-                           <Input type="url" placeholder="https://..." value={formData.image && !formData.image.startsWith('data:') ? formData.image : ''} onChange={(e) => setFormData({...formData, image: e.target.value})} className="bg-black/50 border-white/20 text-xs focus-visible:border-[#00FFFF]" />
-                           {formData.image && !formData.image.startsWith('data:') && (
-                             <div className="mt-2 relative w-full h-24 rounded-lg overflow-hidden border border-white/10 bg-black/50">
-                               <img src={formData.image} alt="URL Preview" className="w-full h-full object-cover" onError={(e) => { e.currentTarget.src = '/placeholder.jpg' }} />
+
+                         {/* EXTRA GALLERY IMAGES */}
+                         <div className="space-y-4 bg-white/5 p-4 rounded-xl border border-white/10">
+                           <Label className="text-xs font-black uppercase tracking-widest text-[#CCFF00]">Extra Photos (For Details Page)</Label>
+                           
+                           {formData.galleryImages.length > 0 && (
+                             <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
+                               {formData.galleryImages.map((img, i) => (
+                                 <div key={i} className="relative w-20 h-20 shrink-0 rounded-lg overflow-hidden border border-white/20">
+                                   <img src={img} alt={`Gallery ${i}`} className="w-full h-full object-cover" />
+                                   <button type="button" onClick={() => removeGalleryImage(i)} className="absolute top-1 right-1 bg-red-500 rounded-full p-1 text-white hover:scale-110"><XCircle className="w-3 h-3" /></button>
+                                 </div>
+                               ))}
                              </div>
                            )}
-                         </div>
-                       </div>
 
-                       {/* 🔥 NAYA: EXTRA GALLERY IMAGES */}
-                       <div className="space-y-4 bg-white/5 p-4 rounded-xl border border-white/10">
-                         <Label className="text-xs font-black uppercase tracking-widest text-[#CCFF00]">Extra Photos (For Details Page)</Label>
-                         
-                         {/* Show existing gallery images */}
-                         {formData.galleryImages.length > 0 && (
-                           <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
-                             {formData.galleryImages.map((img, i) => (
-                               <div key={i} className="relative w-20 h-20 shrink-0 rounded-lg overflow-hidden border border-white/20">
-                                 <img src={img} alt={`Gallery ${i}`} className="w-full h-full object-cover" />
-                                 <button type="button" onClick={() => removeGalleryImage(i)} className="absolute top-1 right-1 bg-red-500 rounded-full p-1 text-white hover:scale-110"><XCircle className="w-3 h-3" /></button>
-                               </div>
-                             ))}
+                           <div className="flex gap-2">
+                             <div className="relative flex-1 h-10 rounded-md border border-[#CCFF00]/40 bg-[#CCFF00]/5 flex items-center justify-center overflow-hidden cursor-pointer hover:bg-[#CCFF00]/10 transition-colors">
+                               <input type="file" multiple accept="image/*" onChange={handleGalleryUpload} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" />
+                               <span className="text-xs font-bold text-[#CCFF00] flex items-center gap-2"><UploadCloud className="w-4 h-4"/> Upload Multiple</span>
+                             </div>
                            </div>
-                         )}
-
-                         <div className="flex gap-2">
-                           <div className="relative flex-1 h-10 rounded-md border border-[#CCFF00]/40 bg-[#CCFF00]/5 flex items-center justify-center overflow-hidden cursor-pointer hover:bg-[#CCFF00]/10 transition-colors">
-                             <input type="file" multiple accept="image/*" onChange={handleGalleryUpload} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" />
-                             <span className="text-xs font-bold text-[#CCFF00] flex items-center gap-2"><UploadCloud className="w-4 h-4"/> Upload Multiple</span>
+                           <div className="flex gap-2">
+                             <Input type="url" placeholder="Paste extra image URL..." value={newGalleryUrl} onChange={(e) => setNewGalleryUrl(e.target.value)} className="bg-black/50 border-white/20 text-xs focus-visible:border-[#CCFF00] h-10 flex-1" />
+                             <Button type="button" onClick={addGalleryUrl} className="h-10 bg-white/10 text-white hover:bg-white/20 border border-white/20 px-3">Add URL</Button>
                            </div>
                          </div>
-                         <div className="flex gap-2">
-                           <Input type="url" placeholder="Paste extra image URL..." value={newGalleryUrl} onChange={(e) => setNewGalleryUrl(e.target.value)} className="bg-black/50 border-white/20 text-xs focus-visible:border-[#CCFF00] h-10 flex-1" />
-                           <Button type="button" onClick={addGalleryUrl} className="h-10 bg-white/10 text-white hover:bg-white/20 border border-white/20 px-3">Add URL</Button>
-                         </div>
-                       </div>
 
-                       {/* BASIC DETAILS */}
-                       <div className="space-y-4">
-                         <div className="flex gap-2 items-end">
-                           <div className="flex-1 space-y-2">
-                             <Label>Product Name</Label>
-                             <Input required value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className="bg-white/5 border-white/10" />
+                         {/* BASIC DETAILS */}
+                         <div className="space-y-4">
+                           <div className="flex gap-2 items-end">
+                             <div className="flex-1 space-y-2">
+                               <Label>Product Name</Label>
+                               <Input required value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className="bg-white/5 border-white/10" />
+                             </div>
+                             <Button type="button" onClick={generateAIDesc} className="bg-[#CCFF00] text-black h-10 px-3"><Zap className="w-4 h-4" /></Button>
                            </div>
-                           <Button type="button" onClick={generateAIDesc} className="bg-[#CCFF00] text-black h-10 px-3"><Zap className="w-4 h-4" /></Button>
-                         </div>
 
-                         {/* 🔥 NAYA: DESCRIPTION BOX */}
-                         <div className="space-y-2">
-                           <Label>Description / Specifications</Label>
-                           <textarea 
-                             value={formData.description} 
-                             onChange={e => setFormData({...formData, description: e.target.value})} 
-                             placeholder="Write details, ingredients, or specs here..." 
-                             className="w-full bg-white/5 border border-white/10 focus-visible:border-[#00FFFF] rounded-xl p-3 min-h-[100px] text-sm text-white resize-y"
-                           />
-                         </div>
-
-                         <div className="grid grid-cols-2 gap-4">
-                           <div className="space-y-2"><Label>Selling Price (₹)</Label><Input required type="number" value={formData.price} onChange={e => setFormData({...formData, price: e.target.value})} className="bg-white/5 border-white/10" /></div>
-                           <div className="space-y-2"><Label>MRP / Cut Price (₹)</Label><Input required type="number" value={formData.mrp} onChange={e => setFormData({...formData, mrp: e.target.value})} className="bg-white/5 border-white/10" /></div>
-                         </div>
-                         
-                         <div className="grid grid-cols-2 gap-4">
                            <div className="space-y-2">
-                             <Label>Category</Label>
-                             <select required value={formData.category} onChange={e => setFormData({...formData, category: e.target.value})} className="w-full h-10 bg-white/5 border border-white/10 rounded-md px-3 text-sm text-white focus:outline-none focus:border-[#00FFFF]">
-                               {displayCategories.map((catName: string, idx: number) => (
-                                 <option key={idx} value={catName} className="bg-black text-white">{catName}</option>
-                               ))}
-                             </select>
+                             <Label>Description / Specifications</Label>
+                             <textarea 
+                               value={formData.description} 
+                               onChange={e => setFormData({...formData, description: e.target.value})} 
+                               placeholder="Write details, ingredients, or specs here..." 
+                               className="w-full bg-white/5 border border-white/10 focus-visible:border-[#00FFFF] rounded-xl p-3 min-h-[100px] text-sm text-white resize-y"
+                             />
+                           </div>
+
+                           <div className="grid grid-cols-2 gap-4">
+                             <div className="space-y-2"><Label>Selling Price (₹)</Label><Input required type="number" value={formData.price} onChange={e => setFormData({...formData, price: e.target.value})} className="bg-white/5 border-white/10" /></div>
+                             <div className="space-y-2"><Label>MRP / Cut Price (₹)</Label><Input required type="number" value={formData.mrp} onChange={e => setFormData({...formData, mrp: e.target.value})} className="bg-white/5 border-white/10" /></div>
                            </div>
                            
-                           {/* 🔥 NAYA: VEG/NON-VEG SELECTOR */}
-                           <div className="space-y-2">
-                             <Label>Food Type</Label>
-                             <select required value={formData.foodPref} onChange={e => setFormData({...formData, foodPref: e.target.value as any})} className="w-full h-10 bg-white/5 border border-white/10 rounded-md px-3 text-sm text-white focus:outline-none focus:border-[#00FFFF]">
-                               <option value="none" className="bg-black text-white">None (Gadgets)</option>
-                               <option value="veg" className="bg-black text-green-400">Vegetarian 🟢</option>
-                               <option value="non-veg" className="bg-black text-red-400">Non-Veg 🔴</option>
-                             </select>
+                           <div className="grid grid-cols-2 gap-4">
+                             <div className="space-y-2">
+                               <Label>Category</Label>
+                               <select required value={formData.category} onChange={e => setFormData({...formData, category: e.target.value})} className="w-full h-10 bg-white/5 border border-white/10 rounded-md px-3 text-sm text-white focus:outline-none focus:border-[#00FFFF]">
+                                 {displayCategories.map((catName: string, idx: number) => (
+                                   <option key={idx} value={catName} className="bg-black text-white">{catName}</option>
+                                 ))}
+                               </select>
+                             </div>
+                             
+                             <div className="space-y-2">
+                               <Label>Food Type</Label>
+                               <select required value={formData.foodPref} onChange={e => setFormData({...formData, foodPref: e.target.value as any})} className="w-full h-10 bg-white/5 border border-white/10 rounded-md px-3 text-sm text-white focus:outline-none focus:border-[#00FFFF]">
+                                 <option value="none" className="bg-black text-white">None (Gadgets)</option>
+                                 <option value="veg" className="bg-black text-green-400">Vegetarian 🟢</option>
+                                 <option value="non-veg" className="bg-black text-red-400">Non-Veg 🔴</option>
+                               </select>
+                             </div>
                            </div>
                          </div>
-                       </div>
-                       <Button type="submit" className="w-full h-14 bg-[#00FFFF] text-black font-black hover:bg-[#00FFFF]/80 mt-4">{editingId ? 'UPDATE PRODUCT' : 'SAVE TO INVENTORY'}</Button>
-                     </form>
-                   </SheetContent>
-                 </Sheet>
+                         <Button type="submit" className="w-full h-14 bg-[#00FFFF] text-black font-black hover:bg-[#00FFFF]/80 mt-4">{editingId ? 'UPDATE PRODUCT' : 'SAVE TO INVENTORY'}</Button>
+                       </form>
+                     </SheetContent>
+                   </Sheet>
+                 </div>
                </div>
+               
+               {/* Mobile Magic Button (Visible only on small screens below ADD PRODUCT) */}
+               <Button onClick={handleMagicAddGroceries} variant="outline" className="w-full border-[#00FFFF]/50 text-[#00FFFF] hover:bg-[#00FFFF] hover:text-black font-black uppercase tracking-widest h-12 rounded-xl px-4 sm:hidden flex mt-4">
+                 <Zap className="w-4 h-4 mr-2" /> MAGIC ADD GROCERY
+               </Button>
                
                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 mt-6">
                  {products.map((product: any) => (
@@ -1204,7 +1233,6 @@ export default function AdminDashboard() {
                      <div className="relative h-40 w-full bg-white/5">
                        <img src={product.image || "/placeholder.jpg"} alt={product.name} className="object-cover w-full h-full" onError={(e) => { e.currentTarget.src = '/placeholder.jpg' }} />
                        
-                       {/* 🔥 NAYA: VEG/NON-VEG BADGE IN ADMIN PANEL */}
                        {product.foodPref === 'veg' && <div className="absolute top-2 left-2 bg-white rounded-sm p-0.5"><div className="w-3 h-3 border-2 border-green-600 flex items-center justify-center"><div className="w-1.5 h-1.5 bg-green-600 rounded-full"></div></div></div>}
                        {product.foodPref === 'non-veg' && <div className="absolute top-2 left-2 bg-white rounded-sm p-0.5"><div className="w-3 h-3 border-2 border-red-600 flex items-center justify-center"><div className="w-1.5 h-1.5 bg-red-600 rounded-full"></div></div></div>}
 
