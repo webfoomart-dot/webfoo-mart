@@ -80,7 +80,8 @@ export default function AdminDashboard() {
   
   const [formData, setFormData] = React.useState({
     name: '', price: '', mrp: '', category: '', image: '', inStock: true,
-    description: '', galleryImages: [] as string[], foodPref: 'none' as 'veg' | 'non-veg' | 'none'
+    description: '', galleryImages: [] as string[], foodPref: 'none' as 'veg' | 'non-veg' | 'none',
+    sort_order: 99 // 🔥 NAYA ADD KIYA
   })
 
   // 🔥 NAYA: AI Search Auto-Fill State
@@ -405,7 +406,8 @@ export default function AdminDashboard() {
     e.preventDefault()
     const productPayload = { 
       name: formData.name, price: Number(formData.price), mrp: Number(formData.mrp), category: formData.category, image: formData.image || '/placeholder.jpg', inStock: formData.inStock,
-      description: formData.description, galleryImages: formData.galleryImages, foodPref: formData.foodPref
+      description: formData.description, galleryImages: formData.galleryImages, foodPref: formData.foodPref,
+      sort_order: Number(formData.sort_order) // 🔥 NAYA ADD KIYA (Payload me pass kiya)
     }
     if (editingId) updateProduct(editingId, productPayload)
     else addProduct(productPayload)
@@ -416,14 +418,15 @@ export default function AdminDashboard() {
     setEditingId(product.id); 
     setFormData({ 
       name: product.name, price: product.price.toString(), mrp: product.mrp.toString(), category: product.category, image: product.image, inStock: product.inStock,
-      description: product.description || '', galleryImages: product.galleryImages || [], foodPref: product.foodPref || 'none'
+      description: product.description || '', galleryImages: product.galleryImages || [], foodPref: product.foodPref || 'none',
+      sort_order: product.sort_order !== undefined ? product.sort_order : 99 // 🔥 NAYA ADD KIYA
     }); 
     setIsProductSheetOpen(true) 
   }
 
   const resetForm = () => { 
     setEditingId(null); 
-    setFormData({ name: '', price: '', mrp: '', category: displayCategories[0], image: '', inStock: true, description: '', galleryImages: [], foodPref: 'none' });
+    setFormData({ name: '', price: '', mrp: '', category: displayCategories[0], image: '', inStock: true, description: '', galleryImages: [], foodPref: 'none', sort_order: 99 }); // 🔥 UPDATE KIYA
     setNewGalleryUrl(''); 
     setAiSearchQuery(''); // Reset search query on close
   }
@@ -1247,6 +1250,13 @@ export default function AdminDashboard() {
                                </select>
                              </div>
                            </div>
+                           
+                           {/* 🔥 NAYA ADD KIYA - SORT ORDER / RANK */}
+                           <div className="space-y-2 mt-4 pt-4 border-t border-white/10">
+                             <Label className="flex items-center gap-2">Sort Order / Rank <span className="text-[10px] text-muted-foreground normal-case font-normal">(1 = Top, 99 = Bottom)</span></Label>
+                             <Input required type="number" min="0" value={formData.sort_order} onChange={e => setFormData({...formData, sort_order: Number(e.target.value)})} className="bg-white/5 border-white/10 w-full" />
+                           </div>
+
                          </div>
                          <Button type="submit" className="w-full h-14 bg-[#00FFFF] text-black font-black hover:bg-[#00FFFF]/80 mt-4">{editingId ? 'UPDATE PRODUCT' : 'SAVE TO INVENTORY'}</Button>
                        </form>
@@ -1271,7 +1281,11 @@ export default function AdminDashboard() {
                        </div>
                      </div>
                      <CardContent className="p-4">
-                       <div className="flex justify-between items-start mb-2"><p className="text-[10px] text-muted-foreground uppercase tracking-widest">{product.category}</p><button onClick={() => toggleStock(product.id)} className={`text-[10px] font-bold px-2 py-0.5 rounded border uppercase flex items-center gap-1 ${product.inStock ? 'text-green-400 border-green-400/30 bg-green-400/10' : 'text-red-400 border-red-400/30 bg-red-400/10'}`}>{product.inStock ? 'In Stock' : 'Out'}</button></div>
+                       <div className="flex justify-between items-start mb-2">
+                         {/* 🔥 NAYA ADD KIYA - CARD ME RANK */}
+                         <p className="text-[10px] text-muted-foreground uppercase tracking-widest">{product.category} <span className="text-[#00FFFF]">| Rank: {product.sort_order ?? 99}</span></p>
+                         <button onClick={() => toggleStock(product.id)} className={`text-[10px] font-bold px-2 py-0.5 rounded border uppercase flex items-center gap-1 ${product.inStock ? 'text-green-400 border-green-400/30 bg-green-400/10' : 'text-red-400 border-red-400/30 bg-red-400/10'}`}>{product.inStock ? 'In Stock' : 'Out'}</button>
+                       </div>
                        <h3 className="font-bold text-white text-sm leading-tight truncate">{product.name}</h3>
                        <div className="flex items-center gap-2 mt-2"><span className="font-mono font-black text-[#00FFFF]">₹{product.price}</span>{product.mrp > product.price && <span className="text-xs text-muted-foreground line-through font-mono">₹{product.mrp}</span>}</div>
                      </CardContent>
