@@ -429,20 +429,6 @@ export default function AdminDashboard() {
     setNewGalleryUrl(''); 
   }
 
-  // 🔥 NAYA: In-Category Up/Down Sorting Logic
-  const handleReorderProduct = async (product: any, direction: 'up' | 'down') => {
-    const catProducts = products.filter((p:any) => p.category === selectedCategoryView).sort((a:any, b:any) => (a.sort_order ?? 999) - (b.sort_order ?? 999));
-    const index = catProducts.findIndex((p:any) => p.id === product.id);
-    
-    if (direction === 'up' && index > 0) {
-        const temp = catProducts[index]; catProducts[index] = catProducts[index - 1]; catProducts[index - 1] = temp;
-    } else if (direction === 'down' && index < catProducts.length - 1) {
-        const temp = catProducts[index]; catProducts[index] = catProducts[index + 1]; catProducts[index + 1] = temp;
-    } else { return; }
-
-    catProducts.forEach((p:any, i:number) => { updateProduct(p.id, { sort_order: i + 1 }); });
-  }
-
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (file) { const reader = new FileReader(); reader.onloadend = () => setFormData({ ...formData, image: reader.result as string }); reader.readAsDataURL(file) }
@@ -1119,7 +1105,7 @@ export default function AdminDashboard() {
 
                          {/* EXTRA GALLERY IMAGES */}
                          <div className="space-y-4 bg-white/5 p-4 rounded-xl border border-white/10">
-                           <Label className="text-xs font-black uppercase tracking-widest text-[#CCFF00]">Extra Photos (For Details Page)</Label>
+                           <Label className="text-xs font-black uppercase tracking-widest text-[#CCFF00]">Extra Photos</Label>
                            {formData.galleryImages.length > 0 && (<div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">{formData.galleryImages.map((img, i) => (<div key={i} className="relative w-20 h-20 shrink-0 rounded-lg overflow-hidden border border-white/20"><img src={img} alt={`Gallery ${i}`} className="w-full h-full object-cover" /><button type="button" onClick={() => removeGalleryImage(i)} className="absolute top-1 right-1 bg-red-500 rounded-full p-1 text-white hover:scale-110"><XCircle className="w-3 h-3" /></button></div>))}</div>)}
                            <div className="flex gap-2"><div className="relative flex-1 h-10 rounded-md border border-[#CCFF00]/40 bg-[#CCFF00]/5 flex items-center justify-center overflow-hidden cursor-pointer hover:bg-[#CCFF00]/10 transition-colors"><input type="file" multiple accept="image/*" onChange={handleGalleryUpload} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" /><span className="text-xs font-bold text-[#CCFF00] flex items-center gap-2"><UploadCloud className="w-4 h-4"/> Upload Multiple</span></div></div>
                            <div className="flex gap-2"><Input type="url" placeholder="Paste extra image URL..." value={newGalleryUrl} onChange={(e) => setNewGalleryUrl(e.target.value)} className="bg-black/50 border-white/20 text-xs focus-visible:border-[#CCFF00] h-10 flex-1" /><Button type="button" onClick={addGalleryUrl} className="h-10 bg-white/10 text-white hover:bg-white/20 border border-white/20 px-3">Add URL</Button></div>
@@ -1128,8 +1114,8 @@ export default function AdminDashboard() {
                          {/* BASIC DETAILS */}
                          <div className="space-y-4">
                            <div className="space-y-2"><Label>Product Name</Label><Input required value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className="bg-white/5 border-white/10" /></div>
-                           <div className="space-y-2"><Label>Description / Specifications</Label><textarea value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} placeholder="Write details, ingredients, or specs here..." className="w-full bg-white/5 border border-white/10 focus-visible:border-[#00FFFF] rounded-xl p-3 min-h-[100px] text-sm text-white resize-y" /></div>
-                           <div className="grid grid-cols-2 gap-4"><div className="space-y-2"><Label>Selling Price (₹)</Label><Input required type="number" value={formData.price} onChange={e => setFormData({...formData, price: e.target.value})} className="bg-white/5 border-white/10" /></div><div className="space-y-2"><Label>MRP / Cut Price (₹)</Label><Input required type="number" value={formData.mrp} onChange={e => setFormData({...formData, mrp: e.target.value})} className="bg-white/5 border-white/10" /></div></div>
+                           <div className="space-y-2"><Label>Description / Specifications</Label><textarea value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} placeholder="Write details here..." className="w-full bg-white/5 border border-white/10 focus-visible:border-[#00FFFF] rounded-xl p-3 min-h-[100px] text-sm text-white resize-y" /></div>
+                           <div className="grid grid-cols-2 gap-4"><div className="space-y-2"><Label>Selling Price (₹)</Label><Input required type="number" value={formData.price} onChange={e => setFormData({...formData, price: e.target.value})} className="bg-white/5 border-white/10" /></div><div className="space-y-2"><Label>MRP (₹)</Label><Input required type="number" value={formData.mrp} onChange={e => setFormData({...formData, mrp: e.target.value})} className="bg-white/5 border-white/10" /></div></div>
                            <div className="grid grid-cols-2 gap-4">
                              <div className="space-y-2"><Label>Category</Label><select required value={formData.category} onChange={e => setFormData({...formData, category: e.target.value})} className="w-full h-10 bg-white/5 border border-white/10 rounded-md px-3 text-sm text-white focus:outline-none focus:border-[#00FFFF]">{displayCategories.map((catName: string, idx: number) => (<option key={idx} value={catName} className="bg-black text-white">{catName}</option>))}</select></div>
                              <div className="space-y-2"><Label>Food Type</Label><select required value={formData.foodPref} onChange={e => setFormData({...formData, foodPref: e.target.value as any})} className="w-full h-10 bg-white/5 border border-white/10 rounded-md px-3 text-sm text-white focus:outline-none focus:border-[#00FFFF]"><option value="none" className="bg-black text-white">None (Gadgets)</option><option value="veg" className="bg-black text-green-400">Vegetarian 🟢</option><option value="non-veg" className="bg-black text-red-400">Non-Veg 🔴</option></select></div>
@@ -1142,6 +1128,7 @@ export default function AdminDashboard() {
                  </div>
                </div>
                
+               {/* FOLDER SYSTEM */}
                {!selectedCategoryView ? (
                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 mt-6">
                    {displayCategories.map((catName: string, idx: number) => {
@@ -1165,16 +1152,12 @@ export default function AdminDashboard() {
                      <Card key={product.id} className={`glass-strong border-white/10 overflow-hidden group transition-all ${!product.inStock ? 'opacity-60 grayscale' : 'hover:border-[#00FFFF]/30'}`}>
                        <div className="relative h-40 w-full bg-white/5">
                          <img src={product.image || "/placeholder.jpg"} alt={product.name} className="object-cover w-full h-full" onError={(e) => { e.currentTarget.src = '/placeholder.jpg' }} />
-                         
                          {product.foodPref === 'veg' && <div className="absolute top-2 left-2 bg-white rounded-sm p-0.5"><div className="w-3 h-3 border-2 border-green-600 flex items-center justify-center"><div className="w-1.5 h-1.5 bg-green-600 rounded-full"></div></div></div>}
                          {product.foodPref === 'non-veg' && <div className="absolute top-2 left-2 bg-white rounded-sm p-0.5"><div className="w-3 h-3 border-2 border-red-600 flex items-center justify-center"><div className="w-1.5 h-1.5 bg-red-600 rounded-full"></div></div></div>}
-
                          {!product.inStock && <div className="absolute inset-0 bg-black/60 flex items-center justify-center z-10"><span className="bg-red-500 text-white font-black text-[10px] px-2 py-1 uppercase rounded">Out of Stock</span></div>}
+                         
+                         {/* NO ARROWS HERE ANYMORE - JUST EDIT & DELETE */}
                          <div className="absolute top-2 right-2 flex flex-col gap-1 z-20 opacity-0 group-hover:opacity-100 transition-opacity">
-                           <div className="flex gap-1 mb-2">
-                             <button onClick={(e) => { e.stopPropagation(); handleReorderProduct(product, 'up') }} className="w-8 h-8 rounded-full bg-black/90 border border-[#00FFFF]/50 flex items-center justify-center text-[#00FFFF] shadow-[0_0_10px_rgba(0,255,255,0.2)] hover:bg-[#00FFFF] hover:text-black transition-all"><ArrowUp className="w-4 h-4" /></button>
-                             <button onClick={(e) => { e.stopPropagation(); handleReorderProduct(product, 'down') }} className="w-8 h-8 rounded-full bg-black/90 border border-[#00FFFF]/50 flex items-center justify-center text-[#00FFFF] shadow-[0_0_10px_rgba(0,255,255,0.2)] hover:bg-[#00FFFF] hover:text-black transition-all"><ArrowDown className="w-4 h-4" /></button>
-                           </div>
                            <div className="flex gap-1">
                              <button onClick={(e) => { e.stopPropagation(); openEdit(product) }} className="w-8 h-8 rounded-full bg-black/90 border border-[#CCFF00]/50 flex items-center justify-center text-[#CCFF00] shadow-[0_0_10px_rgba(204,255,0,0.2)] hover:bg-[#CCFF00] hover:text-black transition-all"><Edit className="w-4 h-4" /></button>
                              <button onClick={(e) => { e.stopPropagation(); if(confirm("Delete this product?")) deleteProduct(product.id) }} className="w-8 h-8 rounded-full bg-black/90 border border-red-500/50 flex items-center justify-center text-red-500 shadow-[0_0_10px_rgba(255,0,0,0.2)] hover:bg-red-500 hover:text-white transition-all"><Trash2 className="w-4 h-4" /></button>
@@ -1191,6 +1174,7 @@ export default function AdminDashboard() {
                        </CardContent>
                      </Card>
                    ))}
+                   {products.filter((p:any) => p.category === selectedCategoryView).length === 0 && <div className="col-span-full py-10 text-center opacity-50"><p className="text-xs uppercase tracking-widest font-bold">No items in this category yet.</p></div>}
                  </div>
                )}
              </motion.div>
