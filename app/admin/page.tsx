@@ -35,9 +35,8 @@ const MENU_ITEMS = [
 ]
 
 const ADMIN_CATEGORIES = [
-  "Groceries & Staples", "Fast Food", "Snacks & Namkeen", "Cold Drinks", 
-  "Dairy & Milk", "Chocolates & Cakes", "Stationery", "Party & Birthdays", 
-  "Fashion & Clothes", "Electronics"
+   "Fast Food", "Cold Drinks", 
+   "Stationery","Electronics"
 ]
 
 const ADMIN_SECRET_PASSCODE = "WEBFOO99"
