@@ -34,12 +34,6 @@ const MENU_ITEMS = [
   { id: 'settings', label: 'Settings', icon: Settings }, 
 ]
 
-const ADMIN_CATEGORIES = [
-  "Groceries & Staples", "Fast Food", "Snacks & Namkeen", "Cold Drinks", 
-  "Dairy & Milk", "Chocolates & Cakes", "Stationery", "Party & Birthdays", 
-  "Fashion & Clothes", "Electronics"
-]
-
 const ADMIN_SECRET_PASSCODE = "WEBFOO99"
 
 // ⚠️ WARNING: YAHAN APNA ASLI SUPABASE URL AUR ANON KEY DAALNA ⚠️
@@ -149,12 +143,12 @@ export default function AdminDashboard() {
     }
   }, [storeConfig])
 
-  const dbCategoryNames = categories ? categories.map((c: any) => c.name) : [];
-  const displayCategories = Array.from(new Set([...ADMIN_CATEGORIES, ...dbCategoryNames]));
+  // 🔥 YAHAN SE DUMMY LIST HATAYI AUR SIRF DATABASE CATEGORIES RAKHI
+  const displayCategories = categories ? Array.from(new Set(categories.map((c: any) => c.name))) : [];
 
   React.useEffect(() => {
     if (!formData.category && !editingId) {
-      setFormData(prev => ({ ...prev, category: selectedCategoryView || displayCategories[0] }))
+      setFormData(prev => ({ ...prev, category: selectedCategoryView || displayCategories[0] || '' }))
     }
   }, [displayCategories, formData.category, editingId, selectedCategoryView])
 
@@ -425,7 +419,7 @@ export default function AdminDashboard() {
 
   const resetForm = () => { 
     setEditingId(null); 
-    setFormData({ name: '', price: '', mrp: '', category: selectedCategoryView || displayCategories[0], image: '', inStock: true, description: '', galleryImages: [], foodPref: 'none', sort_order: 999 }); 
+    setFormData({ name: '', price: '', mrp: '', category: selectedCategoryView || displayCategories[0] || '', image: '', inStock: true, description: '', galleryImages: [], foodPref: 'none', sort_order: 999 }); 
     setNewGalleryUrl(''); 
   }
 
@@ -592,7 +586,7 @@ export default function AdminDashboard() {
                       ))}
                       {categories.length === 0 && (
                          <p className="text-[10px] text-muted-foreground uppercase tracking-widest text-center py-4">
-                           No categories added yet. Default ones are shown at bottom. <br/>Add a category here to control its rank & image!
+                           No categories added yet. Add a category here!
                          </p>
                       )}
                     </div>
@@ -1133,7 +1127,6 @@ export default function AdminDashboard() {
                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 mt-6">
                    {displayCategories.map((catName: string, idx: number) => {
                      const itemCount = products.filter((p:any) => p.category === catName).length;
-                     if(itemCount === 0 && !ADMIN_CATEGORIES.includes(catName)) return null; 
                      return (
                        <Card key={idx} onClick={() => setSelectedCategoryView(catName)} className="glass-strong border-white/10 hover:border-[#00FFFF]/50 hover:shadow-[0_0_20px_rgba(0,255,255,0.1)] transition-all cursor-pointer group">
                          <CardContent className="p-6 flex flex-col items-center justify-center text-center h-32 relative overflow-hidden">
@@ -1148,7 +1141,7 @@ export default function AdminDashboard() {
                  </div>
                ) : (
                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 mt-6">
-                   {products.filter((p:any) => p.category === selectedCategoryView).sort((a:any, b:any) => (a.sort_order ?? 999) - (b.sort_order ?? 999)).map((product: any, itemIndex: number) => (
+                   {products.filter((p:any) => p.category === selectedCategoryView).map((product: any, itemIndex: number) => (
                      <Card key={product.id} className={`glass-strong border-white/10 overflow-hidden group transition-all ${!product.inStock ? 'opacity-60 grayscale' : 'hover:border-[#00FFFF]/30'}`}>
                        <div className="relative h-40 w-full bg-white/5">
                          <img src={product.image || "/placeholder.jpg"} alt={product.name} className="object-cover w-full h-full" onError={(e) => { e.currentTarget.src = '/placeholder.jpg' }} />
@@ -1156,7 +1149,6 @@ export default function AdminDashboard() {
                          {product.foodPref === 'non-veg' && <div className="absolute top-2 left-2 bg-white rounded-sm p-0.5"><div className="w-3 h-3 border-2 border-red-600 flex items-center justify-center"><div className="w-1.5 h-1.5 bg-red-600 rounded-full"></div></div></div>}
                          {!product.inStock && <div className="absolute inset-0 bg-black/60 flex items-center justify-center z-10"><span className="bg-red-500 text-white font-black text-[10px] px-2 py-1 uppercase rounded">Out of Stock</span></div>}
                          
-                         {/* NO ARROWS HERE ANYMORE - JUST EDIT & DELETE */}
                          <div className="absolute top-2 right-2 flex flex-col gap-1 z-20 opacity-0 group-hover:opacity-100 transition-opacity">
                            <div className="flex gap-1">
                              <button onClick={(e) => { e.stopPropagation(); openEdit(product) }} className="w-8 h-8 rounded-full bg-black/90 border border-[#CCFF00]/50 flex items-center justify-center text-[#CCFF00] shadow-[0_0_10px_rgba(204,255,0,0.2)] hover:bg-[#CCFF00] hover:text-black transition-all"><Edit className="w-4 h-4" /></button>
@@ -1166,7 +1158,7 @@ export default function AdminDashboard() {
                        </div>
                        <CardContent className="p-4">
                          <div className="flex justify-between items-start mb-2">
-                           <p className="text-[10px] text-muted-foreground uppercase tracking-widest flex items-center gap-1">Rank <Badge variant="outline" className="text-[#00FFFF] border-[#00FFFF]/30 bg-[#00FFFF]/10 px-1 ml-1">{itemIndex + 1}</Badge></p>
+                           <p className="text-[10px] text-muted-foreground uppercase tracking-widest flex items-center gap-1">{product.category}</p>
                            <button onClick={() => toggleStock(product.id)} className={`text-[10px] font-bold px-2 py-0.5 rounded border uppercase flex items-center gap-1 ${product.inStock ? 'text-green-400 border-green-400/30 bg-green-400/10' : 'text-red-400 border-red-400/30 bg-red-400/10'}`}>{product.inStock ? 'In Stock' : 'Out'}</button>
                          </div>
                          <h3 className="font-bold text-white text-sm leading-tight truncate">{product.name}</h3>
