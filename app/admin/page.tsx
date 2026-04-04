@@ -34,12 +34,6 @@ const MENU_ITEMS = [
   { id: 'settings', label: 'Settings', icon: Settings }, 
 ]
 
-const ADMIN_CATEGORIES = [
-  "Groceries & Staples", "Fast Food", "Snacks & Namkeen", "Cold Drinks", 
-  "Dairy & Milk", "Chocolates & Cakes", "Stationery", "Party & Birthdays", 
-  "Fashion & Clothes", "Electronics"
-]
-
 const ADMIN_SECRET_PASSCODE = "WEBFOO99"
 
 // ⚠️ WARNING: YAHAN APNA ASLI SUPABASE URL AUR ANON KEY DAALNA ⚠️
@@ -83,8 +77,7 @@ export default function AdminDashboard() {
 
   const [formData, setFormData] = React.useState({
     name: '', price: '', mrp: '', category: '', image: '', inStock: true,
-    description: '', galleryImages: [] as string[], foodPref: 'none' as 'veg' | 'non-veg' | 'none',
-    sort_order: 999 
+    description: '', galleryImages: [] as string[], foodPref: 'none' as 'veg' | 'non-veg' | 'none'
   })
 
   const [newGalleryUrl, setNewGalleryUrl] = React.useState('') 
@@ -149,8 +142,7 @@ export default function AdminDashboard() {
     }
   }, [storeConfig])
 
-  const dbCategoryNames = categories ? categories.map((c: any) => c.name) : [];
-  const displayCategories = Array.from(new Set([...ADMIN_CATEGORIES, ...dbCategoryNames]));
+  const displayCategories = categories ? Array.from(new Set(categories.map((c: any) => c.name))) : [];
 
   React.useEffect(() => {
     if (!formData.category && !editingId) {
@@ -405,8 +397,7 @@ export default function AdminDashboard() {
     e.preventDefault()
     const productPayload = { 
       name: formData.name, price: Number(formData.price), mrp: Number(formData.mrp), category: formData.category, image: formData.image || '/placeholder.jpg', inStock: formData.inStock,
-      description: formData.description, galleryImages: formData.galleryImages, foodPref: formData.foodPref,
-      sort_order: formData.sort_order ?? 999 
+      description: formData.description, galleryImages: formData.galleryImages, foodPref: formData.foodPref
     }
     if (editingId) updateProduct(editingId, productPayload)
     else addProduct(productPayload)
@@ -417,15 +408,14 @@ export default function AdminDashboard() {
     setEditingId(product.id); 
     setFormData({ 
       name: product.name, price: product.price.toString(), mrp: product.mrp.toString(), category: product.category, image: product.image, inStock: product.inStock,
-      description: product.description || '', galleryImages: product.galleryImages || [], foodPref: product.foodPref || 'none',
-      sort_order: product.sort_order !== undefined ? product.sort_order : 999
+      description: product.description || '', galleryImages: product.galleryImages || [], foodPref: product.foodPref || 'none'
     }); 
     setIsProductSheetOpen(true) 
   }
 
   const resetForm = () => { 
     setEditingId(null); 
-    setFormData({ name: '', price: '', mrp: '', category: (selectedCategoryView || displayCategories[0] || '') as string, image: '', inStock: true, description: '', galleryImages: [], foodPref: 'none', sort_order: 999 }); 
+    setFormData({ name: '', price: '', mrp: '', category: (selectedCategoryView || displayCategories[0] || '') as string, image: '', inStock: true, description: '', galleryImages: [], foodPref: 'none' }); 
     setNewGalleryUrl(''); 
   }
 
@@ -592,7 +582,7 @@ export default function AdminDashboard() {
                       ))}
                       {categories.length === 0 && (
                          <p className="text-[10px] text-muted-foreground uppercase tracking-widest text-center py-4">
-                           No categories added yet. Add a category here!
+                           No categories added yet. Default ones are shown at bottom. <br/>Add a category here to control its rank & image!
                          </p>
                       )}
                     </div>
@@ -1120,13 +1110,6 @@ export default function AdminDashboard() {
                              <div className="space-y-2"><Label>Category</Label><select required value={formData.category} onChange={e => setFormData({...formData, category: e.target.value})} className="w-full h-10 bg-white/5 border border-white/10 rounded-md px-3 text-sm text-white focus:outline-none focus:border-[#00FFFF]">{displayCategories.map((catName: string, idx: number) => (<option key={idx} value={catName} className="bg-black text-white">{catName}</option>))}</select></div>
                              <div className="space-y-2"><Label>Food Type</Label><select required value={formData.foodPref} onChange={e => setFormData({...formData, foodPref: e.target.value as any})} className="w-full h-10 bg-white/5 border border-white/10 rounded-md px-3 text-sm text-white focus:outline-none focus:border-[#00FFFF]"><option value="none" className="bg-black text-white">None (Gadgets)</option><option value="veg" className="bg-black text-green-400">Vegetarian 🟢</option><option value="non-veg" className="bg-black text-red-400">Non-Veg 🔴</option></select></div>
                            </div>
-                           
-                           {/* 🔥 SORT ORDER / RANK INPUT WAPAS LAYA */}
-                           <div className="space-y-2 mt-4 pt-4 border-t border-white/10">
-                             <Label className="flex items-center gap-2">Sort Order / Rank <span className="text-[10px] text-muted-foreground normal-case font-normal">(1 = Top, 999 = Bottom)</span></Label>
-                             <Input required type="number" min="0" value={formData.sort_order} onChange={e => setFormData({...formData, sort_order: Number(e.target.value)})} className="bg-white/5 border-white/10 w-full" />
-                           </div>
-
                          </div>
                          <Button type="submit" className="w-full h-14 bg-[#00FFFF] text-black font-black hover:bg-[#00FFFF]/80 mt-4">{editingId ? 'UPDATE PRODUCT' : 'SAVE TO INVENTORY'}</Button>
                        </form>
@@ -1154,7 +1137,7 @@ export default function AdminDashboard() {
                  </div>
                ) : (
                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 mt-6">
-                   {products.filter((p:any) => p.category === selectedCategoryView).map((product: any, itemIndex: number) => (
+                   {products.filter((p:any) => p.category === selectedCategoryView).map((product: any) => (
                      <Card key={product.id} className={`glass-strong border-white/10 overflow-hidden group transition-all ${!product.inStock ? 'opacity-60 grayscale' : 'hover:border-[#00FFFF]/30'}`}>
                        <div className="relative h-40 w-full bg-white/5">
                          <img src={product.image || "/placeholder.jpg"} alt={product.name} className="object-cover w-full h-full" onError={(e) => { e.currentTarget.src = '/placeholder.jpg' }} />
@@ -1162,7 +1145,6 @@ export default function AdminDashboard() {
                          {product.foodPref === 'non-veg' && <div className="absolute top-2 left-2 bg-white rounded-sm p-0.5"><div className="w-3 h-3 border-2 border-red-600 flex items-center justify-center"><div className="w-1.5 h-1.5 bg-red-600 rounded-full"></div></div></div>}
                          {!product.inStock && <div className="absolute inset-0 bg-black/60 flex items-center justify-center z-10"><span className="bg-red-500 text-white font-black text-[10px] px-2 py-1 uppercase rounded">Out of Stock</span></div>}
                          
-                         {/* 🔥 FIX: BUTTONS HAMESHA DIKHENGE (No Opacity Hover) */}
                          <div className="absolute top-2 right-2 flex gap-2 z-20">
                            <button onClick={(e) => { e.stopPropagation(); openEdit(product) }} className="w-8 h-8 rounded-full bg-black/90 border border-[#00FFFF]/50 flex items-center justify-center text-[#00FFFF] shadow-[0_0_10px_rgba(0,255,255,0.2)] hover:bg-[#00FFFF] hover:text-black transition-all"><Edit className="w-4 h-4" /></button>
                            <button onClick={(e) => { e.stopPropagation(); if(confirm("Delete this product?")) deleteProduct(product.id) }} className="w-8 h-8 rounded-full bg-black/90 border border-red-500/50 flex items-center justify-center text-red-500 shadow-[0_0_10px_rgba(255,0,0,0.2)] hover:bg-red-500 hover:text-white transition-all"><Trash2 className="w-4 h-4" /></button>
