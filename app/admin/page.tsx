@@ -9,7 +9,7 @@ import {
   MapPin, Phone, Truck, XCircle, Plus, UploadCloud, Trash2, Edit, PowerOff, Power,
   Star, Ban, MessageCircle, FileText, Send, CheckSquare, Square, Smartphone,
   TrendingUp, Target, BarChart, ShieldAlert, LockKeyhole, Calendar, Settings, AlertTriangle, MoonStar, LayoutGrid,
-  ArrowUp, ArrowDown, Palette, Volume2
+  ArrowUp, ArrowDown, Palette, Volume2, Wallet
 } from "lucide-react"
 import { createClient } from '@supabase/supabase-js' 
 
@@ -24,6 +24,7 @@ import { Badge } from "@/components/ui/badge"
 
 const MENU_ITEMS = [
   { id: 'analytics', label: 'Analytics', icon: LayoutDashboard },
+  { id: 'billing', label: 'Supplier Bill', icon: Wallet }, // 🔥 NAYA TAB
   { id: 'live_orders', label: 'Live Orders', icon: Zap },
   { id: 'order_history', label: 'Order History', icon: History }, 
   { id: 'products', label: 'Products', icon: PackageIcon },
@@ -69,7 +70,10 @@ export default function AdminDashboard() {
   const [analyticsFilter, setAnalyticsFilter] = React.useState('all')
   const [customDate, setCustomDate] = React.useState('')
 
-  // 🔥 NAYA: Order History Filter State
+  // 🔥 NAYA: Billing Filter State
+  const [billingFilter, setBillingFilter] = React.useState('today')
+  const [billingCustomDate, setBillingCustomDate] = React.useState('')
+
   const [historyFilter, setHistoryFilter] = React.useState('all')
   const [historyCustomDate, setHistoryCustomDate] = React.useState('')
 
@@ -79,7 +83,7 @@ export default function AdminDashboard() {
   const [selectedCategoryView, setSelectedCategoryView] = React.useState<string | null>(null)
 
   const [formData, setFormData] = React.useState({
-    name: '', price: '', mrp: '', category: '', image: '', inStock: true,
+    name: '', price: '', mrp: '', cost_price: '', category: '', image: '', inStock: true,
     description: '', galleryImages: [] as string[], foodPref: 'none' as 'veg' | 'non-veg' | 'none'
   })
 
@@ -176,6 +180,33 @@ export default function AdminDashboard() {
       return true;
     });
   }, [orders, analyticsFilter, customDate]);
+
+  // 🔥 NAYA: Billing Orders Filter Logic
+  const filteredBillingOrders = React.useMemo(() => {
+    const deliveredOnly = orders.filter((o: any) => o.status === 'Delivered');
+    if (billingFilter === 'all') return deliveredOnly;
+
+    const getLocalYYYYMMDD = (d: Date) => {
+      const offset = d.getTimezoneOffset() * 60000;
+      return new Date(d.getTime() - offset).toISOString().split('T')[0];
+    }
+    const today = new Date();
+    const todayStr = getLocalYYYYMMDD(today);
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+    const yesterdayStr = getLocalYYYYMMDD(yesterday);
+
+    return deliveredOnly.filter((o: any) => {
+      let orderDateStr = o.date;
+      if (!orderDateStr && o.id && !isNaN(Number(o.id))) {
+        orderDateStr = getLocalYYYYMMDD(new Date(Number(o.id)));
+      }
+      if (billingFilter === 'today') return orderDateStr === todayStr;
+      if (billingFilter === 'yesterday') return orderDateStr === yesterdayStr;
+      if (billingFilter === 'custom') return orderDateStr === billingCustomDate;
+      return true;
+    });
+  }, [orders, billingFilter, billingCustomDate]);
 
   const handleAdminAccess = (e: React.FormEvent) => {
     e.preventDefault()
@@ -279,7 +310,6 @@ export default function AdminDashboard() {
 
   const liveOrders = orders.filter((o: any) => o.status === 'Pending' || o.status === 'In Transit').reverse()
   
-  // 🔥 NAYA: Filtered Order History
   const filteredOrderHistory = React.useMemo(() => {
     const baseHistory = orders.filter((o: any) => o.status === 'Delivered' || o.status === 'Cancelled').reverse();
     if (historyFilter === 'all') return baseHistory;
@@ -361,6 +391,34 @@ export default function AdminDashboard() {
   })
   const topProducts = Array.from(productSales.entries()).map(([name, data]) => ({ name, ...data as {qty: number, revenue: number} })).sort((a, b) => b.qty - a.qty).slice(0, 5)
 
+  // 🔥 NAYA: Billing Computations
+  let totalSupplierCost = 0;
+  let totalBilledRevenue = 0;
+  const billedItemsMap = new Map();
+
+  filteredBillingOrders.forEach((order: any) => {
+    totalBilledRevenue += order.amount;
+    order.items.forEach((item: any) => {
+      // Find actual cost from products list
+      const invItem = products.find((p:any) => p.name === item.name);
+      const costRate = invItem?.cost_price ? Number(invItem.cost_price) : 0;
+      const totalCostForItem = costRate * item.quantity;
+      
+      totalSupplierCost += totalCostForItem;
+
+      const current = billedItemsMap.get(item.name) || { qty: 0, totalCost: 0, costRate: costRate };
+      billedItemsMap.set(item.name, {
+        qty: current.qty + item.quantity,
+        totalCost: current.totalCost + totalCostForItem,
+        costRate: costRate
+      });
+    });
+  });
+
+  const totalBilledProfit = totalBilledRevenue - totalSupplierCost;
+  const billedItemsArray = Array.from(billedItemsMap.entries()).map(([name, data]) => ({ name, ...data as any })).sort((a, b) => b.totalCost - a.totalCost);
+
+
   const customersMap = new Map()
   Object.keys(customerMeta).forEach(phone => {
     const meta = customerMeta[phone]
@@ -425,7 +483,7 @@ export default function AdminDashboard() {
   const handleSaveProduct = (e: React.FormEvent) => {
     e.preventDefault()
     const productPayload = { 
-      name: formData.name, price: Number(formData.price), mrp: Number(formData.mrp), category: formData.category, image: formData.image || '/placeholder.jpg', inStock: formData.inStock,
+      name: formData.name, price: Number(formData.price), mrp: Number(formData.mrp), cost_price: Number(formData.cost_price), category: formData.category, image: formData.image || '/placeholder.jpg', inStock: formData.inStock,
       description: formData.description, galleryImages: formData.galleryImages, foodPref: formData.foodPref
     }
     if (editingId) updateProduct(editingId, productPayload)
@@ -436,7 +494,7 @@ export default function AdminDashboard() {
   const openEdit = (product: any) => { 
     setEditingId(product.id); 
     setFormData({ 
-      name: product.name, price: product.price.toString(), mrp: product.mrp.toString(), category: product.category, image: product.image, inStock: product.inStock,
+      name: product.name, price: product.price.toString(), mrp: product.mrp.toString(), cost_price: product.cost_price?.toString() || '', category: product.category, image: product.image, inStock: product.inStock,
       description: product.description || '', galleryImages: product.galleryImages || [], foodPref: product.foodPref || 'none'
     }); 
     setIsProductSheetOpen(true) 
@@ -444,7 +502,7 @@ export default function AdminDashboard() {
 
   const resetForm = () => { 
     setEditingId(null); 
-    setFormData({ name: '', price: '', mrp: '', category: (selectedCategoryView || displayCategories[0] || '') as string, image: '', inStock: true, description: '', galleryImages: [], foodPref: 'none' }); 
+    setFormData({ name: '', price: '', mrp: '', cost_price: '', category: (selectedCategoryView || displayCategories[0] || '') as string, image: '', inStock: true, description: '', galleryImages: [], foodPref: 'none' }); 
     setNewGalleryUrl(''); 
   }
 
@@ -535,6 +593,62 @@ export default function AdminDashboard() {
         </div>
 
         <AnimatePresence mode="wait">
+
+          {/* 🔥 NAYA: SUPPLIER BILLING TAB */}
+          {activeTab === 'billing' && (
+            <motion.div key="billing" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="space-y-6">
+              
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 glass-strong p-4 rounded-xl border border-[#00FFFF]/20 shadow-[0_0_15px_rgba(0,255,255,0.05)]">
+                <div>
+                   <h3 className="text-sm font-black text-white uppercase tracking-widest flex items-center gap-2"><Wallet className="w-4 h-4 text-[#00FFFF]"/> Wholesale Billing</h3>
+                   <p className="text-[10px] text-muted-foreground mt-1">Calculated based on DELIVERED orders only.</p>
+                </div>
+                <div className="flex items-center gap-3 w-full sm:w-auto">
+                  <select value={billingFilter} onChange={(e) => setBillingFilter(e.target.value)} className="bg-black/50 border border-white/10 rounded-lg px-3 h-10 text-xs font-bold text-white focus:outline-none focus:border-[#00FFFF] w-full sm:w-auto uppercase tracking-wider">
+                    <option value="today" className="bg-black">Today's Bill</option>
+                    <option value="yesterday" className="bg-black">Yesterday</option>
+                    <option value="all" className="bg-black">All Time</option>
+                    <option value="custom" className="bg-black">Custom Date</option>
+                  </select>
+                  {billingFilter === 'custom' && (
+                    <Input type="date" value={billingCustomDate} onChange={(e) => setBillingCustomDate(e.target.value)} className="bg-black/50 border-white/10 h-10 text-xs w-full sm:w-auto text-white" />
+                  )}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <Card className="glass-strong border-white/10"><CardContent className="p-6"><p className="text-xs text-muted-foreground uppercase tracking-widest font-bold mb-2">Total Sales (Revenue)</p><p className="text-3xl font-black text-white font-mono">₹{totalBilledRevenue}</p></CardContent></Card>
+                <Card className="glass-strong border-red-500/30 bg-red-500/5"><CardContent className="p-6"><p className="text-xs text-red-400 uppercase tracking-widest font-bold mb-2">Payable to Shop (Cost)</p><p className="text-3xl font-black text-red-500 font-mono">₹{totalSupplierCost}</p></CardContent></Card>
+                <Card className="glass-strong border-[#00FF55]/30 bg-[#00FF55]/5"><CardContent className="p-6"><p className="text-xs text-[#00FF55] uppercase tracking-widest font-bold mb-2">Your Profit</p><p className="text-3xl font-black text-[#00FF55] font-mono">₹{totalBilledProfit}</p></CardContent></Card>
+              </div>
+
+              <Card className="glass-strong border-white/10">
+                <CardContent className="p-6">
+                  <h3 className="text-sm font-black text-white uppercase tracking-widest mb-4 border-b border-white/10 pb-4">Items Breakdown</h3>
+                  {billedItemsArray.length === 0 ? (
+                    <div className="text-center py-10 opacity-50"><Wallet className="w-8 h-8 mx-auto mb-2" /><p className="text-xs uppercase tracking-widest font-bold">No items delivered in this period</p></div>
+                  ) : (
+                    <div className="space-y-2">
+                      <div className="flex justify-between items-center px-4 py-2 bg-white/5 rounded-lg border border-white/10 text-[10px] uppercase font-black text-muted-foreground tracking-widest">
+                        <span className="flex-1">Product</span>
+                        <span className="w-16 text-center">Qty</span>
+                        <span className="w-24 text-right">Buy Rate</span>
+                        <span className="w-24 text-right text-white">Total Cost</span>
+                      </div>
+                      {billedItemsArray.map((item, idx) => (
+                        <div key={idx} className="flex justify-between items-center px-4 py-3 bg-black/50 rounded-lg border border-white/5 hover:border-white/20 transition-colors">
+                          <span className="flex-1 font-bold text-sm text-white truncate pr-4">{item.name}</span>
+                          <span className="w-16 text-center font-mono text-[#00FFFF] font-bold">{item.qty}</span>
+                          <span className="w-24 text-right font-mono text-muted-foreground">₹{item.costRate}</span>
+                          <span className="w-24 text-right font-mono font-black text-red-400">₹{item.totalCost}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </motion.div>
+          )}
 
           {/* 🗂️ CATEGORIES MANAGEMENT TAB */}
           {activeTab === 'categories' && (
@@ -850,7 +964,7 @@ export default function AdminDashboard() {
              </motion.div>
           )}
 
-          {/* 📜 ORDER HISTORY VIEW (🔥 NAYA FILTER ADD KIYA HAI YAHAN) */}
+          {/* 📜 ORDER HISTORY VIEW */}
           {activeTab === 'order_history' && (
             <motion.div key="order_history" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
               
@@ -1151,7 +1265,17 @@ export default function AdminDashboard() {
                          <div className="space-y-4">
                            <div className="space-y-2"><Label>Product Name</Label><Input required value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className="bg-white/5 border-white/10" /></div>
                            <div className="space-y-2"><Label>Description / Specifications</Label><textarea value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} placeholder="Write details here..." className="w-full bg-white/5 border border-white/10 focus-visible:border-[#00FFFF] rounded-xl p-3 min-h-[100px] text-sm text-white resize-y" /></div>
-                           <div className="grid grid-cols-2 gap-4"><div className="space-y-2"><Label>Selling Price (₹)</Label><Input required type="number" value={formData.price} onChange={e => setFormData({...formData, price: e.target.value})} className="bg-white/5 border-white/10" /></div><div className="space-y-2"><Label>MRP (₹)</Label><Input required type="number" value={formData.mrp} onChange={e => setFormData({...formData, mrp: e.target.value})} className="bg-white/5 border-white/10" /></div></div>
+                           
+                           {/* 🔥 NAYA: WHOLESALE PRICE BOX */}
+                           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                             <div className="space-y-2">
+                               <Label className="text-[#00FFFF]">Buy / Cost (₹)</Label>
+                               <Input required type="number" value={formData.cost_price} onChange={e => setFormData({...formData, cost_price: e.target.value})} className="bg-white/5 border-[#00FFFF]/50 text-[#00FFFF] font-bold" placeholder="Your cost" />
+                             </div>
+                             <div className="space-y-2"><Label>Sell Price (₹)</Label><Input required type="number" value={formData.price} onChange={e => setFormData({...formData, price: e.target.value})} className="bg-white/5 border-white/10" /></div>
+                             <div className="space-y-2"><Label>MRP (₹)</Label><Input required type="number" value={formData.mrp} onChange={e => setFormData({...formData, mrp: e.target.value})} className="bg-white/5 border-white/10" /></div>
+                           </div>
+
                            <div className="grid grid-cols-2 gap-4">
                              <div className="space-y-2"><Label>Category</Label><select required value={formData.category} onChange={e => setFormData({...formData, category: e.target.value})} className="w-full h-10 bg-white/5 border border-white/10 rounded-md px-3 text-sm text-white focus:outline-none focus:border-[#00FFFF]">{displayCategories.map((catName: any, idx: number) => (<option key={idx} value={catName} className="bg-black text-white">{catName}</option>))}</select></div>
                              <div className="space-y-2"><Label>Food Type</Label><select required value={formData.foodPref} onChange={e => setFormData({...formData, foodPref: e.target.value as any})} className="w-full h-10 bg-white/5 border border-white/10 rounded-md px-3 text-sm text-white focus:outline-none focus:border-[#00FFFF]"><option value="none" className="bg-black text-white">None (Gadgets)</option><option value="veg" className="bg-black text-green-400">Vegetarian 🟢</option><option value="non-veg" className="bg-black text-red-400">Non-Veg 🔴</option></select></div>
