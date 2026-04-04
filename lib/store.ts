@@ -2,12 +2,13 @@ import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { supabase } from '@/lib/supabase'
 
-// 🔥 NAYA: Product interface me 3 nayi cheezein add ki hain
+// 🔥 NAYA: Product interface me cost_price add kiya
 export interface Product { 
   id: string; 
   name: string; 
   price: number; 
   mrp: number; 
+  cost_price?: number; // Yahan add kiya
   category: string; 
   image: string; 
   inStock: boolean;
@@ -83,7 +84,7 @@ interface AppState {
 }
 
 const defaultProducts: Product[] = [
-  { id: '1', name: 'Cyberpunk Energy Drink', price: 99, mrp: 149, category: 'Drinks', image: '/placeholder.jpg', inStock: true, description: '', galleryImages: [], foodPref: 'veg' }
+  { id: '1', name: 'Cyberpunk Energy Drink', price: 99, mrp: 149, cost_price: 50, category: 'Drinks', image: '/placeholder.jpg', inStock: true, description: '', galleryImages: [], foodPref: 'veg' }
 ]
 
 export const useAppStore = create<AppState>()(
@@ -147,9 +148,9 @@ export const useAppStore = create<AppState>()(
       fetchData: async () => {
         const { data: prods } = await supabase.from('products').select('*').order('created_at', { ascending: false })
         if (prods && prods.length > 0) {
-          // 🔥 NAYA: Naye columns ko fetch karke map kar rahe hain
+          // 🔥 UPDATE: cost_price fetch kiya
           set({ products: prods.map(p => ({ 
-            id: p.id, name: p.name, price: p.price, mrp: p.mrp, category: p.category, image: p.image, inStock: p.in_stock,
+            id: p.id, name: p.name, price: p.price, mrp: p.mrp, cost_price: p.cost_price || 0, category: p.category, image: p.image, inStock: p.in_stock,
             description: p.description || '', galleryImages: p.gallery_images || [], foodPref: p.food_pref || 'none'
           })) })
         } else {
@@ -195,9 +196,9 @@ export const useAppStore = create<AppState>()(
         const tempId = Date.now().toString()
         set((state) => ({ products: [{ ...prod, id: tempId }, ...state.products] })) 
         
-        // 🔥 NAYA: Naye columns Supabase me insert kar rahe hain
+        // 🔥 UPDATE: cost_price database me insert kar rahe hain
         const { data } = await supabase.from('products').insert({ 
-          name: prod.name, price: prod.price, mrp: prod.mrp, category: prod.category, image: prod.image, in_stock: prod.inStock,
+          name: prod.name, price: prod.price, mrp: prod.mrp, cost_price: prod.cost_price || 0, category: prod.category, image: prod.image, in_stock: prod.inStock,
           description: prod.description || '', gallery_images: prod.galleryImages || [], food_pref: prod.foodPref || 'none'
         }).select().single()
         
@@ -206,11 +207,12 @@ export const useAppStore = create<AppState>()(
       updateProduct: async (id, updatedProd) => {
         set((state) => ({ products: state.products.map(p => p.id === id ? { ...p, ...updatedProd } : p) }))
         
-        // 🔥 NAYA: Naye columns Supabase me update kar rahe hain
         const updatePayload: any = {}
         if (updatedProd.name !== undefined) updatePayload.name = updatedProd.name
         if (updatedProd.price !== undefined) updatePayload.price = updatedProd.price
         if (updatedProd.mrp !== undefined) updatePayload.mrp = updatedProd.mrp
+        // 🔥 UPDATE: cost_price update logic
+        if (updatedProd.cost_price !== undefined) updatePayload.cost_price = updatedProd.cost_price
         if (updatedProd.category !== undefined) updatePayload.category = updatedProd.category
         if (updatedProd.image !== undefined) updatePayload.image = updatedProd.image
         if (updatedProd.inStock !== undefined) updatePayload.in_stock = updatedProd.inStock
