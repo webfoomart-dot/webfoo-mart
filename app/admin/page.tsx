@@ -69,10 +69,13 @@ export default function AdminDashboard() {
   const [analyticsFilter, setAnalyticsFilter] = React.useState('all')
   const [customDate, setCustomDate] = React.useState('')
 
+  // 🔥 NAYA: Order History Filter State
+  const [historyFilter, setHistoryFilter] = React.useState('all')
+  const [historyCustomDate, setHistoryCustomDate] = React.useState('')
+
   const [isProductSheetOpen, setIsProductSheetOpen] = React.useState(false)
   const [editingId, setEditingId] = React.useState<string | null>(null)
   
-  // 🔥 Category Selection State
   const [selectedCategoryView, setSelectedCategoryView] = React.useState<string | null>(null)
 
   const [formData, setFormData] = React.useState({
@@ -142,7 +145,6 @@ export default function AdminDashboard() {
     }
   }, [storeConfig])
 
-  // 🔥 TypeScript Strict Fix: Explicitly defining as string[]
   const displayCategories = (categories ? Array.from(new Set(categories.map((c: any) => c.name))) : []) as string[];
 
   React.useEffect(() => {
@@ -276,7 +278,33 @@ export default function AdminDashboard() {
   }
 
   const liveOrders = orders.filter((o: any) => o.status === 'Pending' || o.status === 'In Transit').reverse()
-  const orderHistory = orders.filter((o: any) => o.status === 'Delivered' || o.status === 'Cancelled').reverse()
+  
+  // 🔥 NAYA: Filtered Order History
+  const filteredOrderHistory = React.useMemo(() => {
+    const baseHistory = orders.filter((o: any) => o.status === 'Delivered' || o.status === 'Cancelled').reverse();
+    if (historyFilter === 'all') return baseHistory;
+
+    const getLocalYYYYMMDD = (d: Date) => {
+      const offset = d.getTimezoneOffset() * 60000;
+      return new Date(d.getTime() - offset).toISOString().split('T')[0];
+    }
+    const today = new Date();
+    const todayStr = getLocalYYYYMMDD(today);
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+    const yesterdayStr = getLocalYYYYMMDD(yesterday);
+
+    return baseHistory.filter((o: any) => {
+      let orderDateStr = o.date;
+      if (!orderDateStr && o.id && !isNaN(Number(o.id))) {
+        orderDateStr = getLocalYYYYMMDD(new Date(Number(o.id)));
+      }
+      if (historyFilter === 'today') return orderDateStr === todayStr;
+      if (historyFilter === 'yesterday') return orderDateStr === yesterdayStr;
+      if (historyFilter === 'custom') return orderDateStr === historyCustomDate;
+      return true;
+    });
+  }, [orders, historyFilter, historyCustomDate]);
   
   React.useEffect(() => {
     if (isMounted && isAuthorized) {
@@ -583,7 +611,7 @@ export default function AdminDashboard() {
                       ))}
                       {categories.length === 0 && (
                          <p className="text-[10px] text-muted-foreground uppercase tracking-widest text-center py-4">
-                           No categories added yet. Default ones are shown at bottom. <br/>Add a category here to control its rank & image!
+                           No categories added yet. Add a category here!
                          </p>
                       )}
                     </div>
@@ -822,14 +850,31 @@ export default function AdminDashboard() {
              </motion.div>
           )}
 
-          {/* 📜 ORDER HISTORY VIEW */}
+          {/* 📜 ORDER HISTORY VIEW (🔥 NAYA FILTER ADD KIYA HAI YAHAN) */}
           {activeTab === 'order_history' && (
             <motion.div key="order_history" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
-              {orderHistory.length === 0 ? (
-                <Empty className="glass-strong border-[#00FFFF]/20 py-20 mt-10 max-w-md mx-auto"><EmptyContent><History className="w-12 h-12 text-[#00FFFF] opacity-50 mb-4" /><EmptyTitle className="text-xl uppercase">No Past Orders</EmptyTitle><EmptyDescription className="text-muted-foreground">Delivered and Cancelled orders will appear here.</EmptyDescription></EmptyContent></Empty>
+              
+              {/* 🔥 HISTORY DATE FILTER */}
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
+                <h3 className="text-xl font-black uppercase text-white">Order History</h3>
+                <div className="flex items-center gap-3 w-full sm:w-auto">
+                  <select value={historyFilter} onChange={(e) => setHistoryFilter(e.target.value)} className="bg-black/50 border border-white/10 rounded-lg px-3 h-10 text-xs font-bold text-white focus:outline-none focus:border-[#00FFFF] w-full sm:w-auto uppercase tracking-wider">
+                    <option value="all" className="bg-black">All Time</option>
+                    <option value="today" className="bg-black">Today</option>
+                    <option value="yesterday" className="bg-black">Yesterday</option>
+                    <option value="custom" className="bg-black">Custom Date</option>
+                  </select>
+                  {historyFilter === 'custom' && (
+                    <Input type="date" value={historyCustomDate} onChange={(e) => setHistoryCustomDate(e.target.value)} className="bg-black/50 border-white/10 h-10 text-xs w-full sm:w-auto text-white" />
+                  )}
+                </div>
+              </div>
+
+              {filteredOrderHistory.length === 0 ? (
+                <Empty className="glass-strong border-[#00FFFF]/20 py-20 max-w-md mx-auto"><EmptyContent><History className="w-12 h-12 text-[#00FFFF] opacity-50 mb-4" /><EmptyTitle className="text-xl uppercase">No Past Orders</EmptyTitle><EmptyDescription className="text-muted-foreground">Delivered and Cancelled orders will appear here based on selected date.</EmptyDescription></EmptyContent></Empty>
               ) : (
                 <div className="grid grid-cols-1 gap-6">
-                  {orderHistory.map((order: any, idx: number) => {
+                  {filteredOrderHistory.map((order: any, idx: number) => {
                     const isBlocked = customerMeta[order.phone]?.isBlocked
                     return (
                       <Card key={idx} className={`glass-strong border-white/10 overflow-hidden relative ${isBlocked ? 'border-red-500/50' : ''}`}>
@@ -1096,7 +1141,7 @@ export default function AdminDashboard() {
 
                          {/* EXTRA GALLERY IMAGES */}
                          <div className="space-y-4 bg-white/5 p-4 rounded-xl border border-white/10">
-                           <Label className="text-xs font-black uppercase tracking-widest text-[#CCFF00]">Extra Photos</Label>
+                           <Label className="text-xs font-black uppercase tracking-widest text-[#CCFF00]">Extra Photos (For Details Page)</Label>
                            {formData.galleryImages.length > 0 && (<div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">{formData.galleryImages.map((img, i) => (<div key={i} className="relative w-20 h-20 shrink-0 rounded-lg overflow-hidden border border-white/20"><img src={img} alt={`Gallery ${i}`} className="w-full h-full object-cover" /><button type="button" onClick={() => removeGalleryImage(i)} className="absolute top-1 right-1 bg-red-500 rounded-full p-1 text-white hover:scale-110"><XCircle className="w-3 h-3" /></button></div>))}</div>)}
                            <div className="flex gap-2"><div className="relative flex-1 h-10 rounded-md border border-[#CCFF00]/40 bg-[#CCFF00]/5 flex items-center justify-center overflow-hidden cursor-pointer hover:bg-[#CCFF00]/10 transition-colors"><input type="file" multiple accept="image/*" onChange={handleGalleryUpload} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" /><span className="text-xs font-bold text-[#CCFF00] flex items-center gap-2"><UploadCloud className="w-4 h-4"/> Upload Multiple</span></div></div>
                            <div className="flex gap-2"><Input type="url" placeholder="Paste extra image URL..." value={newGalleryUrl} onChange={(e) => setNewGalleryUrl(e.target.value)} className="bg-black/50 border-white/20 text-xs focus-visible:border-[#CCFF00] h-10 flex-1" /><Button type="button" onClick={addGalleryUrl} className="h-10 bg-white/10 text-white hover:bg-white/20 border border-white/20 px-3">Add URL</Button></div>
@@ -1138,7 +1183,7 @@ export default function AdminDashboard() {
                  </div>
                ) : (
                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 mt-6">
-                   {products.filter((p:any) => p.category === selectedCategoryView).map((product: any, itemIndex: number) => (
+                   {products.filter((p:any) => p.category === selectedCategoryView).map((product: any) => (
                      <Card key={product.id} className={`glass-strong border-white/10 overflow-hidden group transition-all ${!product.inStock ? 'opacity-60 grayscale' : 'hover:border-[#00FFFF]/30'}`}>
                        <div className="relative h-40 w-full bg-white/5">
                          <img src={product.image || "/placeholder.jpg"} alt={product.name} className="object-cover w-full h-full" onError={(e) => { e.currentTarget.src = '/placeholder.jpg' }} />
