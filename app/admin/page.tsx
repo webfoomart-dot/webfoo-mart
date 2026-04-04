@@ -142,7 +142,8 @@ export default function AdminDashboard() {
     }
   }, [storeConfig])
 
-  const displayCategories = categories ? Array.from(new Set(categories.map((c: any) => c.name))) : [];
+  // 🔥 TypeScript Strict Fix: Explicitly defining as string[]
+  const displayCategories = (categories ? Array.from(new Set(categories.map((c: any) => c.name))) : []) as string[];
 
   React.useEffect(() => {
     if (!formData.category && !editingId) {
@@ -1107,7 +1108,7 @@ export default function AdminDashboard() {
                            <div className="space-y-2"><Label>Description / Specifications</Label><textarea value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} placeholder="Write details here..." className="w-full bg-white/5 border border-white/10 focus-visible:border-[#00FFFF] rounded-xl p-3 min-h-[100px] text-sm text-white resize-y" /></div>
                            <div className="grid grid-cols-2 gap-4"><div className="space-y-2"><Label>Selling Price (₹)</Label><Input required type="number" value={formData.price} onChange={e => setFormData({...formData, price: e.target.value})} className="bg-white/5 border-white/10" /></div><div className="space-y-2"><Label>MRP (₹)</Label><Input required type="number" value={formData.mrp} onChange={e => setFormData({...formData, mrp: e.target.value})} className="bg-white/5 border-white/10" /></div></div>
                            <div className="grid grid-cols-2 gap-4">
-                             <div className="space-y-2"><Label>Category</Label><select required value={formData.category} onChange={e => setFormData({...formData, category: e.target.value})} className="w-full h-10 bg-white/5 border border-white/10 rounded-md px-3 text-sm text-white focus:outline-none focus:border-[#00FFFF]">{displayCategories.map((catName: string, idx: number) => (<option key={idx} value={catName} className="bg-black text-white">{catName}</option>))}</select></div>
+                             <div className="space-y-2"><Label>Category</Label><select required value={formData.category} onChange={e => setFormData({...formData, category: e.target.value})} className="w-full h-10 bg-white/5 border border-white/10 rounded-md px-3 text-sm text-white focus:outline-none focus:border-[#00FFFF]">{displayCategories.map((catName: any, idx: number) => (<option key={idx} value={catName} className="bg-black text-white">{catName}</option>))}</select></div>
                              <div className="space-y-2"><Label>Food Type</Label><select required value={formData.foodPref} onChange={e => setFormData({...formData, foodPref: e.target.value as any})} className="w-full h-10 bg-white/5 border border-white/10 rounded-md px-3 text-sm text-white focus:outline-none focus:border-[#00FFFF]"><option value="none" className="bg-black text-white">None (Gadgets)</option><option value="veg" className="bg-black text-green-400">Vegetarian 🟢</option><option value="non-veg" className="bg-black text-red-400">Non-Veg 🔴</option></select></div>
                            </div>
                          </div>
@@ -1121,7 +1122,7 @@ export default function AdminDashboard() {
                {/* FOLDER SYSTEM */}
                {!selectedCategoryView ? (
                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 mt-6">
-                   {displayCategories.map((catName: string, idx: number) => {
+                   {displayCategories.map((catName: any, idx: number) => {
                      const itemCount = products.filter((p:any) => p.category === catName).length;
                      return (
                        <Card key={idx} onClick={() => setSelectedCategoryView(catName)} className="glass-strong border-white/10 hover:border-[#00FFFF]/50 hover:shadow-[0_0_20px_rgba(0,255,255,0.1)] transition-all cursor-pointer group">
@@ -1137,7 +1138,7 @@ export default function AdminDashboard() {
                  </div>
                ) : (
                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 mt-6">
-                   {products.filter((p:any) => p.category === selectedCategoryView).map((product: any) => (
+                   {products.filter((p:any) => p.category === selectedCategoryView).map((product: any, itemIndex: number) => (
                      <Card key={product.id} className={`glass-strong border-white/10 overflow-hidden group transition-all ${!product.inStock ? 'opacity-60 grayscale' : 'hover:border-[#00FFFF]/30'}`}>
                        <div className="relative h-40 w-full bg-white/5">
                          <img src={product.image || "/placeholder.jpg"} alt={product.name} className="object-cover w-full h-full" onError={(e) => { e.currentTarget.src = '/placeholder.jpg' }} />
