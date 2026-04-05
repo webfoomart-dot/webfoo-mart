@@ -2,13 +2,12 @@ import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { supabase } from '@/lib/supabase'
 
-// 🔥 NAYA: Product interface me cost_price add kiya
 export interface Product { 
   id: string; 
   name: string; 
   price: number; 
   mrp: number; 
-  cost_price?: number; // Yahan add kiya
+  cost_price?: number; 
   category: string; 
   image: string; 
   inStock: boolean;
@@ -33,6 +32,11 @@ export interface StoreConfig {
   openTime: string; 
   closeTime: string; 
   minOrderAmount: number;
+  // 🔥 NAYA: Footer Profile Fields
+  ownerName: string;
+  ownerPhone: string;
+  ownerEmail: string;
+  ownerPhoto: string;
 }
 
 interface AppState {
@@ -110,25 +114,37 @@ export const useAppStore = create<AppState>()(
             storeMode: data.store_mode || 'manual',
             openTime: data.open_time || '08:00',
             closeTime: data.close_time || '22:00',
-            minOrderAmount: data.min_order_amount || 0
+            minOrderAmount: data.min_order_amount || 0,
+            // 🔥 NAYA: Fetching profile data
+            ownerName: data.owner_name || 'Vineet Kumar',
+            ownerPhone: data.owner_phone || '',
+            ownerEmail: data.owner_email || '',
+            ownerPhoto: data.owner_photo || ''
           }})
         }
       },
       
       updateStoreConfig: async (newConfig) => {
         set((state) => ({ storeConfig: state.storeConfig ? { ...state.storeConfig, ...newConfig } : null }))
-        await supabase.from('webfoo_configs').update({
-          is_store_open: newConfig.isStoreOpen,
-          banner_text_open: newConfig.bannerTextOpen,
-          banner_image_url_open: newConfig.bannerImageUrlOpen,
-          banner_text_closed: newConfig.bannerTextClosed,
-          banner_image_url_closed: newConfig.bannerImageUrlClosed,
-          store_mode: newConfig.storeMode,
-          open_time: newConfig.openTime,
-          close_time: newConfig.closeTime,
-          min_order_amount: newConfig.minOrderAmount,
-          updated_at: new Date()
-        }).eq('id', 1)
+        
+        const updatePayload: any = { updated_at: new Date() }
+        if (newConfig.isStoreOpen !== undefined) updatePayload.is_store_open = newConfig.isStoreOpen
+        if (newConfig.bannerTextOpen !== undefined) updatePayload.banner_text_open = newConfig.bannerTextOpen
+        if (newConfig.bannerImageUrlOpen !== undefined) updatePayload.banner_image_url_open = newConfig.bannerImageUrlOpen
+        if (newConfig.bannerTextClosed !== undefined) updatePayload.banner_text_closed = newConfig.bannerTextClosed
+        if (newConfig.bannerImageUrlClosed !== undefined) updatePayload.banner_image_url_closed = newConfig.bannerImageUrlClosed
+        if (newConfig.storeMode !== undefined) updatePayload.store_mode = newConfig.storeMode
+        if (newConfig.openTime !== undefined) updatePayload.open_time = newConfig.openTime
+        if (newConfig.closeTime !== undefined) updatePayload.close_time = newConfig.closeTime
+        if (newConfig.minOrderAmount !== undefined) updatePayload.min_order_amount = newConfig.minOrderAmount
+        
+        // 🔥 NAYA: Updating profile data
+        if (newConfig.ownerName !== undefined) updatePayload.owner_name = newConfig.ownerName
+        if (newConfig.ownerPhone !== undefined) updatePayload.owner_phone = newConfig.ownerPhone
+        if (newConfig.ownerEmail !== undefined) updatePayload.owner_email = newConfig.ownerEmail
+        if (newConfig.ownerPhoto !== undefined) updatePayload.owner_photo = newConfig.ownerPhoto
+
+        await supabase.from('webfoo_configs').update(updatePayload).eq('id', 1)
       },
 
       checkIfStoreOpen: () => {
@@ -148,7 +164,6 @@ export const useAppStore = create<AppState>()(
       fetchData: async () => {
         const { data: prods } = await supabase.from('products').select('*').order('created_at', { ascending: false })
         if (prods && prods.length > 0) {
-          // 🔥 UPDATE: cost_price fetch kiya
           set({ products: prods.map(p => ({ 
             id: p.id, name: p.name, price: p.price, mrp: p.mrp, cost_price: p.cost_price || 0, category: p.category, image: p.image, inStock: p.in_stock,
             description: p.description || '', galleryImages: p.gallery_images || [], foodPref: p.food_pref || 'none'
@@ -196,7 +211,6 @@ export const useAppStore = create<AppState>()(
         const tempId = Date.now().toString()
         set((state) => ({ products: [{ ...prod, id: tempId }, ...state.products] })) 
         
-        // 🔥 UPDATE: cost_price database me insert kar rahe hain
         const { data } = await supabase.from('products').insert({ 
           name: prod.name, price: prod.price, mrp: prod.mrp, cost_price: prod.cost_price || 0, category: prod.category, image: prod.image, in_stock: prod.inStock,
           description: prod.description || '', gallery_images: prod.galleryImages || [], food_pref: prod.foodPref || 'none'
@@ -211,7 +225,6 @@ export const useAppStore = create<AppState>()(
         if (updatedProd.name !== undefined) updatePayload.name = updatedProd.name
         if (updatedProd.price !== undefined) updatePayload.price = updatedProd.price
         if (updatedProd.mrp !== undefined) updatePayload.mrp = updatedProd.mrp
-        // 🔥 UPDATE: cost_price update logic
         if (updatedProd.cost_price !== undefined) updatePayload.cost_price = updatedProd.cost_price
         if (updatedProd.category !== undefined) updatePayload.category = updatedProd.category
         if (updatedProd.image !== undefined) updatePayload.image = updatedProd.image
