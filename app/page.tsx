@@ -5,7 +5,7 @@ import Image from "next/image"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { motion, AnimatePresence } from "framer-motion"
-import { Search, Zap, MoonStar, TicketPercent, Plus, Minus } from "lucide-react"
+import { Search, Zap, MoonStar, TicketPercent, Plus, Minus, UserCircle, Phone, Mail } from "lucide-react"
 
 import { useAppStore } from "@/lib/store"
 import { Button } from "@/components/ui/button"
@@ -55,7 +55,6 @@ export default function HomePage() {
     return p.name.toLowerCase().includes(searchQuery.toLowerCase());
   })
 
-  // 🔥 ERROR FIXED: TypeScript ke 'unknown' error ko hatane ke liye spread operator [...] use kiya
   const rawCategories: string[] = products.map((p: any) => String(p.category || ''));
   const uniqueCategories: string[] = [...new Set(rawCategories)].sort((a: string, b: string) => {
     const catA = (categories || []).find((c: any) => c.name.toLowerCase() === a.toLowerCase());
@@ -274,6 +273,53 @@ export default function HomePage() {
             </div>
           )
         )}
+
+        {/* 🔥 NAYA FOOTER: ABOUT SECTION */}
+        {storeConfig && storeConfig.ownerName && (
+          <div className="mt-16 pt-8 border-t border-white/10">
+            <div className="max-w-md mx-auto glass-strong p-6 rounded-[2rem] border border-white/5 text-center flex flex-col items-center gap-4 relative overflow-hidden group">
+              <div className="absolute inset-0 bg-gradient-to-t from-[#CCFF00]/5 to-transparent pointer-events-none"></div>
+              
+              {storeConfig.ownerPhoto ? (
+                <div className="relative w-20 h-20 rounded-full border-2 border-[#CCFF00]/30 p-1 bg-black overflow-hidden z-10 group-hover:scale-105 transition-transform duration-300">
+                  <Image src={storeConfig.ownerPhoto} alt={storeConfig.ownerName} fill className="object-cover rounded-full" />
+                </div>
+              ) : (
+                <div className="w-16 h-16 rounded-full border-2 border-[#CCFF00]/30 bg-[#CCFF00]/10 flex items-center justify-center z-10">
+                  <UserCircle className="w-8 h-8 text-[#CCFF00]" />
+                </div>
+              )}
+              
+              <div className="space-y-1 z-10">
+                <Badge variant="outline" className="text-[#00FFFF] border-[#00FFFF]/30 bg-[#00FFFF]/10 mb-2 uppercase tracking-widest text-[9px] font-black">Founder & Owner</Badge>
+                <h3 className="text-xl font-black text-white uppercase tracking-tight">{storeConfig.ownerName}</h3>
+                <p className="text-xs text-muted-foreground uppercase tracking-widest font-bold">Behind WebFoo</p>
+              </div>
+
+              <div className="flex gap-4 w-full mt-2 z-10">
+                {storeConfig.ownerPhone && (
+                  <a href={`tel:${storeConfig.ownerPhone}`} className="flex-1">
+                    <Button variant="outline" className="w-full h-10 border-white/10 hover:border-[#CCFF00]/50 hover:bg-[#CCFF00]/10 hover:text-[#CCFF00] text-muted-foreground transition-all">
+                      <Phone className="w-4 h-4 mr-2" /> Call
+                    </Button>
+                  </a>
+                )}
+                {storeConfig.ownerEmail && (
+                  <a href={`mailto:${storeConfig.ownerEmail}`} className="flex-1">
+                    <Button variant="outline" className="w-full h-10 border-white/10 hover:border-[#00FFFF]/50 hover:bg-[#00FFFF]/10 hover:text-[#00FFFF] text-muted-foreground transition-all">
+                      <Mail className="w-4 h-4 mr-2" /> Mail
+                    </Button>
+                  </a>
+                )}
+              </div>
+            </div>
+            
+            <p className="text-center text-[10px] uppercase tracking-widest text-muted-foreground/50 mt-6 font-bold">
+              © {new Date().getFullYear()} WebFoo Mart. Built for speed.
+            </p>
+          </div>
+        )}
+
       </main>
 
       <BottomNav />
