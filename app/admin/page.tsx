@@ -9,7 +9,7 @@ import {
   MapPin, Phone, Truck, XCircle, Plus, UploadCloud, Trash2, Edit, PowerOff, Power,
   Star, Ban, MessageCircle, FileText, Send, CheckSquare, Square, Smartphone,
   TrendingUp, Target, BarChart, ShieldAlert, LockKeyhole, Calendar, Settings, AlertTriangle, MoonStar, LayoutGrid,
-  ArrowUp, ArrowDown, Palette, Volume2, Wallet
+  ArrowUp, ArrowDown, Palette, Volume2, Wallet, UserCircle
 } from "lucide-react"
 import { createClient } from '@supabase/supabase-js' 
 
@@ -24,7 +24,7 @@ import { Badge } from "@/components/ui/badge"
 
 const MENU_ITEMS = [
   { id: 'analytics', label: 'Analytics', icon: LayoutDashboard },
-  { id: 'billing', label: 'Supplier Bill', icon: Wallet }, // 🔥 NAYA TAB
+  { id: 'billing', label: 'Supplier Bill', icon: Wallet },
   { id: 'live_orders', label: 'Live Orders', icon: Zap },
   { id: 'order_history', label: 'Order History', icon: History }, 
   { id: 'products', label: 'Products', icon: PackageIcon },
@@ -37,7 +37,6 @@ const MENU_ITEMS = [
 
 const ADMIN_SECRET_PASSCODE = "WEBFOO99"
 
-// ⚠️ WARNING: YAHAN APNA ASLI SUPABASE URL AUR ANON KEY DAALNA ⚠️
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'TERA_SUPABASE_URL_YAHAN_DAAL'
 const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'TERA_SUPABASE_ANON_KEY_YAHAN_DAAL'
 const supabase = createClient(supabaseUrl, supabaseKey)
@@ -70,7 +69,6 @@ export default function AdminDashboard() {
   const [analyticsFilter, setAnalyticsFilter] = React.useState('all')
   const [customDate, setCustomDate] = React.useState('')
 
-  // 🔥 NAYA: Billing Filter State
   const [billingFilter, setBillingFilter] = React.useState('today')
   const [billingCustomDate, setBillingCustomDate] = React.useState('')
 
@@ -96,9 +94,11 @@ export default function AdminDashboard() {
   const [newCategoryName, setNewCategoryName] = React.useState('')
   const [newCategoryImage, setNewCategoryImage] = React.useState('')
 
+  // 🔥 NAYA: Settings Form State me Owner Details Add Kiye
   const [settingsFormData, setSettingsFormData] = React.useState({
     storeMode: 'manual', openTime: '08:00', closeTime: '22:00',
-    isStoreOpen: true, bannerTextOpen: '', bannerImageUrlOpen: '', bannerTextClosed: '', bannerImageUrlClosed: ''
+    isStoreOpen: true, bannerTextOpen: '', bannerImageUrlOpen: '', bannerTextClosed: '', bannerImageUrlClosed: '',
+    ownerName: '', ownerPhone: '', ownerEmail: '', ownerPhoto: ''
   })
   const [isSettingsSaving, setIsSettingsSaving] = React.useState(false)
   const [globalMinOrder, setGlobalMinOrder] = React.useState(0)
@@ -143,7 +143,12 @@ export default function AdminDashboard() {
         bannerTextOpen: storeConfig.bannerTextOpen || '',
         bannerImageUrlOpen: storeConfig.bannerImageUrlOpen || '',
         bannerTextClosed: storeConfig.bannerTextClosed || '',
-        bannerImageUrlClosed: storeConfig.bannerImageUrlClosed || ''
+        bannerImageUrlClosed: storeConfig.bannerImageUrlClosed || '',
+        // 🔥 NAYA: Populating fields
+        ownerName: storeConfig.ownerName || '',
+        ownerPhone: storeConfig.ownerPhone || '',
+        ownerEmail: storeConfig.ownerEmail || '',
+        ownerPhoto: storeConfig.ownerPhoto || ''
       })
       setGlobalMinOrder(storeConfig.minOrderAmount || 0) 
     }
@@ -181,7 +186,6 @@ export default function AdminDashboard() {
     });
   }, [orders, analyticsFilter, customDate]);
 
-  // 🔥 NAYA: Billing Orders Filter Logic
   const filteredBillingOrders = React.useMemo(() => {
     const deliveredOnly = orders.filter((o: any) => o.status === 'Delivered');
     if (billingFilter === 'all') return deliveredOnly;
@@ -220,6 +224,16 @@ export default function AdminDashboard() {
     }
   }
 
+  // 🔥 NAYA: Owner Image Upload Handler
+  const handleOwnerPhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) { 
+      const reader = new FileReader(); 
+      reader.onloadend = () => setSettingsFormData({...settingsFormData, ownerPhoto: reader.result as string}); 
+      reader.readAsDataURL(file) 
+    }
+  }
+
   const handleSaveSettings = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!updateStoreConfig) return;
@@ -234,8 +248,13 @@ export default function AdminDashboard() {
         bannerImageUrlOpen: settingsFormData.bannerImageUrlOpen || null,
         bannerTextClosed: settingsFormData.bannerTextClosed,
         bannerImageUrlClosed: settingsFormData.bannerImageUrlClosed || null,
+        // 🔥 NAYA: Saving Profile
+        ownerName: settingsFormData.ownerName,
+        ownerPhone: settingsFormData.ownerPhone,
+        ownerEmail: settingsFormData.ownerEmail,
+        ownerPhoto: settingsFormData.ownerPhoto,
       });
-      alert("✅ Store Settings & Banners saved to Central Database!");
+      alert("✅ Store Settings & Profile saved to Central Database!");
       if (fetchStoreConfig) fetchStoreConfig();
     } catch(e) { 
       alert("ERROR saving settings!") 
@@ -391,7 +410,6 @@ export default function AdminDashboard() {
   })
   const topProducts = Array.from(productSales.entries()).map(([name, data]) => ({ name, ...data as {qty: number, revenue: number} })).sort((a, b) => b.qty - a.qty).slice(0, 5)
 
-  // 🔥 NAYA: Billing Computations
   let totalSupplierCost = 0;
   let totalBilledRevenue = 0;
   const billedItemsMap = new Map();
@@ -399,25 +417,17 @@ export default function AdminDashboard() {
   filteredBillingOrders.forEach((order: any) => {
     totalBilledRevenue += order.amount;
     order.items.forEach((item: any) => {
-      // Find actual cost from products list
       const invItem = products.find((p:any) => p.name === item.name);
       const costRate = invItem?.cost_price ? Number(invItem.cost_price) : 0;
       const totalCostForItem = costRate * item.quantity;
-      
       totalSupplierCost += totalCostForItem;
-
       const current = billedItemsMap.get(item.name) || { qty: 0, totalCost: 0, costRate: costRate };
-      billedItemsMap.set(item.name, {
-        qty: current.qty + item.quantity,
-        totalCost: current.totalCost + totalCostForItem,
-        costRate: costRate
-      });
+      billedItemsMap.set(item.name, { qty: current.qty + item.quantity, totalCost: current.totalCost + totalCostForItem, costRate: costRate });
     });
   });
 
   const totalBilledProfit = totalBilledRevenue - totalSupplierCost;
   const billedItemsArray = Array.from(billedItemsMap.entries()).map(([name, data]) => ({ name, ...data as any })).sort((a, b) => b.totalCost - a.totalCost);
-
 
   const customersMap = new Map()
   Object.keys(customerMeta).forEach(phone => {
@@ -597,7 +607,6 @@ export default function AdminDashboard() {
           {/* 🔥 NAYA: SUPPLIER BILLING TAB */}
           {activeTab === 'billing' && (
             <motion.div key="billing" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="space-y-6">
-              
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 glass-strong p-4 rounded-xl border border-[#00FFFF]/20 shadow-[0_0_15px_rgba(0,255,255,0.05)]">
                 <div>
                    <h3 className="text-sm font-black text-white uppercase tracking-widest flex items-center gap-2"><Wallet className="w-4 h-4 text-[#00FFFF]"/> Wholesale Billing</h3>
@@ -659,7 +668,6 @@ export default function AdminDashboard() {
                       <LayoutGrid className="w-6 h-6 text-[#00FFFF]" />
                       <h3 className="text-xl font-black uppercase text-white">Manage Store Categories</h3>
                     </div>
-                    
                     <form onSubmit={handleSaveCategory} className="flex flex-col gap-4">
                       <div className="space-y-4 bg-white/5 p-4 rounded-xl border border-white/10">
                         <Label className="text-xs font-black uppercase tracking-widest text-[#00FFFF]">Category Image (Optional)</Label>
@@ -738,6 +746,50 @@ export default function AdminDashboard() {
           {activeTab === 'settings' && (
              <motion.div key="settings" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="space-y-6 max-w-3xl">
                 
+                {/* 🔥 NAYA: FOOTER PROFILE CARD */}
+                <Card className="glass-strong border-white/10 mb-8 border-[#CCFF00]/30 shadow-[0_0_20px_rgba(204,255,0,0.05)]">
+                  <CardContent className="p-6 sm:p-8 space-y-6">
+                    <div className="flex items-center gap-3 border-b border-[#CCFF00]/30 pb-4">
+                      <UserCircle className="w-6 h-6 text-[#CCFF00]" />
+                      <h3 className="text-xl font-black uppercase text-white">Footer Profile (About)</h3>
+                    </div>
+                    
+                    <div className="flex flex-col sm:flex-row gap-6">
+                      {/* Photo Uploader */}
+                      <div className="shrink-0 space-y-2">
+                        <Label className="text-xs uppercase font-bold text-muted-foreground">Your Photo</Label>
+                        <div className="relative w-32 h-32 rounded-full border-2 border-dashed border-[#CCFF00]/40 bg-[#CCFF00]/5 flex items-center justify-center overflow-hidden cursor-pointer group mx-auto sm:mx-0">
+                          <input type="file" accept="image/*" onChange={handleOwnerPhotoUpload} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" />
+                          {settingsFormData.ownerPhoto ? (
+                            <img src={settingsFormData.ownerPhoto} alt="Owner" className="w-full h-full object-cover" />
+                          ) : (
+                            <div className="text-center group-hover:scale-105 transition-transform"><UploadCloud className="w-6 h-6 text-[#CCFF00] mx-auto mb-1" /><span className="text-[10px] font-bold text-[#CCFF00]">Upload</span></div>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Details Fields */}
+                      <div className="flex-1 space-y-4">
+                        <div className="space-y-2">
+                          <Label className="text-xs uppercase font-bold text-muted-foreground">Owner Name</Label>
+                          <Input value={settingsFormData.ownerName} onChange={(e) => setSettingsFormData({...settingsFormData, ownerName: e.target.value})} placeholder="e.g. Vineet Kumar" className="bg-black/50 border-white/10 text-white" />
+                        </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <Label className="text-xs uppercase font-bold text-muted-foreground">Phone Number</Label>
+                            <Input value={settingsFormData.ownerPhone} onChange={(e) => setSettingsFormData({...settingsFormData, ownerPhone: e.target.value})} placeholder="+91 XXXXX XXXXX" className="bg-black/50 border-white/10 text-white font-mono" />
+                          </div>
+                          <div className="space-y-2">
+                            <Label className="text-xs uppercase font-bold text-muted-foreground">Email Address</Label>
+                            <Input type="email" value={settingsFormData.ownerEmail} onChange={(e) => setSettingsFormData({...settingsFormData, ownerEmail: e.target.value})} placeholder="contact@webfoo.in" className="bg-black/50 border-white/10 text-white" />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* THEME COLORS CARD */}
                 <Card className="glass-strong border-white/10 mb-8 border-[#00FFFF]/30">
                   <CardContent className="p-6 sm:p-8 space-y-6">
                     <div className="flex items-center gap-3 border-b border-[#00FFFF]/30 pb-4">
@@ -968,7 +1020,6 @@ export default function AdminDashboard() {
           {activeTab === 'order_history' && (
             <motion.div key="order_history" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
               
-              {/* 🔥 HISTORY DATE FILTER */}
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
                 <h3 className="text-xl font-black uppercase text-white">Order History</h3>
                 <div className="flex items-center gap-3 w-full sm:w-auto">
@@ -1266,7 +1317,6 @@ export default function AdminDashboard() {
                            <div className="space-y-2"><Label>Product Name</Label><Input required value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className="bg-white/5 border-white/10" /></div>
                            <div className="space-y-2"><Label>Description / Specifications</Label><textarea value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} placeholder="Write details here..." className="w-full bg-white/5 border border-white/10 focus-visible:border-[#00FFFF] rounded-xl p-3 min-h-[100px] text-sm text-white resize-y" /></div>
                            
-                           {/* 🔥 NAYA: WHOLESALE PRICE BOX */}
                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                              <div className="space-y-2">
                                <Label className="text-[#00FFFF]">Buy / Cost (₹)</Label>
