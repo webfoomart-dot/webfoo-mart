@@ -94,7 +94,6 @@ export default function AdminDashboard() {
   const [newCategoryName, setNewCategoryName] = React.useState('')
   const [newCategoryImage, setNewCategoryImage] = React.useState('')
 
-  // 🔥 NAYA: Settings Form State me Owner Details Add Kiye
   const [settingsFormData, setSettingsFormData] = React.useState({
     storeMode: 'manual', openTime: '08:00', closeTime: '22:00',
     isStoreOpen: true, bannerTextOpen: '', bannerImageUrlOpen: '', bannerTextClosed: '', bannerImageUrlClosed: '',
@@ -144,7 +143,6 @@ export default function AdminDashboard() {
         bannerImageUrlOpen: storeConfig.bannerImageUrlOpen || '',
         bannerTextClosed: storeConfig.bannerTextClosed || '',
         bannerImageUrlClosed: storeConfig.bannerImageUrlClosed || '',
-        // 🔥 NAYA: Populating fields
         ownerName: storeConfig.ownerName || '',
         ownerPhone: storeConfig.ownerPhone || '',
         ownerEmail: storeConfig.ownerEmail || '',
@@ -224,7 +222,6 @@ export default function AdminDashboard() {
     }
   }
 
-  // 🔥 NAYA: Owner Image Upload Handler
   const handleOwnerPhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (file) { 
@@ -248,7 +245,6 @@ export default function AdminDashboard() {
         bannerImageUrlOpen: settingsFormData.bannerImageUrlOpen || null,
         bannerTextClosed: settingsFormData.bannerTextClosed,
         bannerImageUrlClosed: settingsFormData.bannerImageUrlClosed || null,
-        // 🔥 NAYA: Saving Profile
         ownerName: settingsFormData.ownerName,
         ownerPhone: settingsFormData.ownerPhone,
         ownerEmail: settingsFormData.ownerEmail,
@@ -746,7 +742,7 @@ export default function AdminDashboard() {
           {activeTab === 'settings' && (
              <motion.div key="settings" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="space-y-6 max-w-3xl">
                 
-                {/* 🔥 NAYA: FOOTER PROFILE CARD */}
+                {/* 🔥 NAYA: FOOTER PROFILE CARD (WITH URL OPTION) */}
                 <Card className="glass-strong border-white/10 mb-8 border-[#CCFF00]/30 shadow-[0_0_20px_rgba(204,255,0,0.05)]">
                   <CardContent className="p-6 sm:p-8 space-y-6">
                     <div className="flex items-center gap-3 border-b border-[#CCFF00]/30 pb-4">
@@ -754,17 +750,36 @@ export default function AdminDashboard() {
                       <h3 className="text-xl font-black uppercase text-white">Footer Profile (About)</h3>
                     </div>
                     
-                    <div className="flex flex-col sm:flex-row gap-6">
-                      {/* Photo Uploader */}
-                      <div className="shrink-0 space-y-2">
-                        <Label className="text-xs uppercase font-bold text-muted-foreground">Your Photo</Label>
-                        <div className="relative w-32 h-32 rounded-full border-2 border-dashed border-[#CCFF00]/40 bg-[#CCFF00]/5 flex items-center justify-center overflow-hidden cursor-pointer group mx-auto sm:mx-0">
-                          <input type="file" accept="image/*" onChange={handleOwnerPhotoUpload} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" />
-                          {settingsFormData.ownerPhoto ? (
-                            <img src={settingsFormData.ownerPhoto} alt="Owner" className="w-full h-full object-cover" />
-                          ) : (
-                            <div className="text-center group-hover:scale-105 transition-transform"><UploadCloud className="w-6 h-6 text-[#CCFF00] mx-auto mb-1" /><span className="text-[10px] font-bold text-[#CCFF00]">Upload</span></div>
-                          )}
+                    <div className="flex flex-col sm:flex-row gap-8">
+                      {/* Photo Uploader with URL Option */}
+                      <div className="shrink-0 space-y-4">
+                        <div>
+                          <Label className="text-xs uppercase font-bold text-muted-foreground mb-2 block text-center sm:text-left">Your Photo</Label>
+                          <div className="relative w-32 h-32 rounded-full border-2 border-dashed border-[#CCFF00]/40 bg-[#CCFF00]/5 flex items-center justify-center overflow-hidden cursor-pointer group mx-auto sm:mx-0">
+                            <input type="file" accept="image/*" onChange={handleOwnerPhotoUpload} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" />
+                            {settingsFormData.ownerPhoto ? (
+                              <img src={settingsFormData.ownerPhoto} alt="Owner" className="w-full h-full object-cover" />
+                            ) : (
+                              <div className="text-center group-hover:scale-105 transition-transform"><UploadCloud className="w-6 h-6 text-[#CCFF00] mx-auto mb-1" /><span className="text-[10px] font-bold text-[#CCFF00]">Upload</span></div>
+                            )}
+                          </div>
+                        </div>
+                        
+                        <div className="flex items-center gap-4 w-32 mx-auto sm:mx-0">
+                          <div className="h-px bg-white/10 flex-1"></div>
+                          <span className="text-[10px] text-muted-foreground uppercase font-black tracking-widest">OR</span>
+                          <div className="h-px bg-white/10 flex-1"></div>
+                        </div>
+                        
+                        <div className="space-y-2 w-full sm:w-40 mx-auto sm:mx-0">
+                          <Label className="text-[10px] text-white/70 text-center sm:text-left block">Paste Image Link (URL)</Label>
+                          <Input 
+                            type="url" 
+                            placeholder="https://..." 
+                            value={settingsFormData.ownerPhoto && !settingsFormData.ownerPhoto.startsWith('data:') ? settingsFormData.ownerPhoto : ''} 
+                            onChange={(e) => setSettingsFormData({...settingsFormData, ownerPhoto: e.target.value})} 
+                            className="bg-black/50 border-white/20 text-xs focus-visible:border-[#CCFF00] h-10 w-full" 
+                          />
                         </div>
                       </div>
 
