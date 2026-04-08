@@ -123,13 +123,6 @@ export default function AdminDashboard() {
     }
     loadTheme()
 
-    const syncInterval = setInterval(() => {
-      if (sessionStorage.getItem('webfoo_admin_unlocked') === 'true') {
-        if (fetchData) fetchData()
-      }
-    }, 10000)
-
-    return () => clearInterval(syncInterval) 
   }, [fetchData, fetchStoreConfig])
 
   React.useEffect(() => {
