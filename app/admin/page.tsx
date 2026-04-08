@@ -194,6 +194,25 @@ export default function AdminDashboard() {
     });
   }, [orders, billingFilter, billingCustomDate]);
 
+  const filteredOrderHistory = React.useMemo(() => {
+    const baseHistory = orders.filter((o: any) => o.status === 'Delivered' || o.status === 'Cancelled').reverse();
+    if (historyFilter === 'all') return baseHistory;
+    const getLocalYYYYMMDD = (d: Date) => {
+      const offset = d.getTimezoneOffset() * 60000;
+      return new Date(d.getTime() - offset).toISOString().split('T')[0];
+    }
+    const today = new Date(); const todayStr = getLocalYYYYMMDD(today);
+    const yesterday = new Date(today); yesterday.setDate(yesterday.getDate() - 1); const yesterdayStr = getLocalYYYYMMDD(yesterday);
+    return baseHistory.filter((o: any) => {
+      let orderDateStr = o.date;
+      if (!orderDateStr && o.id && !isNaN(Number(o.id))) orderDateStr = getLocalYYYYMMDD(new Date(Number(o.id)));
+      if (historyFilter === 'today') return orderDateStr === todayStr;
+      if (historyFilter === 'yesterday') return orderDateStr === yesterdayStr;
+      if (historyFilter === 'custom') return orderDateStr === historyCustomDate;
+      return true;
+    });
+  }, [orders, historyFilter, historyCustomDate]);
+
   React.useEffect(() => {
     if (isMounted && isAuthorized) {
       const liveOrds = orders.filter((o: any) => o.status === 'Pending' || o.status === 'In Transit');
