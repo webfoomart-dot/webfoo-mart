@@ -6,10 +6,10 @@ import { motion, AnimatePresence } from "framer-motion"
 import { 
   Menu, LayoutDashboard, Zap, History, Tag, Package as PackageIcon, 
   MessageSquare, Users, IndianRupee, Clock, CheckCircle2, ArrowLeft,
-  MapPin, Phone, Truck, XCircle, Plus, UploadCloud, Trash2, Edit, PowerOff, Power,
+  MapPin, Phone, Truck, XCircle, Plus, Trash2, Edit, PowerOff, Power,
   Star, Ban, MessageCircle, FileText, Send, CheckSquare, Square, Smartphone,
   TrendingUp, Target, BarChart, ShieldAlert, LockKeyhole, Calendar, Settings, AlertTriangle, MoonStar, LayoutGrid,
-  ArrowUp, ArrowDown, Palette, Volume2, Wallet, UserCircle
+  ArrowUp, ArrowDown, Palette, Volume2, Wallet, UserCircle, Link as LinkIcon
 } from "lucide-react"
 import { createClient } from '@supabase/supabase-js' 
 
@@ -43,13 +43,12 @@ const supabase = createClient(supabaseUrl, supabaseKey)
 
 export default function AdminDashboard() {
   const [isMounted, setIsMounted] = React.useState(false)
-  
   const [isAuthorized, setIsAuthorized] = React.useState(false)
   const [passcode, setPasscode] = React.useState('')
   const [authError, setAuthError] = React.useState('')
 
-  const prevOrderCountRef = React.useRef(0)
   const alertAudioRef = React.useRef<HTMLAudioElement>(null)
+  const prevOrderCountRef = React.useRef(0)
 
   const { 
     orders, updateOrderStatus, 
@@ -68,16 +67,13 @@ export default function AdminDashboard() {
 
   const [analyticsFilter, setAnalyticsFilter] = React.useState('all')
   const [customDate, setCustomDate] = React.useState('')
-
   const [billingFilter, setBillingFilter] = React.useState('today')
   const [billingCustomDate, setBillingCustomDate] = React.useState('')
-
   const [historyFilter, setHistoryFilter] = React.useState('all')
   const [historyCustomDate, setHistoryCustomDate] = React.useState('')
 
   const [isProductSheetOpen, setIsProductSheetOpen] = React.useState(false)
   const [editingId, setEditingId] = React.useState<string | null>(null)
-  
   const [selectedCategoryView, setSelectedCategoryView] = React.useState<string | null>(null)
 
   const [formData, setFormData] = React.useState({
@@ -86,7 +82,6 @@ export default function AdminDashboard() {
   })
 
   const [newGalleryUrl, setNewGalleryUrl] = React.useState('') 
-
   const [selectedCustomers, setSelectedCustomers] = React.useState<string[]>([])
   const [messageText, setMessageText] = React.useState('')
 
@@ -122,7 +117,6 @@ export default function AdminDashboard() {
       if (data) setThemeColorData(data)
     }
     loadTheme()
-
   }, [fetchData, fetchStoreConfig])
 
   React.useEffect(() => {
@@ -164,7 +158,6 @@ export default function AdminDashboard() {
     const yesterday = new Date(today);
     yesterday.setDate(yesterday.getDate() - 1);
     const yesterdayStr = getLocalYYYYMMDD(yesterday);
-
     return orders.filter((o: any) => {
       let orderDateStr = o.date;
       if (!orderDateStr && o.id && !isNaN(Number(o.id))) {
@@ -180,7 +173,6 @@ export default function AdminDashboard() {
   const filteredBillingOrders = React.useMemo(() => {
     const deliveredOnly = orders.filter((o: any) => o.status === 'Delivered');
     if (billingFilter === 'all') return deliveredOnly;
-
     const getLocalYYYYMMDD = (d: Date) => {
       const offset = d.getTimezoneOffset() * 60000;
       return new Date(d.getTime() - offset).toISOString().split('T')[0];
@@ -190,7 +182,6 @@ export default function AdminDashboard() {
     const yesterday = new Date(today);
     yesterday.setDate(yesterday.getDate() - 1);
     const yesterdayStr = getLocalYYYYMMDD(yesterday);
-
     return deliveredOnly.filter((o: any) => {
       let orderDateStr = o.date;
       if (!orderDateStr && o.id && !isNaN(Number(o.id))) {
@@ -203,6 +194,18 @@ export default function AdminDashboard() {
     });
   }, [orders, billingFilter, billingCustomDate]);
 
+  React.useEffect(() => {
+    if (isMounted && isAuthorized) {
+      const liveOrds = orders.filter((o: any) => o.status === 'Pending' || o.status === 'In Transit');
+      if (liveOrds.length > prevOrderCountRef.current && prevOrderCountRef.current !== 0) {
+        if (alertAudioRef.current) {
+          alertAudioRef.current.play().catch(e => console.error("Sound blocked by browser:", e))
+        }
+      }
+      prevOrderCountRef.current = liveOrds.length
+    }
+  }, [orders, isMounted, isAuthorized])
+
   const handleAdminAccess = (e: React.FormEvent) => {
     e.preventDefault()
     if (passcode === ADMIN_SECRET_PASSCODE) {
@@ -210,17 +213,8 @@ export default function AdminDashboard() {
       setIsAuthorized(true)
       setAuthError('')
     } else {
-      setAuthError('ACCESS DENIED. INTRUDER LOGGED.')
+      setAuthError('ACCESS DENIED.')
       setPasscode('')
-    }
-  }
-
-  const handleOwnerPhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (file) { 
-      const reader = new FileReader(); 
-      reader.onloadend = () => setSettingsFormData({...settingsFormData, ownerPhoto: reader.result as string}); 
-      reader.readAsDataURL(file) 
     }
   }
 
@@ -243,11 +237,9 @@ export default function AdminDashboard() {
         ownerEmail: settingsFormData.ownerEmail,
         ownerPhoto: settingsFormData.ownerPhoto,
       });
-      alert("✅ Store Settings & Profile saved to Central Database!");
+      alert("✅ Settings saved!");
       if (fetchStoreConfig) fetchStoreConfig();
-    } catch(e) { 
-      alert("ERROR saving settings!") 
-    }
+    } catch(e) { alert("ERROR saving settings!") }
     setIsSettingsSaving(false);
   }
 
@@ -259,102 +251,37 @@ export default function AdminDashboard() {
       text_color: themeColorData.text_color,
       button_color: themeColorData.button_color
     }).eq('id', 1)
-    
     setIsThemeSaving(false)
-    if (error) {
-      alert("⚠️ Color update nahi hua: " + error.message)
-    } else {
-      alert("✅ Website Colors Successfully Updated! \nRefresh the website tab to see new colors.")
-    }
+    if (error) alert("⚠️ Error: " + error.message)
+    else alert("✅ Colors Updated!")
   }
 
   const handleSaveGlobalMinOrder = async () => {
     if (!updateStoreConfig) return;
     try {
       await updateStoreConfig({ minOrderAmount: globalMinOrder });
-      alert("✅ Global Minimum Order Limit Updated!");
+      alert("✅ Global Min Order Updated!");
       if (fetchStoreConfig) fetchStoreConfig();
-    } catch(e) {
-      alert("ERROR: Make sure min_order_amount column exists in your Supabase table!");
-    }
-  }
-
-  const handleCategoryImgUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (file) { 
-      const reader = new FileReader(); 
-      reader.onloadend = () => setNewCategoryImage(reader.result as string); 
-      reader.readAsDataURL(file) 
-    }
+    } catch(e) { alert("ERROR"); }
   }
 
   const handleSaveCategory = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!newCategoryName.trim()) return;
-
-    if (editingCategoryId) {
-      await updateCategory(editingCategoryId, { name: newCategoryName.trim(), image: newCategoryImage });
-    } else {
-      await addCategory({ name: newCategoryName.trim(), image: newCategoryImage });
-    }
-    
-    setNewCategoryName('');
-    setNewCategoryImage('');
-    setEditingCategoryId(null);
+    if (editingCategoryId) await updateCategory(editingCategoryId, { name: newCategoryName.trim(), image: newCategoryImage });
+    else await addCategory({ name: newCategoryName.trim(), image: newCategoryImage });
+    setNewCategoryName(''); setNewCategoryImage(''); setEditingCategoryId(null);
   }
 
   const editCategoryUI = (cat: any) => {
-    setEditingCategoryId(cat.id);
-    setNewCategoryName(cat.name);
-    setNewCategoryImage(cat.image || '');
+    setEditingCategoryId(cat.id); setNewCategoryName(cat.name); setNewCategoryImage(cat.image || '');
     window.scrollTo({ top: 0, behavior: 'smooth' }); 
   }
 
-  const resetCategoryForm = () => {
-    setEditingCategoryId(null);
-    setNewCategoryName('');
-    setNewCategoryImage('');
-  }
+  const resetCategoryForm = () => { setEditingCategoryId(null); setNewCategoryName(''); setNewCategoryImage(''); }
 
   const liveOrders = orders.filter((o: any) => o.status === 'Pending' || o.status === 'In Transit').reverse()
   
-  const filteredOrderHistory = React.useMemo(() => {
-    const baseHistory = orders.filter((o: any) => o.status === 'Delivered' || o.status === 'Cancelled').reverse();
-    if (historyFilter === 'all') return baseHistory;
-
-    const getLocalYYYYMMDD = (d: Date) => {
-      const offset = d.getTimezoneOffset() * 60000;
-      return new Date(d.getTime() - offset).toISOString().split('T')[0];
-    }
-    const today = new Date();
-    const todayStr = getLocalYYYYMMDD(today);
-    const yesterday = new Date(today);
-    yesterday.setDate(yesterday.getDate() - 1);
-    const yesterdayStr = getLocalYYYYMMDD(yesterday);
-
-    return baseHistory.filter((o: any) => {
-      let orderDateStr = o.date;
-      if (!orderDateStr && o.id && !isNaN(Number(o.id))) {
-        orderDateStr = getLocalYYYYMMDD(new Date(Number(o.id)));
-      }
-      if (historyFilter === 'today') return orderDateStr === todayStr;
-      if (historyFilter === 'yesterday') return orderDateStr === yesterdayStr;
-      if (historyFilter === 'custom') return orderDateStr === historyCustomDate;
-      return true;
-    });
-  }, [orders, historyFilter, historyCustomDate]);
-  
-  React.useEffect(() => {
-    if (isMounted && isAuthorized) {
-      if (liveOrders.length > prevOrderCountRef.current && prevOrderCountRef.current !== 0) {
-        if (alertAudioRef.current) {
-          alertAudioRef.current.play().catch(e => console.error("Sound blocked by browser:", e))
-        }
-      }
-      prevOrderCountRef.current = liveOrders.length
-    }
-  }, [liveOrders.length, isMounted, isAuthorized])
-
   if (!isMounted) return null
 
   if (!isAuthorized) {
@@ -372,7 +299,6 @@ export default function AdminDashboard() {
                 <LockKeyhole className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-red-500/50" />
                 <Input type="password" value={passcode} onChange={(e) => setPasscode(e.target.value)} className={`pl-12 h-14 bg-black/50 border-red-500/30 text-white rounded-xl font-mono text-xl tracking-[0.3em] focus-visible:border-red-500 focus-visible:ring-1 focus-visible:ring-red-500 ${authError ? 'border-red-500 animate-shake' : ''}`} autoFocus />
               </div>
-              {authError && <p className="text-red-500 text-[10px] font-black uppercase tracking-widest mt-2">{authError}</p>}
             </div>
             <Button type="submit" className="w-full h-14 bg-red-500 text-white font-black text-lg hover:bg-red-600 shadow-[0_0_20px_rgba(255,0,85,0.4)] tracking-widest uppercase transition-all">DECRYPT</Button>
             <Link href="/"><Button type="button" variant="ghost" className="w-full mt-4 text-muted-foreground hover:text-white uppercase tracking-widest text-xs font-bold"><ArrowLeft className="w-4 h-4 mr-2" /> Return to Safety</Button></Link>
@@ -399,10 +325,7 @@ export default function AdminDashboard() {
   })
   const topProducts = Array.from(productSales.entries()).map(([name, data]) => ({ name, ...data as {qty: number, revenue: number} })).sort((a, b) => b.qty - a.qty).slice(0, 5)
 
-  let totalSupplierCost = 0;
-  let totalBilledRevenue = 0;
-  const billedItemsMap = new Map();
-
+  let totalSupplierCost = 0; let totalBilledRevenue = 0; const billedItemsMap = new Map();
   filteredBillingOrders.forEach((order: any) => {
     totalBilledRevenue += order.amount;
     order.items.forEach((item: any) => {
@@ -414,30 +337,22 @@ export default function AdminDashboard() {
       billedItemsMap.set(item.name, { qty: current.qty + item.quantity, totalCost: current.totalCost + totalCostForItem, costRate: costRate });
     });
   });
-
   const totalBilledProfit = totalBilledRevenue - totalSupplierCost;
   const billedItemsArray = Array.from(billedItemsMap.entries()).map(([name, data]) => ({ name, ...data as any })).sort((a, b) => b.totalCost - a.totalCost);
 
   const customersMap = new Map()
   Object.keys(customerMeta).forEach(phone => {
     const meta = customerMeta[phone]
-    customersMap.set(phone, {
-      name: meta.name || 'Unknown', phone: phone, address: meta.address || 'Address not added', totalOrders: 0, totalSpent: 0, ordersList: []
-    })
+    customersMap.set(phone, { name: meta.name || 'Unknown', phone: phone, address: meta.address || 'Address not added', totalOrders: 0, totalSpent: 0, ordersList: [] })
   })
-
   orders.forEach((order: any) => {
-    if (!customersMap.has(order.phone)) {
-      customersMap.set(order.phone, { name: order.customer, phone: order.phone, address: order.landmark, totalOrders: 0, totalSpent: 0, ordersList: [] })
-    } else {
-      if(order.landmark) customersMap.get(order.phone).address = order.landmark
-    }
+    if (!customersMap.has(order.phone)) customersMap.set(order.phone, { name: order.customer, phone: order.phone, address: order.landmark, totalOrders: 0, totalSpent: 0, ordersList: [] })
+    else if(order.landmark) customersMap.get(order.phone).address = order.landmark
     const cust = customersMap.get(order.phone)
     cust.totalOrders += 1
     if (order.status === 'Delivered') cust.totalSpent += order.amount
     cust.ordersList.push(order)
   })
-
   const customersList = Array.from(customersMap.values()).sort((a, b) => {
     if (b.totalSpent !== a.totalSpent) return b.totalSpent - a.totalSpent
     return b.totalOrders - a.totalOrders
@@ -459,15 +374,11 @@ export default function AdminDashboard() {
   const handleSendToApp = async () => {
     if (selectedCustomers.length === 0) return alert("Select at least one customer!")
     if (!messageText.trim()) return alert("Message is empty!")
-    
     try {
       await Promise.all(selectedCustomers.map(phone => addNotification(phone, messageText)))
-      alert(`✅ Notification pushed to ${selectedCustomers.length} app(s) successfully!`)
+      alert(`✅ Pushed successfully!`)
       setSelectedCustomers([]); setMessageText('')
-    } catch (error) {
-      console.error(error)
-      alert("⚠️ Error: Message bhejne mein problem hui. Check Console & Supabase RLS.")
-    }
+    } catch (error) { alert("⚠️ Error sending message.") }
   }
 
   const handleSendToWhatsApp = () => {
@@ -476,7 +387,7 @@ export default function AdminDashboard() {
     if (selectedCustomers.length === 1) {
       const phone = selectedCustomers[0].replace(/\D/g, '')
       window.open(`https://wa.me/91${phone}?text=${encodeURIComponent(messageText)}`, '_blank')
-    } else { alert(`⚠️ WhatsApp Bulk Send requires Business API integration.\nFor now, select 1 customer at a time to open WhatsApp Web.`) }
+    } else { alert(`⚠️ Bulk requires API.`) }
   }
 
   const handleSaveProduct = (e: React.FormEvent) => {
@@ -505,32 +416,12 @@ export default function AdminDashboard() {
     setNewGalleryUrl(''); 
   }
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (file) { const reader = new FileReader(); reader.onloadend = () => setFormData({ ...formData, image: reader.result as string }); reader.readAsDataURL(file) }
-  }
-
-  const handleGalleryUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files || [])
-    const readers = files.map(file => {
-      return new Promise<string>((resolve) => {
-        const reader = new FileReader()
-        reader.onloadend = () => resolve(reader.result as string)
-        reader.readAsDataURL(file)
-      })
-    })
-    Promise.all(readers).then(images => {
-      setFormData(prev => ({ ...prev, galleryImages: [...prev.galleryImages, ...images] }))
-    })
-  }
-
   const addGalleryUrl = () => {
     if(newGalleryUrl.trim() !== '') {
       setFormData(prev => ({ ...prev, galleryImages: [...prev.galleryImages, newGalleryUrl.trim()] }))
       setNewGalleryUrl('')
     }
   }
-
   const removeGalleryImage = (index: number) => {
     setFormData(prev => ({ ...prev, galleryImages: prev.galleryImages.filter((_, i) => i !== index) }))
   }
@@ -563,9 +454,7 @@ export default function AdminDashboard() {
   return (
     <div className="flex min-h-screen bg-[#050505] text-foreground font-sans selection:bg-[#00FFFF]/30">
       <audio ref={alertAudioRef} src="https://actions.google.com/sounds/v1/alarms/beep_short.ogg" preload="auto" />
-
       <aside className="hidden md:flex flex-col w-72 glass-strong border-r border-white/10 fixed top-0 bottom-0 left-0 z-40"><SidebarNav /></aside>
-
       <header className="md:hidden fixed top-0 left-0 right-0 h-16 glass-strong border-b border-white/10 z-40 flex items-center px-4 justify-between">
         <div className="flex items-center gap-3">
           <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
@@ -574,8 +463,8 @@ export default function AdminDashboard() {
           </Sheet>
           <span className="text-xl font-black italic uppercase text-white">Admin <span className="text-[#CCFF00]">Panel</span></span>
         </div>
-        <Button variant="ghost" size="icon" onClick={() => alertAudioRef.current?.play()} className="text-[#CCFF00] hover:bg-[#CCFF00]/10">
-          <Volume2 className="w-5 h-5" />
+        <Button variant="ghost" size="icon" onClick={() => fetchData && fetchData()} className="text-[#00FFFF] border border-[#00FFFF]/30 hover:bg-[#00FFFF]/10">
+          <Zap className="w-4 h-4" />
         </Button>
       </header>
 
@@ -585,41 +474,34 @@ export default function AdminDashboard() {
             {MENU_ITEMS.find(m => m.id === activeTab)?.label}
             {activeTab === 'live_orders' && liveOrders.length > 0 && <span className="w-3 h-3 rounded-full bg-[#FF0055] animate-pulse ml-2" />}
           </h2>
-          
-          <Button variant="outline" onClick={() => { alertAudioRef.current?.play(); alert("✅ Alert Sound Enabled! Ab background me tab chhod de, naye order par aawaz aayegi."); }} className="border-[#CCFF00]/30 text-[#CCFF00] hover:bg-[#CCFF00] hover:text-black font-black tracking-widest uppercase">
-            <Volume2 className="w-4 h-4 mr-2" /> 🔔 Enable Sound
-          </Button>
+          <div className="flex gap-3">
+            <Button variant="outline" onClick={() => fetchData && fetchData()} className="border-[#00FFFF]/30 text-[#00FFFF] hover:bg-[#00FFFF] hover:text-black font-black tracking-widest uppercase">
+              <Zap className="w-4 h-4 mr-2" /> Refresh Data
+            </Button>
+            <Button variant="outline" onClick={() => { alertAudioRef.current?.play(); alert("✅ Alert Sound Enabled! Naye order par aawaz aayegi."); }} className="border-[#CCFF00]/30 text-[#CCFF00] hover:bg-[#CCFF00] hover:text-black font-black tracking-widest uppercase">
+              <Volume2 className="w-4 h-4 mr-2" /> 🔔 Sound
+            </Button>
+          </div>
         </div>
 
         <AnimatePresence mode="wait">
-
-          {/* 🔥 NAYA: SUPPLIER BILLING TAB */}
+          {/* BILLING */}
           {activeTab === 'billing' && (
             <motion.div key="billing" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="space-y-6">
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 glass-strong p-4 rounded-xl border border-[#00FFFF]/20 shadow-[0_0_15px_rgba(0,255,255,0.05)]">
-                <div>
-                   <h3 className="text-sm font-black text-white uppercase tracking-widest flex items-center gap-2"><Wallet className="w-4 h-4 text-[#00FFFF]"/> Wholesale Billing</h3>
-                   <p className="text-[10px] text-muted-foreground mt-1">Calculated based on DELIVERED orders only.</p>
-                </div>
+                <div><h3 className="text-sm font-black text-white uppercase tracking-widest flex items-center gap-2"><Wallet className="w-4 h-4 text-[#00FFFF]"/> Wholesale Billing</h3></div>
                 <div className="flex items-center gap-3 w-full sm:w-auto">
                   <select value={billingFilter} onChange={(e) => setBillingFilter(e.target.value)} className="bg-black/50 border border-white/10 rounded-lg px-3 h-10 text-xs font-bold text-white focus:outline-none focus:border-[#00FFFF] w-full sm:w-auto uppercase tracking-wider">
-                    <option value="today" className="bg-black">Today's Bill</option>
-                    <option value="yesterday" className="bg-black">Yesterday</option>
-                    <option value="all" className="bg-black">All Time</option>
-                    <option value="custom" className="bg-black">Custom Date</option>
+                    <option value="today" className="bg-black">Today's Bill</option><option value="yesterday" className="bg-black">Yesterday</option><option value="all" className="bg-black">All Time</option><option value="custom" className="bg-black">Custom Date</option>
                   </select>
-                  {billingFilter === 'custom' && (
-                    <Input type="date" value={billingCustomDate} onChange={(e) => setBillingCustomDate(e.target.value)} className="bg-black/50 border-white/10 h-10 text-xs w-full sm:w-auto text-white" />
-                  )}
+                  {billingFilter === 'custom' && <Input type="date" value={billingCustomDate} onChange={(e) => setBillingCustomDate(e.target.value)} className="bg-black/50 border-white/10 h-10 text-xs w-full sm:w-auto text-white" />}
                 </div>
               </div>
-
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <Card className="glass-strong border-white/10"><CardContent className="p-6"><p className="text-xs text-muted-foreground uppercase tracking-widest font-bold mb-2">Total Sales (Revenue)</p><p className="text-3xl font-black text-white font-mono">₹{totalBilledRevenue}</p></CardContent></Card>
                 <Card className="glass-strong border-red-500/30 bg-red-500/5"><CardContent className="p-6"><p className="text-xs text-red-400 uppercase tracking-widest font-bold mb-2">Payable to Shop (Cost)</p><p className="text-3xl font-black text-red-500 font-mono">₹{totalSupplierCost}</p></CardContent></Card>
                 <Card className="glass-strong border-[#00FF55]/30 bg-[#00FF55]/5"><CardContent className="p-6"><p className="text-xs text-[#00FF55] uppercase tracking-widest font-bold mb-2">Your Profit</p><p className="text-3xl font-black text-[#00FF55] font-mono">₹{totalBilledProfit}</p></CardContent></Card>
               </div>
-
               <Card className="glass-strong border-white/10">
                 <CardContent className="p-6">
                   <h3 className="text-sm font-black text-white uppercase tracking-widest mb-4 border-b border-white/10 pb-4">Items Breakdown</h3>
@@ -627,19 +509,9 @@ export default function AdminDashboard() {
                     <div className="text-center py-10 opacity-50"><Wallet className="w-8 h-8 mx-auto mb-2" /><p className="text-xs uppercase tracking-widest font-bold">No items delivered in this period</p></div>
                   ) : (
                     <div className="space-y-2">
-                      <div className="flex justify-between items-center px-4 py-2 bg-white/5 rounded-lg border border-white/10 text-[10px] uppercase font-black text-muted-foreground tracking-widest">
-                        <span className="flex-1">Product</span>
-                        <span className="w-16 text-center">Qty</span>
-                        <span className="w-24 text-right">Buy Rate</span>
-                        <span className="w-24 text-right text-white">Total Cost</span>
-                      </div>
+                      <div className="flex justify-between items-center px-4 py-2 bg-white/5 rounded-lg border border-white/10 text-[10px] uppercase font-black text-muted-foreground tracking-widest"><span className="flex-1">Product</span><span className="w-16 text-center">Qty</span><span className="w-24 text-right">Buy Rate</span><span className="w-24 text-right text-white">Total Cost</span></div>
                       {billedItemsArray.map((item, idx) => (
-                        <div key={idx} className="flex justify-between items-center px-4 py-3 bg-black/50 rounded-lg border border-white/5 hover:border-white/20 transition-colors">
-                          <span className="flex-1 font-bold text-sm text-white truncate pr-4">{item.name}</span>
-                          <span className="w-16 text-center font-mono text-[#00FFFF] font-bold">{item.qty}</span>
-                          <span className="w-24 text-right font-mono text-muted-foreground">₹{item.costRate}</span>
-                          <span className="w-24 text-right font-mono font-black text-red-400">₹{item.totalCost}</span>
-                        </div>
+                        <div key={idx} className="flex justify-between items-center px-4 py-3 bg-black/50 rounded-lg border border-white/5 hover:border-white/20 transition-colors"><span className="flex-1 font-bold text-sm text-white truncate pr-4">{item.name}</span><span className="w-16 text-center font-mono text-[#00FFFF] font-bold">{item.qty}</span><span className="w-24 text-right font-mono text-muted-foreground">₹{item.costRate}</span><span className="w-24 text-right font-mono font-black text-red-400">₹{item.totalCost}</span></div>
                       ))}
                     </div>
                   )}
@@ -648,316 +520,148 @@ export default function AdminDashboard() {
             </motion.div>
           )}
 
-          {/* 🗂️ CATEGORIES MANAGEMENT TAB */}
+          {/* CATEGORIES */}
           {activeTab === 'categories' && (
              <motion.div key="categories" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="space-y-6 max-w-2xl">
                 <Card className="glass-strong border-white/10">
                   <CardContent className="p-6 sm:p-8 space-y-6">
-                    <div className="flex items-center gap-3 border-b border-white/10 pb-4">
-                      <LayoutGrid className="w-6 h-6 text-[#00FFFF]" />
-                      <h3 className="text-xl font-black uppercase text-white">Manage Store Categories</h3>
-                    </div>
+                    <div className="flex items-center gap-3 border-b border-white/10 pb-4"><LayoutGrid className="w-6 h-6 text-[#00FFFF]" /><h3 className="text-xl font-black uppercase text-white">Manage Store Categories</h3></div>
                     <form onSubmit={handleSaveCategory} className="flex flex-col gap-4">
-                      <div className="space-y-4 bg-white/5 p-4 rounded-xl border border-white/10">
-                        <Label className="text-xs font-black uppercase tracking-widest text-[#00FFFF]">Category Image (Optional)</Label>
-                        <div className="relative w-full h-24 rounded-xl border-2 border-dashed border-[#00FFFF]/40 bg-[#00FFFF]/5 flex items-center justify-center overflow-hidden cursor-pointer group">
-                          <input type="file" accept="image/*" onChange={handleCategoryImgUpload} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" />
-                          {newCategoryImage && newCategoryImage.startsWith('data:') ? (
-                            <img src={newCategoryImage} alt="Preview" className="w-full h-full object-cover" />
-                          ) : (
-                            <div className="text-center group-hover:scale-105 transition-transform"><UploadCloud className="w-6 h-6 text-[#00FFFF] mx-auto mb-1" /><span className="text-[10px] font-bold text-[#00FFFF]">Upload from Device</span></div>
-                          )}
-                        </div>
-                        <div className="flex items-center gap-4"><div className="h-px bg-white/10 flex-1"></div><span className="text-[10px] text-muted-foreground uppercase font-black tracking-widest">OR</span><div className="h-px bg-white/10 flex-1"></div></div>
-                        <div className="space-y-2">
-                          <Label className="text-[10px] text-white/70">Paste Image Link (URL)</Label>
-                          <Input type="url" placeholder="https://..." value={newCategoryImage && !newCategoryImage.startsWith('data:') ? newCategoryImage : ''} onChange={(e) => setNewCategoryImage(e.target.value)} className="bg-black/50 border-white/20 text-xs focus-visible:border-[#00FFFF] h-10" />
-                          {newCategoryImage && !newCategoryImage.startsWith('data:') && (
-                            <div className="mt-2 relative w-full h-20 rounded-lg overflow-hidden border border-white/10 bg-black/50">
-                              <img src={newCategoryImage} alt="URL Preview" className="w-full h-full object-cover" onError={(e) => { e.currentTarget.src = '' }} />
-                            </div>
-                          )}
-                        </div>
-                      </div>
-
-                      <div className="flex gap-4 items-end mt-2">
-                        <div className="flex-1 space-y-2">
-                          <Label className="text-xs uppercase tracking-widest text-[#00FFFF]">
-                            {editingCategoryId ? 'Edit Category Name' : 'New Category Name'}
-                          </Label>
-                          <Input required placeholder="e.g. Fresh Fruits" value={newCategoryName} onChange={(e) => setNewCategoryName(e.target.value)} className="bg-black/50 border-white/20 text-white h-12" />
-                        </div>
-                        <Button type="submit" className="h-12 bg-[#CCFF00] text-black font-black uppercase tracking-widest px-6 hover:bg-[#CCFF00]/90">
-                          {editingCategoryId ? 'UPDATE' : 'ADD'}
-                        </Button>
-                        {editingCategoryId && (
-                          <Button type="button" onClick={resetCategoryForm} variant="outline" className="h-12 border-white/20 text-white hover:bg-white/10">CANCEL</Button>
+                      {/* ONLY URL ALLOWED */}
+                      <div className="space-y-4 bg-[#00FFFF]/5 p-4 rounded-xl border border-[#00FFFF]/20">
+                        <Label className="text-xs font-black uppercase tracking-widest text-[#00FFFF] flex items-center gap-2"><LinkIcon className="w-4 h-4"/> Paste Category Image URL</Label>
+                        <p className="text-[10px] text-white/50">Host image on ImageKit.io and paste direct URL here. NO DIRECT UPLOADS.</p>
+                        <Input type="url" placeholder="https://ik.imagekit.io/..." value={newCategoryImage} onChange={(e) => setNewCategoryImage(e.target.value)} className="bg-black border-white/20 text-xs focus-visible:border-[#00FFFF] h-12 text-white" />
+                        {newCategoryImage && (
+                          <div className="mt-2 relative w-full h-24 rounded-lg overflow-hidden border border-[#00FFFF]/20 bg-black/50">
+                            <img src={newCategoryImage} alt="URL Preview" className="w-full h-full object-contain" onError={(e) => { e.currentTarget.src = '' }} />
+                          </div>
                         )}
                       </div>
+                      <div className="flex gap-4 items-end mt-2">
+                        <div className="flex-1 space-y-2"><Label className="text-xs uppercase tracking-widest text-[#00FFFF]">{editingCategoryId ? 'Edit Category Name' : 'New Category Name'}</Label><Input required placeholder="e.g. Fresh Fruits" value={newCategoryName} onChange={(e) => setNewCategoryName(e.target.value)} className="bg-black/50 border-white/20 text-white h-12" /></div>
+                        <Button type="submit" className="h-12 bg-[#CCFF00] text-black font-black uppercase tracking-widest px-6 hover:bg-[#CCFF00]/90">{editingCategoryId ? 'UPDATE' : 'ADD'}</Button>
+                        {editingCategoryId && <Button type="button" onClick={resetCategoryForm} variant="outline" className="h-12 border-white/20 text-white hover:bg-white/10">CANCEL</Button>}
+                      </div>
                     </form>
-
                     <div className="mt-6 space-y-3">
-                      <h4 className="text-xs font-black text-muted-foreground uppercase tracking-widest mb-3 border-b border-white/10 pb-2">Active Categories (Order Control)</h4>
-                      
                       {categories.map((cat: any, idx: number) => (
                         <div key={cat.id} className="flex justify-between items-center p-3 bg-white/5 border border-white/10 rounded-xl">
-                          <div className="flex items-center gap-3">
-                             <span className="text-xs text-muted-foreground font-mono">{idx + 1}.</span>
-                             {cat.image ? (
-                               <img src={cat.image} alt={cat.name} className="w-8 h-8 rounded-md object-cover border border-white/10" />
-                             ) : (
-                               <div className="w-8 h-8 rounded-md bg-white/10 flex items-center justify-center border border-white/10"><PackageIcon className="w-4 h-4 text-white/50" /></div>
-                             )}
+                          <div className="flex items-center gap-3"><span className="text-xs text-muted-foreground font-mono">{idx + 1}.</span>
+                             {cat.image ? <img src={cat.image} alt={cat.name} className="w-8 h-8 rounded-md object-cover border border-white/10" /> : <div className="w-8 h-8 rounded-md bg-white/10 flex items-center justify-center border border-white/10"><PackageIcon className="w-4 h-4 text-white/50" /></div>}
                              <span className="font-bold text-white uppercase tracking-wider text-sm">{cat.name}</span>
                           </div>
-                          
-                          <div className="flex gap-1 items-center">
-                             <Button variant="ghost" size="icon" onClick={() => editCategoryUI(cat)} className="w-8 h-8 text-[#CCFF00] hover:bg-[#CCFF00]/20"><Edit className="w-4 h-4" /></Button>
-                             <Button variant="ghost" size="icon" onClick={() => reorderCategory(cat.id, 'up')} disabled={idx === 0} className="w-8 h-8 text-[#00FFFF] hover:bg-[#00FFFF]/20"><ArrowUp className="w-4 h-4" /></Button>
-                             <Button variant="ghost" size="icon" onClick={() => reorderCategory(cat.id, 'down')} disabled={idx === categories.length - 1} className="w-8 h-8 text-[#00FFFF] hover:bg-[#00FFFF]/20"><ArrowDown className="w-4 h-4" /></Button>
-                             <div className="w-px h-5 bg-white/10 mx-1"></div>
-                             <Button variant="ghost" size="icon" onClick={() => { if(confirm("Delete this category?")) deleteCategory(cat.id) }} className="w-8 h-8 text-red-500 hover:text-white hover:bg-red-500"><Trash2 className="w-4 h-4" /></Button>
-                          </div>
+                          <div className="flex gap-1 items-center"><Button variant="ghost" size="icon" onClick={() => editCategoryUI(cat)} className="w-8 h-8 text-[#CCFF00] hover:bg-[#CCFF00]/20"><Edit className="w-4 h-4" /></Button><Button variant="ghost" size="icon" onClick={() => reorderCategory(cat.id, 'up')} disabled={idx === 0} className="w-8 h-8 text-[#00FFFF] hover:bg-[#00FFFF]/20"><ArrowUp className="w-4 h-4" /></Button><Button variant="ghost" size="icon" onClick={() => reorderCategory(cat.id, 'down')} disabled={idx === categories.length - 1} className="w-8 h-8 text-[#00FFFF] hover:bg-[#00FFFF]/20"><ArrowDown className="w-4 h-4" /></Button><div className="w-px h-5 bg-white/10 mx-1"></div><Button variant="ghost" size="icon" onClick={() => { if(confirm("Delete category?")) deleteCategory(cat.id) }} className="w-8 h-8 text-red-500 hover:text-white hover:bg-red-500"><Trash2 className="w-4 h-4" /></Button></div>
                         </div>
                       ))}
-                      {categories.length === 0 && (
-                         <p className="text-[10px] text-muted-foreground uppercase tracking-widest text-center py-4">
-                           No categories added yet. Add a category here!
-                         </p>
-                      )}
                     </div>
                   </CardContent>
                 </Card>
              </motion.div>
           )}
 
-          {/* 🔥 ⚙️ SETTINGS TAB */}
+          {/* SETTINGS */}
           {activeTab === 'settings' && (
              <motion.div key="settings" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="space-y-6 max-w-3xl">
-                
-                {/* 🔥 NAYA: FOOTER PROFILE CARD (WITH URL OPTION) */}
                 <Card className="glass-strong border-white/10 mb-8 border-[#CCFF00]/30 shadow-[0_0_20px_rgba(204,255,0,0.05)]">
                   <CardContent className="p-6 sm:p-8 space-y-6">
-                    <div className="flex items-center gap-3 border-b border-[#CCFF00]/30 pb-4">
-                      <UserCircle className="w-6 h-6 text-[#CCFF00]" />
-                      <h3 className="text-xl font-black uppercase text-white">Footer Profile (About)</h3>
-                    </div>
-                    
+                    <div className="flex items-center gap-3 border-b border-[#CCFF00]/30 pb-4"><UserCircle className="w-6 h-6 text-[#CCFF00]" /><h3 className="text-xl font-black uppercase text-white">Footer Profile (About)</h3></div>
                     <div className="flex flex-col sm:flex-row gap-8">
-                      {/* Photo Uploader with URL Option */}
-                      <div className="shrink-0 space-y-4">
-                        <div>
-                          <Label className="text-xs uppercase font-bold text-muted-foreground mb-2 block text-center sm:text-left">Your Photo</Label>
-                          <div className="relative w-32 h-32 rounded-full border-2 border-dashed border-[#CCFF00]/40 bg-[#CCFF00]/5 flex items-center justify-center overflow-hidden cursor-pointer group mx-auto sm:mx-0">
-                            <input type="file" accept="image/*" onChange={handleOwnerPhotoUpload} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" />
-                            {settingsFormData.ownerPhoto ? (
-                              <img src={settingsFormData.ownerPhoto} alt="Owner" className="w-full h-full object-cover" />
-                            ) : (
-                              <div className="text-center group-hover:scale-105 transition-transform"><UploadCloud className="w-6 h-6 text-[#CCFF00] mx-auto mb-1" /><span className="text-[10px] font-bold text-[#CCFF00]">Upload</span></div>
-                            )}
+                      {/* ONLY URL ALLOWED FOR PHOTO */}
+                      <div className="shrink-0 space-y-4 w-full sm:w-48">
+                        <Label className="text-xs uppercase font-bold text-[#CCFF00] flex items-center gap-2"><LinkIcon className="w-4 h-4"/> Profile Image URL</Label>
+                        <p className="text-[10px] text-white/50 mb-2">Use an external link (ImageKit).</p>
+                        <Input type="url" placeholder="https://ik.imagekit.io/..." value={settingsFormData.ownerPhoto} onChange={(e) => setSettingsFormData({...settingsFormData, ownerPhoto: e.target.value})} className="bg-black border-[#CCFF00]/30 text-xs focus-visible:border-[#CCFF00] h-12 text-white w-full" />
+                        {settingsFormData.ownerPhoto && (
+                          <div className="relative w-20 h-20 rounded-full border-2 border-[#CCFF00]/40 bg-black mt-4 overflow-hidden mx-auto sm:mx-0">
+                            <img src={settingsFormData.ownerPhoto} alt="Owner" className="w-full h-full object-cover" />
                           </div>
-                        </div>
-                        
-                        <div className="flex items-center gap-4 w-32 mx-auto sm:mx-0">
-                          <div className="h-px bg-white/10 flex-1"></div>
-                          <span className="text-[10px] text-muted-foreground uppercase font-black tracking-widest">OR</span>
-                          <div className="h-px bg-white/10 flex-1"></div>
-                        </div>
-                        
-                        <div className="space-y-2 w-full sm:w-40 mx-auto sm:mx-0">
-                          <Label className="text-[10px] text-white/70 text-center sm:text-left block">Paste Image Link (URL)</Label>
-                          <Input 
-                            type="url" 
-                            placeholder="https://..." 
-                            value={settingsFormData.ownerPhoto && !settingsFormData.ownerPhoto.startsWith('data:') ? settingsFormData.ownerPhoto : ''} 
-                            onChange={(e) => setSettingsFormData({...settingsFormData, ownerPhoto: e.target.value})} 
-                            className="bg-black/50 border-white/20 text-xs focus-visible:border-[#CCFF00] h-10 w-full" 
-                          />
-                        </div>
+                        )}
                       </div>
-
-                      {/* Details Fields */}
                       <div className="flex-1 space-y-4">
-                        <div className="space-y-2">
-                          <Label className="text-xs uppercase font-bold text-muted-foreground">Owner Name</Label>
-                          <Input value={settingsFormData.ownerName} onChange={(e) => setSettingsFormData({...settingsFormData, ownerName: e.target.value})} placeholder="e.g. Vineet Kumar" className="bg-black/50 border-white/10 text-white" />
-                        </div>
+                        <div className="space-y-2"><Label className="text-xs uppercase font-bold text-muted-foreground">Owner Name</Label><Input value={settingsFormData.ownerName} onChange={(e) => setSettingsFormData({...settingsFormData, ownerName: e.target.value})} placeholder="e.g. Vineet Kumar" className="bg-black/50 border-white/10 text-white" /></div>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                          <div className="space-y-2">
-                            <Label className="text-xs uppercase font-bold text-muted-foreground">Phone Number</Label>
-                            <Input value={settingsFormData.ownerPhone} onChange={(e) => setSettingsFormData({...settingsFormData, ownerPhone: e.target.value})} placeholder="+91 XXXXX XXXXX" className="bg-black/50 border-white/10 text-white font-mono" />
-                          </div>
-                          <div className="space-y-2">
-                            <Label className="text-xs uppercase font-bold text-muted-foreground">Email Address</Label>
-                            <Input type="email" value={settingsFormData.ownerEmail} onChange={(e) => setSettingsFormData({...settingsFormData, ownerEmail: e.target.value})} placeholder="contact@webfoo.in" className="bg-black/50 border-white/10 text-white" />
-                          </div>
+                          <div className="space-y-2"><Label className="text-xs uppercase font-bold text-muted-foreground">Phone Number</Label><Input value={settingsFormData.ownerPhone} onChange={(e) => setSettingsFormData({...settingsFormData, ownerPhone: e.target.value})} placeholder="+91 XXXXX" className="bg-black/50 border-white/10 text-white font-mono" /></div>
+                          <div className="space-y-2"><Label className="text-xs uppercase font-bold text-muted-foreground">Email</Label><Input type="email" value={settingsFormData.ownerEmail} onChange={(e) => setSettingsFormData({...settingsFormData, ownerEmail: e.target.value})} placeholder="contact@webfoo.in" className="bg-black/50 border-white/10 text-white" /></div>
                         </div>
                       </div>
                     </div>
                   </CardContent>
                 </Card>
 
-                {/* THEME COLORS CARD */}
+                {/* THEME */}
                 <Card className="glass-strong border-white/10 mb-8 border-[#00FFFF]/30">
                   <CardContent className="p-6 sm:p-8 space-y-6">
-                    <div className="flex items-center gap-3 border-b border-[#00FFFF]/30 pb-4">
-                      <Palette className="w-6 h-6 text-[#00FFFF]" />
-                      <h3 className="text-xl font-black uppercase text-white">Website Theme Colors</h3>
-                    </div>
-                    
+                    <div className="flex items-center gap-3 border-b border-[#00FFFF]/30 pb-4"><Palette className="w-6 h-6 text-[#00FFFF]" /><h3 className="text-xl font-black uppercase text-white">Website Theme Colors</h3></div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div className="space-y-2">
-                        <Label className="text-xs uppercase font-bold text-muted-foreground">Background Color</Label>
-                        <div className="flex gap-3 items-center">
-                          <input type="color" value={themeColorData.background_color} onChange={(e) => setThemeColorData({...themeColorData, background_color: e.target.value})} className="w-12 h-12 rounded cursor-pointer border-0 bg-transparent" />
-                          <Input value={themeColorData.background_color} onChange={(e) => setThemeColorData({...themeColorData, background_color: e.target.value})} className="font-mono bg-black/50 border-white/10 uppercase" />
-                        </div>
-                      </div>
-                      <div className="space-y-2">
-                        <Label className="text-xs uppercase font-bold text-muted-foreground">Main Text Color</Label>
-                        <div className="flex gap-3 items-center">
-                          <input type="color" value={themeColorData.text_color} onChange={(e) => setThemeColorData({...themeColorData, text_color: e.target.value})} className="w-12 h-12 rounded cursor-pointer border-0 bg-transparent" />
-                          <Input value={themeColorData.text_color} onChange={(e) => setThemeColorData({...themeColorData, text_color: e.target.value})} className="font-mono bg-black/50 border-white/10 uppercase" />
-                        </div>
-                      </div>
-                      <div className="space-y-2">
-                        <Label className="text-xs uppercase font-bold text-muted-foreground">Primary Accent (Icons/Lines)</Label>
-                        <div className="flex gap-3 items-center">
-                          <input type="color" value={themeColorData.primary_color} onChange={(e) => setThemeColorData({...themeColorData, primary_color: e.target.value})} className="w-12 h-12 rounded cursor-pointer border-0 bg-transparent" />
-                          <Input value={themeColorData.primary_color} onChange={(e) => setThemeColorData({...themeColorData, primary_color: e.target.value})} className="font-mono bg-black/50 border-white/10 uppercase" />
-                        </div>
-                      </div>
-                      <div className="space-y-2">
-                        <Label className="text-xs uppercase font-bold text-muted-foreground">Button Color</Label>
-                        <div className="flex gap-3 items-center">
-                          <input type="color" value={themeColorData.button_color} onChange={(e) => setThemeColorData({...themeColorData, button_color: e.target.value})} className="w-12 h-12 rounded cursor-pointer border-0 bg-transparent" />
-                          <Input value={themeColorData.button_color} onChange={(e) => setThemeColorData({...themeColorData, button_color: e.target.value})} className="font-mono bg-black/50 border-white/10 uppercase" />
-                        </div>
-                      </div>
+                      <div className="space-y-2"><Label className="text-xs uppercase font-bold text-muted-foreground">Background Color</Label><div className="flex gap-3 items-center"><input type="color" value={themeColorData.background_color} onChange={(e) => setThemeColorData({...themeColorData, background_color: e.target.value})} className="w-12 h-12 rounded cursor-pointer border-0 bg-transparent" /><Input value={themeColorData.background_color} onChange={(e) => setThemeColorData({...themeColorData, background_color: e.target.value})} className="font-mono bg-black/50 border-white/10 uppercase" /></div></div>
+                      <div className="space-y-2"><Label className="text-xs uppercase font-bold text-muted-foreground">Main Text Color</Label><div className="flex gap-3 items-center"><input type="color" value={themeColorData.text_color} onChange={(e) => setThemeColorData({...themeColorData, text_color: e.target.value})} className="w-12 h-12 rounded cursor-pointer border-0 bg-transparent" /><Input value={themeColorData.text_color} onChange={(e) => setThemeColorData({...themeColorData, text_color: e.target.value})} className="font-mono bg-black/50 border-white/10 uppercase" /></div></div>
+                      <div className="space-y-2"><Label className="text-xs uppercase font-bold text-muted-foreground">Primary Accent (Icons/Lines)</Label><div className="flex gap-3 items-center"><input type="color" value={themeColorData.primary_color} onChange={(e) => setThemeColorData({...themeColorData, primary_color: e.target.value})} className="w-12 h-12 rounded cursor-pointer border-0 bg-transparent" /><Input value={themeColorData.primary_color} onChange={(e) => setThemeColorData({...themeColorData, primary_color: e.target.value})} className="font-mono bg-black/50 border-white/10 uppercase" /></div></div>
+                      <div className="space-y-2"><Label className="text-xs uppercase font-bold text-muted-foreground">Button Color</Label><div className="flex gap-3 items-center"><input type="color" value={themeColorData.button_color} onChange={(e) => setThemeColorData({...themeColorData, button_color: e.target.value})} className="w-12 h-12 rounded cursor-pointer border-0 bg-transparent" /><Input value={themeColorData.button_color} onChange={(e) => setThemeColorData({...themeColorData, button_color: e.target.value})} className="font-mono bg-black/50 border-white/10 uppercase" /></div></div>
                     </div>
-                    
-                    <div className="flex justify-end pt-4 border-t border-[#00FFFF]/20">
-                      <Button onClick={handleSaveTheme} disabled={isThemeSaving} className="h-12 bg-[#00FFFF] text-black hover:bg-[#00FFFF]/80 font-black uppercase tracking-widest px-8 rounded-full disabled:opacity-50">
-                        {isThemeSaving ? 'Saving...' : 'Update Colors'}
-                      </Button>
-                    </div>
+                    <div className="flex justify-end pt-4 border-t border-[#00FFFF]/20"><Button onClick={handleSaveTheme} disabled={isThemeSaving} className="h-12 bg-[#00FFFF] text-black hover:bg-[#00FFFF]/80 font-black uppercase tracking-widest px-8 rounded-full disabled:opacity-50">{isThemeSaving ? 'Saving...' : 'Update Colors'}</Button></div>
                   </CardContent>
                 </Card>
 
                 <form onSubmit={handleSaveSettings} className="space-y-6">
                   <Card className="glass-strong border-white/10">
                     <CardContent className="p-6 sm:p-8 space-y-6">
-                      <div className="flex items-center gap-3 border-b border-white/10 pb-4">
-                        <Settings className="w-6 h-6 text-[#00FFFF]" />
-                        <h3 className="text-xl font-black uppercase text-white">Store Operations</h3>
-                      </div>
-                      
+                      <div className="flex items-center gap-3 border-b border-white/10 pb-4"><Settings className="w-6 h-6 text-[#00FFFF]" /><h3 className="text-xl font-black uppercase text-white">Store Operations</h3></div>
                       <div className="space-y-4">
                         <Label className="text-xs font-black uppercase tracking-widest text-muted-foreground">Operating Mode</Label>
                         <div className="grid grid-cols-2 gap-4">
-                          <button type="button" onClick={() => setSettingsFormData({...settingsFormData, storeMode: 'auto'})} className={`p-4 rounded-xl border text-left transition-all ${settingsFormData.storeMode === 'auto' ? 'bg-[#00FFFF]/10 border-[#00FFFF] text-[#00FFFF]' : 'bg-white/5 border-white/10 text-white/50 hover:bg-white/10'}`}>
-                            <Clock className="w-5 h-5 mb-2" />
-                            <h4 className="font-bold uppercase tracking-widest">Auto Timer</h4>
-                            <p className="text-[10px] mt-1 opacity-70">Follows open/close timings</p>
-                          </button>
-                          <button type="button" onClick={() => setSettingsFormData({...settingsFormData, storeMode: 'manual'})} className={`p-4 rounded-xl border text-left transition-all ${settingsFormData.storeMode === 'manual' ? 'bg-[#00FFFF]/10 border-[#00FFFF] text-[#00FFFF]' : 'bg-white/5 border-white/10 text-white/50 hover:bg-white/10'}`}>
-                            <Power className="w-5 h-5 mb-2" />
-                            <h4 className="font-bold uppercase tracking-widest">Manual Override</h4>
-                            <p className="text-[10px] mt-1 opacity-70">You decide when to open/close</p>
-                          </button>
+                          <button type="button" onClick={() => setSettingsFormData({...settingsFormData, storeMode: 'auto'})} className={`p-4 rounded-xl border text-left transition-all ${settingsFormData.storeMode === 'auto' ? 'bg-[#00FFFF]/10 border-[#00FFFF] text-[#00FFFF]' : 'bg-white/5 border-white/10 text-white/50 hover:bg-white/10'}`}><Clock className="w-5 h-5 mb-2" /><h4 className="font-bold uppercase tracking-widest">Auto Timer</h4></button>
+                          <button type="button" onClick={() => setSettingsFormData({...settingsFormData, storeMode: 'manual'})} className={`p-4 rounded-xl border text-left transition-all ${settingsFormData.storeMode === 'manual' ? 'bg-[#00FFFF]/10 border-[#00FFFF] text-[#00FFFF]' : 'bg-white/5 border-white/10 text-white/50 hover:bg-white/10'}`}><Power className="w-5 h-5 mb-2" /><h4 className="font-bold uppercase tracking-widest">Manual Override</h4></button>
                         </div>
                       </div>
-
                       {settingsFormData.storeMode === 'auto' ? (
                         <div className="grid grid-cols-2 gap-6 pt-4 border-t border-white/10">
-                          <div className="space-y-2">
-                            <Label className="text-xs font-bold uppercase tracking-widest">Opening Time</Label>
-                            <Input type="time" value={settingsFormData.openTime} onChange={(e) => setSettingsFormData({...settingsFormData, openTime: e.target.value})} className="bg-black border-white/20 text-[#00FFFF] font-mono font-bold text-lg h-14" />
-                          </div>
-                          <div className="space-y-2">
-                            <Label className="text-xs font-bold uppercase tracking-widest">Closing Time</Label>
-                            <Input type="time" value={settingsFormData.closeTime} onChange={(e) => setSettingsFormData({...settingsFormData, closeTime: e.target.value})} className="bg-black border-white/20 text-[#00FFFF] font-mono font-bold text-lg h-14" />
-                          </div>
+                          <div className="space-y-2"><Label className="text-xs font-bold uppercase tracking-widest">Opening Time</Label><Input type="time" value={settingsFormData.openTime} onChange={(e) => setSettingsFormData({...settingsFormData, openTime: e.target.value})} className="bg-black border-white/20 text-[#00FFFF] font-mono font-bold text-lg h-14" /></div>
+                          <div className="space-y-2"><Label className="text-xs font-bold uppercase tracking-widest">Closing Time</Label><Input type="time" value={settingsFormData.closeTime} onChange={(e) => setSettingsFormData({...settingsFormData, closeTime: e.target.value})} className="bg-black border-white/20 text-[#00FFFF] font-mono font-bold text-lg h-14" /></div>
                         </div>
                       ) : (
                         <div className="pt-4 border-t border-white/10 space-y-4">
                           <Label className="text-xs font-black uppercase tracking-widest text-muted-foreground">Manual Status Switch</Label>
                           <div className="grid grid-cols-2 gap-4">
-                            <button type="button" onClick={() => setSettingsFormData({...settingsFormData, isStoreOpen: true})} className={`p-6 rounded-[1.5rem] border flex items-center gap-4 transition-all ${settingsFormData.isStoreOpen ? 'bg-[#00FF55]/10 border-[#00FF55] text-green-300' : 'bg-white/5 border-white/10 text-white/50 hover:bg-white/10'}`}>
-                              <Zap className={`w-10 h-10 ${settingsFormData.isStoreOpen ? 'text-[#00FF55] [filter:drop-shadow(0_0_10px_#00FF55)]' : 'text-white/30'}`} />
-                              <div className="flex-1"><h4 className="font-extrabold uppercase tracking-tight text-xl">Online</h4><p className="text-xs uppercase font-bold tracking-widest mt-0.5 opacity-70">Orders Teleporting</p></div>
-                              <CheckSquare className={`w-6 h-6 shrink-0 ${settingsFormData.isStoreOpen ? 'text-[#00FF55]' : 'text-white/10'}`} />
-                            </button>
-                            
-                            <button type="button" onClick={() => setSettingsFormData({...settingsFormData, isStoreOpen: false})} className={`p-6 rounded-[1.5rem] border flex items-center gap-4 transition-all ${!settingsFormData.isStoreOpen ? 'bg-red-500/10 border-red-500 text-red-300' : 'bg-white/5 border-white/10 text-white/50 hover:bg-white/10'}`}>
-                              <AlertTriangle className={`w-10 h-10 ${!settingsFormData.isStoreOpen ? 'text-red-500 [filter:drop-shadow(0_0_10px_#ff0000)]' : 'text-white/30'}`} />
-                              <div className="flex-1"><h4 className="font-extrabold uppercase tracking-tight text-xl">Closed</h4><p className="text-xs uppercase font-bold tracking-widest mt-0.5 opacity-70">Matrix Recalibrating</p></div>
-                              <CheckSquare className={`w-6 h-6 shrink-0 ${!settingsFormData.isStoreOpen ? 'text-red-500' : 'text-white/10'}`} />
-                            </button>
+                            <button type="button" onClick={() => setSettingsFormData({...settingsFormData, isStoreOpen: true})} className={`p-6 rounded-[1.5rem] border flex items-center gap-4 transition-all ${settingsFormData.isStoreOpen ? 'bg-[#00FF55]/10 border-[#00FF55] text-green-300' : 'bg-white/5 border-white/10 text-white/50 hover:bg-white/10'}`}><Zap className={`w-10 h-10 ${settingsFormData.isStoreOpen ? 'text-[#00FF55] [filter:drop-shadow(0_0_10px_#00FF55)]' : 'text-white/30'}`} /><div className="flex-1"><h4 className="font-extrabold uppercase tracking-tight text-xl">Online</h4></div><CheckSquare className={`w-6 h-6 shrink-0 ${settingsFormData.isStoreOpen ? 'text-[#00FF55]' : 'text-white/10'}`} /></button>
+                            <button type="button" onClick={() => setSettingsFormData({...settingsFormData, isStoreOpen: false})} className={`p-6 rounded-[1.5rem] border flex items-center gap-4 transition-all ${!settingsFormData.isStoreOpen ? 'bg-red-500/10 border-red-500 text-red-300' : 'bg-white/5 border-white/10 text-white/50 hover:bg-white/10'}`}><AlertTriangle className={`w-10 h-10 ${!settingsFormData.isStoreOpen ? 'text-red-500 [filter:drop-shadow(0_0_10px_#ff0000)]' : 'text-white/30'}`} /><div className="flex-1"><h4 className="font-extrabold uppercase tracking-tight text-xl">Closed</h4></div><CheckSquare className={`w-6 h-6 shrink-0 ${!settingsFormData.isStoreOpen ? 'text-red-500' : 'text-white/10'}`} /></button>
                           </div>
                         </div>
                       )}
                     </CardContent>
                   </Card>
-
                   <Card className="glass-strong border-white/10">
                     <CardContent className="p-6 sm:p-8 space-y-6">
-                      <div className="flex items-center gap-3 border-b border-white/10 pb-4">
-                        <Zap className="w-6 h-6 text-[#CCFF00]" />
-                        <h3 className="text-xl font-black uppercase text-white">Open State Banner</h3>
-                      </div>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div className="space-y-2"><Label>Banner Image URL</Label><Input value={settingsFormData.bannerImageUrlOpen} onChange={e => setSettingsFormData({...settingsFormData, bannerImageUrlOpen: e.target.value})} placeholder="https://...jpg" className="bg-black/50" /></div>
-                        <div className="space-y-2"><Label>Banner Text (Offers / Quotes)</Label><textarea value={settingsFormData.bannerTextOpen} onChange={e => setSettingsFormData({...settingsFormData, bannerTextOpen: e.target.value})} placeholder="New deals now!" rows={3} className="w-full h-12 bg-black/50 border border-white/10 focus-visible:border-[#00FFFF] rounded-md p-3 text-sm text-white resize-none" /></div>
-                      </div>
+                      <div className="flex items-center gap-3 border-b border-white/10 pb-4"><Zap className="w-6 h-6 text-[#CCFF00]" /><h3 className="text-xl font-black uppercase text-white">Open State Banner</h3></div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6"><div className="space-y-2"><Label>Banner Image URL</Label><Input value={settingsFormData.bannerImageUrlOpen} onChange={e => setSettingsFormData({...settingsFormData, bannerImageUrlOpen: e.target.value})} placeholder="https://..." className="bg-black/50" /></div><div className="space-y-2"><Label>Banner Text</Label><textarea value={settingsFormData.bannerTextOpen} onChange={e => setSettingsFormData({...settingsFormData, bannerTextOpen: e.target.value})} placeholder="New deals now!" rows={3} className="w-full h-12 bg-black/50 border border-white/10 focus-visible:border-[#00FFFF] rounded-md p-3 text-sm text-white resize-none" /></div></div>
                     </CardContent>
                   </Card>
-
                   <Card className="glass-strong border-white/10">
                     <CardContent className="p-6 sm:p-8 space-y-6">
-                      <div className="flex items-center gap-3 border-b border-white/10 pb-4">
-                        <MoonStar className="w-6 h-6 text-red-500" />
-                        <h3 className="text-xl font-black uppercase text-white">Closed State Banner</h3>
-                      </div>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div className="space-y-2"><Label>Banner Image URL (e.g., sleeping logo)</Label><Input value={settingsFormData.bannerImageUrlClosed} onChange={e => setSettingsFormData({...settingsFormData, bannerImageUrlClosed: e.target.value})} placeholder="https://...jpg" className="bg-black/50" /></div>
-                        <div className="space-y-2"><Label>Closed Line (e.g., Sleeping right now...)</Label><textarea value={settingsFormData.bannerTextClosed} onChange={e => setSettingsFormData({...settingsFormData, bannerTextClosed: e.target.value})} placeholder="Sleeping right now..." rows={3} className="w-full h-12 bg-black/50 border border-white/10 focus-visible:border-[#00FFFF] rounded-md p-3 text-sm text-white resize-none" /></div>
-                      </div>
+                      <div className="flex items-center gap-3 border-b border-white/10 pb-4"><MoonStar className="w-6 h-6 text-red-500" /><h3 className="text-xl font-black uppercase text-white">Closed State Banner</h3></div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6"><div className="space-y-2"><Label>Banner Image URL</Label><Input value={settingsFormData.bannerImageUrlClosed} onChange={e => setSettingsFormData({...settingsFormData, bannerImageUrlClosed: e.target.value})} placeholder="https://..." className="bg-black/50" /></div><div className="space-y-2"><Label>Closed Line</Label><textarea value={settingsFormData.bannerTextClosed} onChange={e => setSettingsFormData({...settingsFormData, bannerTextClosed: e.target.value})} placeholder="Sleeping right now..." rows={3} className="w-full h-12 bg-black/50 border border-white/10 focus-visible:border-[#00FFFF] rounded-md p-3 text-sm text-white resize-none" /></div></div>
                     </CardContent>
                   </Card>
-                  
                   <div className="flex justify-end pt-4 border-t border-white/10">
-                    <Button type="submit" disabled={isSettingsSaving} className="h-14 bg-[#00FFFF] text-black hover:bg-[#00FFFF]/80 font-black uppercase tracking-widest px-10 rounded-full disabled:opacity-50">
-                      {isSettingsSaving ? 'Saving...' : 'Save All Settings'}
-                    </Button>
+                    <Button type="submit" disabled={isSettingsSaving} className="h-14 bg-[#00FFFF] text-black hover:bg-[#00FFFF]/80 font-black uppercase tracking-widest px-10 rounded-full disabled:opacity-50">{isSettingsSaving ? 'Saving...' : 'Save All Settings'}</Button>
                   </div>
                 </form>
              </motion.div>
           )}
 
-          {/* 📊 ANALYTICS DASHBOARD VIEW */}
+          {/* ANALYTICS */}
           {activeTab === 'analytics' && (
             <motion.div key="analytics" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="space-y-6">
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 glass-strong p-4 rounded-xl border border-[#00FFFF]/20 shadow-[0_0_15px_rgba(0,255,255,0.05)]">
-                <div className="flex items-center gap-2">
-                   <Calendar className="w-5 h-5 text-[#00FFFF]" />
-                   <h3 className="text-sm font-black text-white uppercase tracking-widest">Performance Metrics</h3>
-                </div>
+                <div className="flex items-center gap-2"><Calendar className="w-5 h-5 text-[#00FFFF]" /><h3 className="text-sm font-black text-white uppercase tracking-widest">Performance Metrics</h3></div>
                 <div className="flex items-center gap-3 w-full sm:w-auto">
-                  <select value={analyticsFilter} onChange={(e) => setAnalyticsFilter(e.target.value)} className="bg-black/50 border border-white/10 rounded-lg px-3 h-10 text-xs font-bold text-white focus:outline-none focus:border-[#00FFFF] w-full sm:w-auto uppercase tracking-wider">
-                    <option value="all" className="bg-black">All Time</option>
-                    <option value="today" className="bg-black">Today</option>
-                    <option value="yesterday" className="bg-black">Yesterday</option>
-                    <option value="custom" className="bg-black">Custom Date</option>
-                  </select>
-                  {analyticsFilter === 'custom' && (
-                    <Input type="date" value={customDate} onChange={(e) => setCustomDate(e.target.value)} className="bg-black/50 border-white/10 h-10 text-xs w-full sm:w-auto text-white" />
-                  )}
+                  <select value={analyticsFilter} onChange={(e) => setAnalyticsFilter(e.target.value)} className="bg-black/50 border border-white/10 rounded-lg px-3 h-10 text-xs font-bold text-white focus:outline-none focus:border-[#00FFFF] w-full sm:w-auto uppercase tracking-wider"><option value="all" className="bg-black">All Time</option><option value="today" className="bg-black">Today</option><option value="yesterday" className="bg-black">Yesterday</option><option value="custom" className="bg-black">Custom Date</option></select>
+                  {analyticsFilter === 'custom' && <Input type="date" value={customDate} onChange={(e) => setCustomDate(e.target.value)} className="bg-black/50 border-white/10 h-10 text-xs w-full sm:w-auto text-white" />}
                 </div>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                <Card className="glass-strong border-[#CCFF00]/30 hover:border-[#CCFF00]/50 transition-colors"><CardContent className="p-6"><div className="flex justify-between items-start mb-4"><div className="bg-[#CCFF00]/10 p-3 rounded-lg"><IndianRupee className="w-6 h-6 text-[#CCFF00]" /></div><Badge variant="outline" className="text-[#CCFF00] border-[#CCFF00]/30 font-bold uppercase tracking-widest text-[10px]">Revenue</Badge></div><p className="text-3xl font-black text-white font-mono tracking-tighter">₹{totalRevenue}</p><p className="text-xs text-muted-foreground mt-1 uppercase tracking-widest">From Delivered Orders</p></CardContent></Card>
-                <Card className="glass-strong border-[#00FFFF]/30 hover:border-[#00FFFF]/50 transition-colors"><CardContent className="p-6"><div className="flex justify-between items-start mb-4"><div className="bg-[#00FFFF]/10 p-3 rounded-lg"><PackageIcon className="w-6 h-6 text-[#00FFFF]" /></div><Badge variant="outline" className="text-[#00FFFF] border-[#00FFFF]/30 font-bold uppercase tracking-widest text-[10px]">Orders</Badge></div><p className="text-3xl font-black text-white font-mono tracking-tighter">{totalOrdersCount}</p><p className="text-xs text-muted-foreground mt-1 uppercase tracking-widest">Total Orders Received</p></CardContent></Card>
+                <Card className="glass-strong border-[#CCFF00]/30 hover:border-[#CCFF00]/50 transition-colors"><CardContent className="p-6"><div className="flex justify-between items-start mb-4"><div className="bg-[#CCFF00]/10 p-3 rounded-lg"><IndianRupee className="w-6 h-6 text-[#CCFF00]" /></div><Badge variant="outline" className="text-[#CCFF00] border-[#CCFF00]/30 font-bold uppercase tracking-widest text-[10px]">Revenue</Badge></div><p className="text-3xl font-black text-white font-mono tracking-tighter">₹{totalRevenue}</p><p className="text-xs text-muted-foreground mt-1 uppercase tracking-widest">From Delivered</p></CardContent></Card>
+                <Card className="glass-strong border-[#00FFFF]/30 hover:border-[#00FFFF]/50 transition-colors"><CardContent className="p-6"><div className="flex justify-between items-start mb-4"><div className="bg-[#00FFFF]/10 p-3 rounded-lg"><PackageIcon className="w-6 h-6 text-[#00FFFF]" /></div><Badge variant="outline" className="text-[#00FFFF] border-[#00FFFF]/30 font-bold uppercase tracking-widest text-[10px]">Orders</Badge></div><p className="text-3xl font-black text-white font-mono tracking-tighter">{totalOrdersCount}</p><p className="text-xs text-muted-foreground mt-1 uppercase tracking-widest">Total Received</p></CardContent></Card>
                 <Card className="glass-strong border-white/10 hover:border-white/30 transition-colors"><CardContent className="p-6"><div className="flex justify-between items-start mb-4"><div className="bg-white/10 p-3 rounded-lg"><TrendingUp className="w-6 h-6 text-white" /></div><Badge variant="outline" className="text-white border-white/30 font-bold uppercase tracking-widest text-[10px]">A.O.V</Badge></div><p className="text-3xl font-black text-white font-mono tracking-tighter">₹{avgOrderValue}</p><p className="text-xs text-muted-foreground mt-1 uppercase tracking-widest">Average Order Value</p></CardContent></Card>
                 <Card className="glass-strong border-white/10 hover:border-white/30 transition-colors"><CardContent className="p-6"><div className="flex justify-between items-start mb-4"><div className="bg-white/10 p-3 rounded-lg"><Users className="w-6 h-6 text-white" /></div><Badge variant="outline" className="text-white border-white/30 font-bold uppercase tracking-widest text-[10px]">Customers</Badge></div><p className="text-3xl font-black text-white font-mono tracking-tighter">{uniqueCustomersInAnalytics}</p><p className="text-xs text-muted-foreground mt-1 uppercase tracking-widest">Unique Buyers</p></CardContent></Card>
               </div>
@@ -968,7 +672,7 @@ export default function AdminDashboard() {
             </motion.div>
           )}
 
-          {/* ⚡ LIVE ORDERS VIEW */}
+          {/* LIVE ORDERS */}
           {activeTab === 'live_orders' && (
              <motion.div key="live_orders" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
                {liveOrders.length === 0 ? (
@@ -983,7 +687,7 @@ export default function AdminDashboard() {
                      <Card key={idx} className={`glass-strong border-white/10 overflow-hidden relative ${isBlocked ? 'border-red-500/50' : ''}`}>
                        <div className="bg-white/5 p-4 sm:p-6 border-b border-white/10 flex justify-between">
                          <div>
-                           <h3 className="text-xl font-black text-white uppercase flex items-center gap-2">{order.customer} {isBlocked && <Badge variant="destructive" className="text-[10px]">BLOCKED USER</Badge>}</h3>
+                           <h3 className="text-xl font-black text-white uppercase flex items-center gap-2">{order.customer} {isBlocked && <Badge variant="destructive" className="text-[10px]">BLOCKED</Badge>}</h3>
                            <div className="flex items-center gap-4 text-xs font-mono text-muted-foreground mt-1"><span className="flex items-center gap-1"><Clock className="w-3 h-3" /> {order.time}</span><span className="flex items-center gap-1 text-[#00FFFF]"><Phone className="w-3 h-3" /> {order.phone}</span></div>
                          </div>
                          <span className={`px-4 py-1.5 rounded-md border text-[10px] font-black tracking-widest uppercase h-fit ${getStatusColor(order.status)}`}>{order.status}</span>
@@ -1024,27 +728,18 @@ export default function AdminDashboard() {
              </motion.div>
           )}
 
-          {/* 📜 ORDER HISTORY VIEW */}
+          {/* ORDER HISTORY */}
           {activeTab === 'order_history' && (
             <motion.div key="order_history" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
-              
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
                 <h3 className="text-xl font-black uppercase text-white">Order History</h3>
                 <div className="flex items-center gap-3 w-full sm:w-auto">
-                  <select value={historyFilter} onChange={(e) => setHistoryFilter(e.target.value)} className="bg-black/50 border border-white/10 rounded-lg px-3 h-10 text-xs font-bold text-white focus:outline-none focus:border-[#00FFFF] w-full sm:w-auto uppercase tracking-wider">
-                    <option value="all" className="bg-black">All Time</option>
-                    <option value="today" className="bg-black">Today</option>
-                    <option value="yesterday" className="bg-black">Yesterday</option>
-                    <option value="custom" className="bg-black">Custom Date</option>
-                  </select>
-                  {historyFilter === 'custom' && (
-                    <Input type="date" value={historyCustomDate} onChange={(e) => setHistoryCustomDate(e.target.value)} className="bg-black/50 border-white/10 h-10 text-xs w-full sm:w-auto text-white" />
-                  )}
+                  <select value={historyFilter} onChange={(e) => setHistoryFilter(e.target.value)} className="bg-black/50 border border-white/10 rounded-lg px-3 h-10 text-xs font-bold text-white focus:outline-none focus:border-[#00FFFF] w-full sm:w-auto uppercase tracking-wider"><option value="all" className="bg-black">All Time</option><option value="today" className="bg-black">Today</option><option value="yesterday" className="bg-black">Yesterday</option><option value="custom" className="bg-black">Custom Date</option></select>
+                  {historyFilter === 'custom' && <Input type="date" value={historyCustomDate} onChange={(e) => setHistoryCustomDate(e.target.value)} className="bg-black/50 border-white/10 h-10 text-xs w-full sm:w-auto text-white" />}
                 </div>
               </div>
-
               {filteredOrderHistory.length === 0 ? (
-                <Empty className="glass-strong border-[#00FFFF]/20 py-20 max-w-md mx-auto"><EmptyContent><History className="w-12 h-12 text-[#00FFFF] opacity-50 mb-4" /><EmptyTitle className="text-xl uppercase">No Past Orders</EmptyTitle><EmptyDescription className="text-muted-foreground">Delivered and Cancelled orders will appear here based on selected date.</EmptyDescription></EmptyContent></Empty>
+                <Empty className="glass-strong border-[#00FFFF]/20 py-20 max-w-md mx-auto"><EmptyContent><History className="w-12 h-12 text-[#00FFFF] opacity-50 mb-4" /><EmptyTitle className="text-xl uppercase">No Past Orders</EmptyTitle></EmptyContent></Empty>
               ) : (
                 <div className="grid grid-cols-1 gap-6">
                   {filteredOrderHistory.map((order: any, idx: number) => {
@@ -1069,10 +764,7 @@ export default function AdminDashboard() {
                               </div>
                               <div className="mt-4 pt-4 border-t border-white/10 space-y-2">
                                {order.discount > 0 && (
-                                 <>
-                                   <div className="flex justify-between items-center text-[10px] text-muted-foreground uppercase font-bold"><span>Subtotal</span><span>₹{order.subtotal}</span></div>
-                                   <div className="flex justify-between items-center text-[10px] text-[#CCFF00] uppercase font-bold"><span>Discount ({order.promoCode})</span><span>-₹{order.discount}</span></div>
-                                 </>
+                                 <><div className="flex justify-between items-center text-[10px] text-muted-foreground uppercase font-bold"><span>Subtotal</span><span>₹{order.subtotal}</span></div><div className="flex justify-between items-center text-[10px] text-[#CCFF00] uppercase font-bold"><span>Discount ({order.promoCode})</span><span>-₹{order.discount}</span></div></>
                                )}
                                <div className="flex justify-between items-center pt-2 border-t border-white/5 mt-2"><span className="text-xs font-bold text-white uppercase tracking-widest">Final Paid</span><span className="font-mono font-black text-[#00FFFF] text-lg">₹{order.amount}</span></div>
                               </div>
@@ -1088,43 +780,25 @@ export default function AdminDashboard() {
             </motion.div>
           )}
 
-          {/* 🏷️ OFFERS & PROMO CODES VIEW */}
+          {/* OFFERS */}
           {activeTab === 'offers' && (
             <motion.div key="offers" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="space-y-6">
-              
               <Card className="glass-strong border-[#CCFF00]/30 hover:border-[#CCFF00]/50 transition-all mb-6">
                 <CardContent className="p-6 flex flex-col sm:flex-row items-center gap-4 justify-between">
-                  <div>
-                    <h3 className="text-lg font-black text-[#CCFF00] uppercase flex items-center gap-2"><LockKeyhole className="w-5 h-5"/> Global Minimum Order</h3>
-                    <p className="text-xs text-muted-foreground mt-1">Set the strict minimum cart value required to checkout.</p>
-                  </div>
-                  <div className="flex gap-2 w-full sm:w-auto">
-                    <Input type="number" value={globalMinOrder} onChange={e => setGlobalMinOrder(Number(e.target.value))} className="bg-black/50 border-white/10 w-full sm:w-32 text-center text-[#CCFF00] font-mono font-black text-lg" />
-                    <Button onClick={handleSaveGlobalMinOrder} className="bg-[#CCFF00] text-black font-black hover:bg-[#CCFF00]/80 px-6 uppercase">Save Limit</Button>
-                  </div>
+                  <div><h3 className="text-lg font-black text-[#CCFF00] uppercase flex items-center gap-2"><LockKeyhole className="w-5 h-5"/> Global Minimum Order</h3><p className="text-xs text-muted-foreground mt-1">Set the strict minimum cart value required to checkout.</p></div>
+                  <div className="flex gap-2 w-full sm:w-auto"><Input type="number" value={globalMinOrder} onChange={e => setGlobalMinOrder(Number(e.target.value))} className="bg-black/50 border-white/10 w-full sm:w-32 text-center text-[#CCFF00] font-mono font-black text-lg" /><Button onClick={handleSaveGlobalMinOrder} className="bg-[#CCFF00] text-black font-black hover:bg-[#CCFF00]/80 px-6 uppercase">Save</Button></div>
                 </CardContent>
               </Card>
 
               <div className="flex justify-between items-center gap-4 pt-4 border-t border-white/10">
-                <div>
-                  <h3 className="text-lg font-black text-[#00FFFF] uppercase flex items-center gap-2"><Truck className="w-5 h-5"/> Delivery Areas & Fees</h3>
-                  <p className="text-muted-foreground font-mono text-xs">Set delivery charges for different locations.</p>
-                </div>
+                <div><h3 className="text-lg font-black text-[#00FFFF] uppercase flex items-center gap-2"><Truck className="w-5 h-5"/> Delivery Areas & Fees</h3></div>
                 <Sheet>
-                  <SheetTrigger asChild>
-                    <Button className="bg-[#00FFFF] text-black font-black hover:bg-[#00FFFF]/90 shadow-[0_0_15px_rgba(0,255,255,0.3)] h-12 rounded-xl px-6">
-                      <Plus className="w-5 h-5 mr-2" /> NEW AREA
-                    </Button>
-                  </SheetTrigger>
+                  <SheetTrigger asChild><Button className="bg-[#00FFFF] text-black font-black hover:bg-[#00FFFF]/90 shadow-[0_0_15px_rgba(0,255,255,0.3)] h-12 rounded-xl px-6"><Plus className="w-5 h-5 mr-2" /> NEW AREA</Button></SheetTrigger>
                   <SheetContent className="bg-black/95 backdrop-blur-2xl border-l border-[#00FFFF]/30 sm:max-w-md w-full overflow-y-auto">
                     <SheetHeader className="text-left mb-8 mt-6"><SheetTitle className="text-3xl font-black italic uppercase text-[#00FFFF]">Add Delivery Area</SheetTitle></SheetHeader>
-                    <form onSubmit={(e: any) => {
-                      e.preventDefault(); const data = new FormData(e.target);
-                      addDeliveryZone({ areaName: data.get('areaName')?.toString().toUpperCase() || '', fee: Number(data.get('fee')), isActive: true });
-                      e.target.reset();
-                    }} className="flex flex-col gap-6">
-                      <div className="space-y-2"><Label>Area / Location Name (e.g. West Bokaro)</Label><Input name="areaName" required className="bg-white/5 border-white/10 uppercase font-mono text-[#00FFFF]" placeholder="WEST BOKARO" /></div>
-                      <div className="space-y-2"><Label>Delivery Fee (₹)</Label><Input name="fee" type="number" required min="0" className="bg-white/5 border-white/10" placeholder="e.g. 30" /></div>
+                    <form onSubmit={(e: any) => { e.preventDefault(); const data = new FormData(e.target); addDeliveryZone({ areaName: data.get('areaName')?.toString().toUpperCase() || '', fee: Number(data.get('fee')), isActive: true }); e.target.reset(); }} className="flex flex-col gap-6">
+                      <div className="space-y-2"><Label>Area Name</Label><Input name="areaName" required className="bg-white/5 border-white/10 uppercase font-mono text-[#00FFFF]" /></div>
+                      <div className="space-y-2"><Label>Delivery Fee (₹)</Label><Input name="fee" type="number" required min="0" className="bg-white/5 border-white/10" /></div>
                       <Button type="submit" className="w-full h-14 bg-[#00FFFF] text-black font-black hover:bg-[#00FFFF]/80">SAVE AREA</Button>
                     </form>
                   </SheetContent>
@@ -1139,17 +813,13 @@ export default function AdminDashboard() {
                     <Card key={zone.id} className={`glass-strong border-white/10 transition-all ${!zone.isActive ? 'opacity-50 grayscale' : 'hover:border-[#00FFFF]/30'}`}>
                       <CardContent className="p-5">
                         <div className="flex justify-between items-start mb-4">
-                          <div className="flex items-center gap-2">
-                            <p className="text-xl font-black text-[#00FFFF] font-mono tracking-widest">{zone.areaName}</p>
-                          </div>
+                          <p className="text-xl font-black text-[#00FFFF] font-mono tracking-widest">{zone.areaName}</p>
                           <Badge variant={zone.isActive ? "outline" : "secondary"} className={`text-[10px] font-black uppercase tracking-widest ${zone.isActive ? 'text-[#CCFF00] border-[#CCFF00]/30' : ''}`}>{zone.isActive ? 'ACTIVE' : 'OFF'}</Badge>
                         </div>
-                        <div className="space-y-1 mb-6">
-                          <p className="font-bold text-white text-sm">Delivery Fee: <span className="text-[#CCFF00] font-mono">₹{zone.fee}</span></p>
-                        </div>
+                        <div className="space-y-1 mb-6"><p className="font-bold text-white text-sm">Delivery Fee: <span className="text-[#CCFF00] font-mono">₹{zone.fee}</span></p></div>
                         <div className="flex gap-2 pt-4 border-t border-white/10">
-                          <Button variant="ghost" className={`flex-1 text-xs font-black border ${zone.isActive ? 'border-white/10 text-white hover:bg-white/10' : 'border-[#CCFF00]/30 text-[#CCFF00] hover:bg-[#CCFF00] hover:text-black'}`} onClick={() => toggleDeliveryZoneStatus(zone.id)}>{zone.isActive ? <PowerOff className="w-4 h-4 mr-2" /> : <Power className="w-4 h-4 mr-2" />}{zone.isActive ? 'TURN OFF' : 'ACTIVATE'}</Button>
-                          <Button variant="ghost" size="icon" className="border border-red-500/30 text-red-500 hover:bg-red-500 hover:text-white" onClick={() => { if(confirm("Delete this delivery zone?")) deleteDeliveryZone(zone.id) }}><Trash2 className="w-4 h-4" /></Button>
+                          <Button variant="ghost" className={`flex-1 text-xs font-black border ${zone.isActive ? 'border-white/10 text-white hover:bg-white/10' : 'border-[#CCFF00]/30 text-[#CCFF00] hover:bg-[#CCFF00] hover:text-black'}`} onClick={() => toggleDeliveryZoneStatus(zone.id)}>{zone.isActive ? 'TURN OFF' : 'ACTIVATE'}</Button>
+                          <Button variant="ghost" size="icon" className="border border-red-500/30 text-red-500 hover:bg-red-500 hover:text-white" onClick={() => { if(confirm("Delete?")) deleteDeliveryZone(zone.id) }}><Trash2 className="w-4 h-4" /></Button>
                         </div>
                       </CardContent>
                     </Card>
@@ -1158,23 +828,15 @@ export default function AdminDashboard() {
               </div>
 
               <div className="flex justify-between items-center gap-4 pt-8 border-t border-white/10">
-                <div><p className="text-muted-foreground font-mono">Manage discount coupons for your customers.</p></div>
+                <div><p className="text-muted-foreground font-mono">Manage discount coupons.</p></div>
                 <Sheet>
-                  <SheetTrigger asChild>
-                    <Button className="bg-[#00FFFF] text-black font-black hover:bg-[#00FFFF]/90 shadow-[0_0_15px_rgba(0,255,255,0.3)] h-12 rounded-xl px-6">
-                      <Plus className="w-5 h-5 mr-2" /> NEW OFFER
-                    </Button>
-                  </SheetTrigger>
+                  <SheetTrigger asChild><Button className="bg-[#00FFFF] text-black font-black hover:bg-[#00FFFF]/90 shadow-[0_0_15px_rgba(0,255,255,0.3)] h-12 rounded-xl px-6"><Plus className="w-5 h-5 mr-2" /> NEW OFFER</Button></SheetTrigger>
                   <SheetContent className="bg-black/95 backdrop-blur-2xl border-l border-[#00FFFF]/30 sm:max-w-md w-full overflow-y-auto">
                     <SheetHeader className="text-left mb-8 mt-6"><SheetTitle className="text-3xl font-black italic uppercase text-[#00FFFF]">Create Coupon</SheetTitle></SheetHeader>
-                    <form onSubmit={(e: any) => {
-                      e.preventDefault(); const data = new FormData(e.target);
-                      addPromoCode({ code: data.get('code')?.toString().toUpperCase() || '', type: data.get('type') as any, value: Number(data.get('value')), minOrder: Number(data.get('minOrder')), isActive: true });
-                      e.target.reset();
-                    }} className="flex flex-col gap-6">
-                      <div className="space-y-2"><Label>Coupon Code (e.g. HOLI50)</Label><Input name="code" required className="bg-white/5 border-white/10 uppercase font-mono text-[#00FFFF]" placeholder="WEBFOO20" /></div>
-                      <div className="grid grid-cols-2 gap-4"><div className="space-y-2"><Label>Discount Type</Label><select name="type" className="w-full h-10 bg-white/5 border border-white/10 rounded-md px-3 text-sm text-white focus:outline-none focus:border-[#00FFFF]"><option value="flat" className="bg-black">Flat Amount (₹)</option><option value="percent" className="bg-black">Percentage (%)</option></select></div><div className="space-y-2"><Label>Discount Value</Label><Input name="value" type="number" required min="1" className="bg-white/5 border-white/10" placeholder="e.g. 50" /></div></div>
-                      <div className="space-y-2"><Label>Minimum Order Amount (₹)</Label><Input name="minOrder" type="number" required min="0" className="bg-white/5 border-white/10" placeholder="e.g. 500" /></div>
+                    <form onSubmit={(e: any) => { e.preventDefault(); const data = new FormData(e.target); addPromoCode({ code: data.get('code')?.toString().toUpperCase() || '', type: data.get('type') as any, value: Number(data.get('value')), minOrder: Number(data.get('minOrder')), isActive: true }); e.target.reset(); }} className="flex flex-col gap-6">
+                      <div className="space-y-2"><Label>Coupon Code</Label><Input name="code" required className="bg-white/5 border-white/10 uppercase font-mono text-[#00FFFF]" /></div>
+                      <div className="grid grid-cols-2 gap-4"><div className="space-y-2"><Label>Discount Type</Label><select name="type" className="w-full h-10 bg-white/5 border border-white/10 rounded-md px-3 text-sm text-white focus:outline-none focus:border-[#00FFFF]"><option value="flat" className="bg-black">Flat Amount (₹)</option><option value="percent" className="bg-black">Percentage (%)</option></select></div><div className="space-y-2"><Label>Value</Label><Input name="value" type="number" required min="1" className="bg-white/5 border-white/10" /></div></div>
+                      <div className="space-y-2"><Label>Min Order (₹)</Label><Input name="minOrder" type="number" required min="0" className="bg-white/5 border-white/10" /></div>
                       <Button type="submit" className="w-full h-14 bg-[#00FFFF] text-black font-black hover:bg-[#00FFFF]/80">SAVE OFFER</Button>
                     </form>
                   </SheetContent>
@@ -1187,12 +849,9 @@ export default function AdminDashboard() {
                   promoCodes.map((promo: any) => (
                     <Card key={promo.id} className={`glass-strong border-white/10 transition-all ${!promo.isActive ? 'opacity-50 grayscale' : 'hover:border-[#00FFFF]/30'}`}>
                       <CardContent className="p-5">
-                        <div className="flex justify-between items-start mb-4"><div className="flex items-center gap-2"><p className="text-xl font-black text-[#00FFFF] font-mono tracking-widest">{promo.code}</p>{promo.isActive && <span className="w-2 h-2 rounded-full bg-[#CCFF00] animate-pulse" />}</div><Badge variant={promo.isActive ? "outline" : "secondary"} className={`text-[10px] font-black uppercase tracking-widest ${promo.isActive ? 'text-[#CCFF00] border-[#CCFF00]/30' : ''}`}>{promo.isActive ? 'ACTIVE' : 'OFF'}</Badge></div>
+                        <div className="flex justify-between items-start mb-4"><div className="flex items-center gap-2"><p className="text-xl font-black text-[#00FFFF] font-mono tracking-widest">{promo.code}</p></div><Badge variant={promo.isActive ? "outline" : "secondary"} className={`text-[10px] font-black uppercase tracking-widest ${promo.isActive ? 'text-[#CCFF00] border-[#CCFF00]/30' : ''}`}>{promo.isActive ? 'ACTIVE' : 'OFF'}</Badge></div>
                         <div className="space-y-1 mb-6"><p className="font-bold text-white text-sm">{promo.type === 'flat' ? `₹${promo.value} Flat Off` : `${promo.value}% Instant Discount`}</p><p className="text-[10px] text-muted-foreground uppercase tracking-widest">Valid on orders above ₹{promo.minOrder}</p></div>
-                        <div className="flex gap-2 pt-4 border-t border-white/10">
-                          <Button variant="ghost" className={`flex-1 text-xs font-black border ${promo.isActive ? 'border-white/10 text-white hover:bg-white/10' : 'border-[#CCFF00]/30 text-[#CCFF00] hover:bg-[#CCFF00] hover:text-black'}`} onClick={() => togglePromoStatus(promo.id)}>{promo.isActive ? <PowerOff className="w-4 h-4 mr-2" /> : <Power className="w-4 h-4 mr-2" />}{promo.isActive ? 'TURN OFF' : 'ACTIVATE'}</Button>
-                          <Button variant="ghost" size="icon" className="border border-red-500/30 text-red-500 hover:bg-red-500 hover:text-white" onClick={() => { if(confirm("Delete this promo code?")) deletePromo(promo.id) }}><Trash2 className="w-4 h-4" /></Button>
-                        </div>
+                        <div className="flex gap-2 pt-4 border-t border-white/10"><Button variant="ghost" className={`flex-1 text-xs font-black border ${promo.isActive ? 'border-white/10 text-white hover:bg-white/10' : 'border-[#CCFF00]/30 text-[#CCFF00] hover:bg-[#CCFF00] hover:text-black'}`} onClick={() => togglePromoStatus(promo.id)}>{promo.isActive ? 'TURN OFF' : 'ACTIVATE'}</Button><Button variant="ghost" size="icon" className="border border-red-500/30 text-red-500 hover:bg-red-500 hover:text-white" onClick={() => { if(confirm("Delete?")) deletePromo(promo.id) }}><Trash2 className="w-4 h-4" /></Button></div>
                       </CardContent>
                     </Card>
                   ))
@@ -1201,15 +860,15 @@ export default function AdminDashboard() {
             </motion.div>
           )}
 
-          {/* 📢 MESSAGES / IN-APP BROADCAST VIEW */}
+          {/* MESSAGES */}
           {activeTab === 'messages' && (
             <motion.div key="messages" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              <Card className="glass-strong border-[#00FFFF]/20 lg:col-span-1 h-fit"><CardContent className="p-6 space-y-6"><div><h3 className="text-xl font-black text-white uppercase tracking-tight mb-2 flex items-center gap-2"><MessageSquare className="w-5 h-5 text-[#00FFFF]"/> Broadcast Center</h3><p className="text-xs text-muted-foreground">Select customers to push an alert to their app or send a direct WhatsApp text.</p></div><div className="space-y-3"><Label className="text-xs uppercase tracking-widest text-[#00FFFF]">Message Content</Label><textarea value={messageText} onChange={(e) => setMessageText(e.target.value)} placeholder="Hey! Use code WEBFOO20 for 20% off your next neon drop... 🚀" className="w-full bg-black/50 border border-white/10 focus-visible:border-[#00FFFF] rounded-xl p-4 min-h-[200px] text-sm text-white resize-none shadow-[0_0_15px_rgba(0,255,255,0.05)]" /><div className="flex justify-between text-[10px] text-muted-foreground uppercase tracking-widest"><span>{messageText.length} characters</span><span>{selectedCustomers.length} selected</span></div></div><div className="flex flex-col gap-3"><Button onClick={handleSendToApp} disabled={selectedCustomers.length === 0 || !messageText.trim()} className="w-full h-12 bg-[#CCFF00] text-black font-black hover:bg-[#CCFF00]/80 shadow-[0_0_20px_rgba(204,255,0,0.2)] disabled:opacity-50 disabled:cursor-not-allowed"><Smartphone className="w-4 h-4 mr-2" /> PUSH TO APP</Button><Button onClick={handleSendToWhatsApp} disabled={selectedCustomers.length === 0 || !messageText.trim()} className="w-full h-12 bg-[#25D366] text-white font-black hover:bg-[#25D366]/80 shadow-[0_0_20px_rgba(37,211,102,0.2)] disabled:opacity-50 disabled:cursor-not-allowed"><MessageCircle className="w-4 h-4 mr-2" /> PUSH TO WHATSAPP</Button></div></CardContent></Card>
+              <Card className="glass-strong border-[#00FFFF]/20 lg:col-span-1 h-fit"><CardContent className="p-6 space-y-6"><div><h3 className="text-xl font-black text-white uppercase tracking-tight mb-2 flex items-center gap-2"><MessageSquare className="w-5 h-5 text-[#00FFFF]"/> Broadcast Center</h3></div><div className="space-y-3"><Label className="text-xs uppercase tracking-widest text-[#00FFFF]">Message Content</Label><textarea value={messageText} onChange={(e) => setMessageText(e.target.value)} className="w-full bg-black/50 border border-white/10 focus-visible:border-[#00FFFF] rounded-xl p-4 min-h-[200px] text-sm text-white resize-none" /><div className="flex justify-between text-[10px] text-muted-foreground uppercase tracking-widest"><span>{messageText.length} chars</span><span>{selectedCustomers.length} selected</span></div></div><div className="flex flex-col gap-3"><Button onClick={handleSendToApp} disabled={selectedCustomers.length === 0 || !messageText.trim()} className="w-full h-12 bg-[#CCFF00] text-black font-black hover:bg-[#CCFF00]/80 disabled:opacity-50"><Smartphone className="w-4 h-4 mr-2" /> PUSH TO APP</Button><Button onClick={handleSendToWhatsApp} disabled={selectedCustomers.length === 0 || !messageText.trim()} className="w-full h-12 bg-[#25D366] text-white font-black hover:bg-[#25D366]/80 disabled:opacity-50"><MessageCircle className="w-4 h-4 mr-2" /> PUSH TO WHATSAPP</Button></div></CardContent></Card>
               <Card className="glass-strong border-white/10 lg:col-span-2">
                 <CardContent className="p-6 space-y-4">
-                  <div className="flex justify-between items-center border-b border-white/10 pb-4"><h3 className="text-sm font-black text-white uppercase tracking-widest">Select Recipients</h3><button onClick={handleSelectAll} className="flex items-center gap-2 text-xs font-bold text-[#00FFFF] hover:text-white transition-colors uppercase tracking-widest">{selectedCustomers.length === customersList.length && customersList.length > 0 ? <CheckSquare className="w-4 h-4" /> : <Square className="w-4 h-4" />} {selectedCustomers.length === customersList.length && customersList.length > 0 ? 'Deselect All' : 'Select All'}</button></div>
+                  <div className="flex justify-between items-center border-b border-white/10 pb-4"><h3 className="text-sm font-black text-white uppercase tracking-widest">Select Recipients</h3><button onClick={handleSelectAll} className="flex items-center gap-2 text-xs font-bold text-[#00FFFF] hover:text-white uppercase tracking-widest">{selectedCustomers.length === customersList.length && customersList.length > 0 ? <CheckSquare className="w-4 h-4" /> : <Square className="w-4 h-4" />} {selectedCustomers.length === customersList.length && customersList.length > 0 ? 'Deselect All' : 'Select All'}</button></div>
                   {customersList.length === 0 ? (
-                    <Empty className="py-12 border-none"><EmptyContent><Users className="w-12 h-12 text-muted-foreground mb-4 opacity-50" /><EmptyTitle className="text-lg uppercase">No customers to message</EmptyTitle></EmptyContent></Empty>
+                    <Empty className="py-12 border-none"><EmptyContent><Users className="w-12 h-12 text-muted-foreground mb-4 opacity-50" /><EmptyTitle className="text-lg uppercase">No customers</EmptyTitle></EmptyContent></Empty>
                   ) : (
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-[500px] overflow-y-auto pr-2 scrollbar-hide">
                       {customersList.map((cust: any) => {
@@ -1225,7 +884,7 @@ export default function AdminDashboard() {
             </motion.div>
           )}
 
-          {/* 👥 CRM - CUSTOMERS LIST VIEW */}
+          {/* CUSTOMERS */}
           {activeTab === 'customers' && (
              <motion.div key="customers" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
                {customersList.length === 0 ? (
@@ -1279,61 +938,50 @@ export default function AdminDashboard() {
              </motion.div>
           )}
 
-          {/* 📦 PRODUCTS INVENTORY VIEW */}
+          {/* PRODUCTS */}
           {activeTab === 'products' && (
              <motion.div key="products" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="space-y-6">
                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                 
                  {selectedCategoryView ? (
-                   <Button variant="ghost" onClick={() => setSelectedCategoryView(null)} className="text-[#00FFFF] hover:bg-[#00FFFF]/10 px-0 hover:text-white transition-all">
-                     <ArrowLeft className="w-5 h-5 mr-2" /> <span className="font-black uppercase tracking-widest text-lg">{selectedCategoryView}</span>
-                   </Button>
+                   <Button variant="ghost" onClick={() => setSelectedCategoryView(null)} className="text-[#00FFFF] hover:bg-[#00FFFF]/10 px-0 hover:text-white transition-all"><ArrowLeft className="w-5 h-5 mr-2" /> <span className="font-black uppercase tracking-widest text-lg">{selectedCategoryView}</span></Button>
                  ) : (
                    <p className="text-muted-foreground font-mono text-sm">Select a category folder to manage its items.</p>
                  )}
-
                  <div className="flex items-center gap-2">
-                   
                    <Sheet open={isProductSheetOpen} onOpenChange={(open) => { setIsProductSheetOpen(open); if(!open) resetForm(); if(open && selectedCategoryView) setFormData(prev => ({...prev, category: selectedCategoryView})); }}>
                      <SheetTrigger asChild><Button onClick={resetForm} className="bg-[#CCFF00] text-black font-black hover:bg-[#CCFF00]/90 shadow-[0_0_15px_rgba(204,255,0,0.3)] h-12 rounded-xl px-6"><Plus className="w-5 h-5 mr-2" /> ADD PRODUCT</Button></SheetTrigger>
-                     
                      <SheetContent className="bg-black/95 backdrop-blur-2xl border-l border-[#00FFFF]/30 sm:max-w-xl w-full overflow-y-auto">
                        <SheetHeader className="text-left mb-6 mt-6"><SheetTitle className="text-3xl font-black italic uppercase text-[#00FFFF]">{editingId ? 'Edit Product' : 'New Product'}</SheetTitle></SheetHeader>
-                       
                        <form onSubmit={handleSaveProduct} className="flex flex-col gap-6 pb-20">
-                         {/* MAIN IMAGE */}
-                         <div className="space-y-4 bg-white/5 p-4 rounded-xl border border-white/10">
-                           <Label className="text-xs font-black uppercase tracking-widest text-[#00FFFF]">Main Product Image (Thumbnail)</Label>
-                           <div className="relative w-full h-32 rounded-xl border-2 border-dashed border-[#00FFFF]/40 bg-[#00FFFF]/5 flex items-center justify-center overflow-hidden cursor-pointer group">
-                             <input type="file" accept="image/*" onChange={handleImageUpload} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" />
-                             {formData.image && formData.image.startsWith('data:') ? (<img src={formData.image} alt="Preview" className="w-full h-full object-cover" />) : (<div className="text-center group-hover:scale-105 transition-transform"><UploadCloud className="w-6 h-6 text-[#00FFFF] mx-auto mb-2" /><span className="text-xs font-bold text-[#00FFFF]">Upload from Device</span></div>)}
-                           </div>
-                           <div className="flex items-center gap-4"><div className="h-px bg-white/10 flex-1"></div><span className="text-[10px] text-muted-foreground uppercase font-black tracking-widest">OR</span><div className="h-px bg-white/10 flex-1"></div></div>
-                           <div className="space-y-2"><Label className="text-[10px] text-white/70">Paste Main Image Link (URL)</Label><Input type="url" placeholder="https://..." value={formData.image && !formData.image.startsWith('data:') ? formData.image : ''} onChange={(e) => setFormData({...formData, image: e.target.value})} className="bg-black/50 border-white/20 text-xs focus-visible:border-[#00FFFF]" />{formData.image && !formData.image.startsWith('data:') && (<div className="mt-2 relative w-full h-24 rounded-lg overflow-hidden border border-white/10 bg-black/50"><img src={formData.image} alt="URL Preview" className="w-full h-full object-cover" onError={(e) => { e.currentTarget.src = '/placeholder.jpg' }} /></div>)}</div>
+                         
+                         {/* 🔥 BULLETPROOF: MAIN IMAGE URL ONLY (For ImageKit) */}
+                         <div className="space-y-4 bg-[#00FFFF]/5 p-5 rounded-xl border border-[#00FFFF]/20">
+                           <Label className="text-xs font-black uppercase tracking-widest text-[#00FFFF] flex items-center gap-2"><LinkIcon className="w-4 h-4"/> Main Product Image URL</Label>
+                           <p className="text-[10px] text-white/50 leading-tight">Paste ImageKit URL here. NO DIRECT UPLOADS.</p>
+                           <Input required type="url" placeholder="https://ik.imagekit.io/..." value={formData.image} onChange={(e) => setFormData({...formData, image: e.target.value})} className="bg-black border-white/20 text-sm focus-visible:border-[#00FFFF] h-12 text-white" />
+                           {formData.image && (
+                             <div className="mt-2 relative w-full h-32 rounded-lg overflow-hidden border border-white/10 bg-black/50">
+                               <img src={formData.image} alt="Preview" className="w-full h-full object-contain" onError={(e) => { e.currentTarget.src = '/placeholder.jpg' }} />
+                             </div>
+                           )}
                          </div>
 
-                         {/* EXTRA GALLERY IMAGES */}
-                         <div className="space-y-4 bg-white/5 p-4 rounded-xl border border-white/10">
-                           <Label className="text-xs font-black uppercase tracking-widest text-[#CCFF00]">Extra Photos (For Details Page)</Label>
-                           {formData.galleryImages.length > 0 && (<div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">{formData.galleryImages.map((img, i) => (<div key={i} className="relative w-20 h-20 shrink-0 rounded-lg overflow-hidden border border-white/20"><img src={img} alt={`Gallery ${i}`} className="w-full h-full object-cover" /><button type="button" onClick={() => removeGalleryImage(i)} className="absolute top-1 right-1 bg-red-500 rounded-full p-1 text-white hover:scale-110"><XCircle className="w-3 h-3" /></button></div>))}</div>)}
-                           <div className="flex gap-2"><div className="relative flex-1 h-10 rounded-md border border-[#CCFF00]/40 bg-[#CCFF00]/5 flex items-center justify-center overflow-hidden cursor-pointer hover:bg-[#CCFF00]/10 transition-colors"><input type="file" multiple accept="image/*" onChange={handleGalleryUpload} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" /><span className="text-xs font-bold text-[#CCFF00] flex items-center gap-2"><UploadCloud className="w-4 h-4"/> Upload Multiple</span></div></div>
-                           <div className="flex gap-2"><Input type="url" placeholder="Paste extra image URL..." value={newGalleryUrl} onChange={(e) => setNewGalleryUrl(e.target.value)} className="bg-black/50 border-white/20 text-xs focus-visible:border-[#CCFF00] h-10 flex-1" /><Button type="button" onClick={addGalleryUrl} className="h-10 bg-white/10 text-white hover:bg-white/20 border border-white/20 px-3">Add URL</Button></div>
+                         {/* 🔥 BULLETPROOF: GALLERY URL ONLY */}
+                         <div className="space-y-4 bg-[#CCFF00]/5 p-5 rounded-xl border border-[#CCFF00]/20">
+                           <Label className="text-xs font-black uppercase tracking-widest text-[#CCFF00] flex items-center gap-2"><LinkIcon className="w-4 h-4"/> Extra Gallery Image URLs</Label>
+                           <div className="flex gap-2"><Input type="url" placeholder="Paste extra ImageKit URL..." value={newGalleryUrl} onChange={(e) => setNewGalleryUrl(e.target.value)} className="bg-black border-white/20 text-xs focus-visible:border-[#CCFF00] h-10 flex-1 text-white" /><Button type="button" onClick={addGalleryUrl} className="h-10 bg-[#CCFF00] text-black font-black hover:bg-[#CCFF00]/80 px-4">ADD</Button></div>
+                           {formData.galleryImages.length > 0 && (<div className="flex gap-3 overflow-x-auto pt-2 pb-2 scrollbar-hide">{formData.galleryImages.map((img, i) => (<div key={i} className="relative w-20 h-20 shrink-0 rounded-lg overflow-hidden border border-white/20"><img src={img} alt={`Gallery ${i}`} className="w-full h-full object-cover" /><button type="button" onClick={() => removeGalleryImage(i)} className="absolute top-1 right-1 bg-red-500 rounded-full p-1 text-white hover:scale-110"><XCircle className="w-3 h-3" /></button></div>))}</div>)}
                          </div>
 
                          {/* BASIC DETAILS */}
                          <div className="space-y-4">
                            <div className="space-y-2"><Label>Product Name</Label><Input required value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className="bg-white/5 border-white/10" /></div>
                            <div className="space-y-2"><Label>Description / Specifications</Label><textarea value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} placeholder="Write details here..." className="w-full bg-white/5 border border-white/10 focus-visible:border-[#00FFFF] rounded-xl p-3 min-h-[100px] text-sm text-white resize-y" /></div>
-                           
                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                             <div className="space-y-2">
-                               <Label className="text-[#00FFFF]">Buy / Cost (₹)</Label>
-                               <Input required type="number" value={formData.cost_price} onChange={e => setFormData({...formData, cost_price: e.target.value})} className="bg-white/5 border-[#00FFFF]/50 text-[#00FFFF] font-bold" placeholder="Your cost" />
-                             </div>
+                             <div className="space-y-2"><Label className="text-[#00FFFF]">Cost (₹)</Label><Input required type="number" value={formData.cost_price} onChange={e => setFormData({...formData, cost_price: e.target.value})} className="bg-white/5 border-[#00FFFF]/50 text-[#00FFFF] font-bold" /></div>
                              <div className="space-y-2"><Label>Sell Price (₹)</Label><Input required type="number" value={formData.price} onChange={e => setFormData({...formData, price: e.target.value})} className="bg-white/5 border-white/10" /></div>
                              <div className="space-y-2"><Label>MRP (₹)</Label><Input required type="number" value={formData.mrp} onChange={e => setFormData({...formData, mrp: e.target.value})} className="bg-white/5 border-white/10" /></div>
                            </div>
-
                            <div className="grid grid-cols-2 gap-4">
                              <div className="space-y-2"><Label>Category</Label><select required value={formData.category} onChange={e => setFormData({...formData, category: e.target.value})} className="w-full h-10 bg-white/5 border border-white/10 rounded-md px-3 text-sm text-white focus:outline-none focus:border-[#00FFFF]">{displayCategories.map((catName: any, idx: number) => (<option key={idx} value={catName} className="bg-black text-white">{catName}</option>))}</select></div>
                              <div className="space-y-2"><Label>Food Type</Label><select required value={formData.foodPref} onChange={e => setFormData({...formData, foodPref: e.target.value as any})} className="w-full h-10 bg-white/5 border border-white/10 rounded-md px-3 text-sm text-white focus:outline-none focus:border-[#00FFFF]"><option value="none" className="bg-black text-white">None (Gadgets)</option><option value="veg" className="bg-black text-green-400">Vegetarian 🟢</option><option value="non-veg" className="bg-black text-red-400">Non-Veg 🔴</option></select></div>
@@ -1346,19 +994,14 @@ export default function AdminDashboard() {
                  </div>
                </div>
                
-               {/* FOLDER SYSTEM */}
+               {/* FOLDERS */}
                {!selectedCategoryView ? (
                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 mt-6">
                    {displayCategories.map((catName: any, idx: number) => {
                      const itemCount = products.filter((p:any) => p.category === catName).length;
                      return (
-                       <Card key={idx} onClick={() => setSelectedCategoryView(catName)} className="glass-strong border-white/10 hover:border-[#00FFFF]/50 hover:shadow-[0_0_20px_rgba(0,255,255,0.1)] transition-all cursor-pointer group">
-                         <CardContent className="p-6 flex flex-col items-center justify-center text-center h-32 relative overflow-hidden">
-                           <div className="absolute inset-0 bg-[#00FFFF]/5 group-hover:bg-[#00FFFF]/10 transition-colors"></div>
-                           <PackageIcon className="w-8 h-8 text-[#00FFFF] mb-3 group-hover:scale-110 transition-transform" />
-                           <h3 className="font-black text-white text-sm uppercase tracking-widest z-10">{catName}</h3>
-                           <Badge variant="outline" className="mt-2 text-[10px] text-muted-foreground border-white/20 z-10 bg-black/50">{itemCount} Items</Badge>
-                         </CardContent>
+                       <Card key={idx} onClick={() => setSelectedCategoryView(catName)} className="glass-strong border-white/10 hover:border-[#00FFFF]/50 transition-all cursor-pointer group">
+                         <CardContent className="p-6 flex flex-col items-center justify-center text-center h-32 relative overflow-hidden"><PackageIcon className="w-8 h-8 text-[#00FFFF] mb-3 group-hover:scale-110 transition-transform" /><h3 className="font-black text-white text-sm uppercase tracking-widest z-10">{catName}</h3><Badge variant="outline" className="mt-2 text-[10px] text-muted-foreground border-white/20 z-10 bg-black/50">{itemCount} Items</Badge></CardContent>
                        </Card>
                      )
                    })}
@@ -1367,25 +1010,15 @@ export default function AdminDashboard() {
                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 mt-6">
                    {products.filter((p:any) => p.category === selectedCategoryView).map((product: any) => (
                      <Card key={product.id} className={`glass-strong border-white/10 overflow-hidden group transition-all ${!product.inStock ? 'opacity-60 grayscale' : 'hover:border-[#00FFFF]/30'}`}>
-                       <div className="relative h-40 w-full bg-white/5">
-                         <img src={product.image || "/placeholder.jpg"} alt={product.name} className="object-cover w-full h-full" onError={(e) => { e.currentTarget.src = '/placeholder.jpg' }} />
+                       <div className="relative h-40 w-full bg-white/5"><img src={product.image || "/placeholder.jpg"} alt={product.name} className="object-cover w-full h-full" onError={(e) => { e.currentTarget.src = '/placeholder.jpg' }} />
                          {product.foodPref === 'veg' && <div className="absolute top-2 left-2 bg-white rounded-sm p-0.5"><div className="w-3 h-3 border-2 border-green-600 flex items-center justify-center"><div className="w-1.5 h-1.5 bg-green-600 rounded-full"></div></div></div>}
                          {product.foodPref === 'non-veg' && <div className="absolute top-2 left-2 bg-white rounded-sm p-0.5"><div className="w-3 h-3 border-2 border-red-600 flex items-center justify-center"><div className="w-1.5 h-1.5 bg-red-600 rounded-full"></div></div></div>}
                          {!product.inStock && <div className="absolute inset-0 bg-black/60 flex items-center justify-center z-10"><span className="bg-red-500 text-white font-black text-[10px] px-2 py-1 uppercase rounded">Out of Stock</span></div>}
-                         
-                         <div className="absolute top-2 right-2 flex gap-2 z-20">
-                           <button onClick={(e) => { e.stopPropagation(); openEdit(product) }} className="w-8 h-8 rounded-full bg-black/90 border border-[#00FFFF]/50 flex items-center justify-center text-[#00FFFF] shadow-[0_0_10px_rgba(0,255,255,0.2)] hover:bg-[#00FFFF] hover:text-black transition-all"><Edit className="w-4 h-4" /></button>
-                           <button onClick={(e) => { e.stopPropagation(); if(confirm("Delete this product?")) deleteProduct(product.id) }} className="w-8 h-8 rounded-full bg-black/90 border border-red-500/50 flex items-center justify-center text-red-500 shadow-[0_0_10px_rgba(255,0,0,0.2)] hover:bg-red-500 hover:text-white transition-all"><Trash2 className="w-4 h-4" /></button>
-                         </div>
-
+                         <div className="absolute top-2 right-2 flex gap-2 z-20"><button onClick={(e) => { e.stopPropagation(); openEdit(product) }} className="w-8 h-8 rounded-full bg-black/90 border border-[#00FFFF]/50 flex items-center justify-center text-[#00FFFF] shadow-[0_0_10px_rgba(0,255,255,0.2)] hover:bg-[#00FFFF] hover:text-black transition-all"><Edit className="w-4 h-4" /></button><button onClick={(e) => { e.stopPropagation(); if(confirm("Delete this product?")) deleteProduct(product.id) }} className="w-8 h-8 rounded-full bg-black/90 border border-red-500/50 flex items-center justify-center text-red-500 shadow-[0_0_10px_rgba(255,0,0,0.2)] hover:bg-red-500 hover:text-white transition-all"><Trash2 className="w-4 h-4" /></button></div>
                        </div>
                        <CardContent className="p-4">
-                         <div className="flex justify-between items-start mb-2">
-                           <p className="text-[10px] text-muted-foreground uppercase tracking-widest flex items-center gap-1">{product.category}</p>
-                           <button onClick={() => toggleStock(product.id)} className={`text-[10px] font-bold px-2 py-0.5 rounded border uppercase flex items-center gap-1 ${product.inStock ? 'text-green-400 border-green-400/30 bg-green-400/10' : 'text-red-400 border-red-400/30 bg-red-400/10'}`}>{product.inStock ? 'In Stock' : 'Out'}</button>
-                         </div>
-                         <h3 className="font-bold text-white text-sm leading-tight truncate">{product.name}</h3>
-                         <div className="flex items-center gap-2 mt-2"><span className="font-mono font-black text-[#00FFFF]">₹{product.price}</span>{product.mrp > product.price && <span className="text-xs text-muted-foreground line-through font-mono">₹{product.mrp}</span>}</div>
+                         <div className="flex justify-between items-start mb-2"><p className="text-[10px] text-muted-foreground uppercase tracking-widest flex items-center gap-1">{product.category}</p><button onClick={() => toggleStock(product.id)} className={`text-[10px] font-bold px-2 py-0.5 rounded border uppercase flex items-center gap-1 ${product.inStock ? 'text-green-400 border-green-400/30 bg-green-400/10' : 'text-red-400 border-red-400/30 bg-red-400/10'}`}>{product.inStock ? 'In Stock' : 'Out'}</button></div>
+                         <h3 className="font-bold text-white text-sm leading-tight truncate">{product.name}</h3><div className="flex items-center gap-2 mt-2"><span className="font-mono font-black text-[#00FFFF]">₹{product.price}</span>{product.mrp > product.price && <span className="text-xs text-muted-foreground line-through font-mono">₹{product.mrp}</span>}</div>
                        </CardContent>
                      </Card>
                    ))}
@@ -1394,7 +1027,6 @@ export default function AdminDashboard() {
                )}
              </motion.div>
           )}
-
         </AnimatePresence>
       </main>
     </div>
