@@ -691,7 +691,7 @@ export default function AdminDashboard() {
             </motion.div>
           )}
 
-          {/* LIVE ORDERS */}
+          {/* LIVE ORDERS (UPDATED WITH CATEGORY BADGE) */}
           {activeTab === 'live_orders' && (
              <motion.div key="live_orders" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
                {liveOrders.length === 0 ? (
@@ -716,9 +716,18 @@ export default function AdminDashboard() {
                            <div className="p-4 sm:p-6 border-b lg:border-b-0 lg:border-r border-white/5">
                              <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-4">Order Items</p>
                              <div className="space-y-3">
-                               {order.items.map((item: any, i: number) => (
-                                 <div key={i} className="flex justify-between items-center text-sm"><span className="text-white">{item.quantity}x {item.name}</span><span className="font-mono text-muted-foreground">₹{item.price * item.quantity}</span></div>
-                               ))}
+                               {order.items.map((item: any, i: number) => {
+                                 const pInfo = products.find((p:any) => p.name === item.name);
+                                 const catName = item.category || pInfo?.category || 'General';
+                                 return (
+                                 <div key={i} className="flex justify-between items-start text-sm">
+                                   <div className="flex flex-col">
+                                     <span className="text-white font-bold">{item.quantity}x {item.name}</span>
+                                     <span className="text-[9px] text-[#00FFFF] uppercase tracking-widest mt-0.5">{catName}</span>
+                                   </div>
+                                   <span className="font-mono text-muted-foreground">₹{item.price * item.quantity}</span>
+                                 </div>
+                               )})}
                              </div>
                              <div className="mt-4 pt-4 border-t border-white/10 space-y-2">
                                {order.discount > 0 && (
@@ -747,7 +756,7 @@ export default function AdminDashboard() {
              </motion.div>
           )}
 
-          {/* ORDER HISTORY */}
+          {/* ORDER HISTORY (UPDATED WITH CATEGORY BADGE) */}
           {activeTab === 'order_history' && (
             <motion.div key="order_history" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
@@ -777,9 +786,18 @@ export default function AdminDashboard() {
                             <div className="p-4 sm:p-6 border-b lg:border-b-0 lg:border-r border-white/5">
                               <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-4">Order Items</p>
                               <div className="space-y-3">
-                                {order.items.map((item: any, i: number) => (
-                                  <div key={i} className="flex justify-between items-center text-sm"><span className="text-white">{item.quantity}x {item.name}</span><span className="font-mono text-muted-foreground">₹{item.price * item.quantity}</span></div>
-                                ))}
+                                {order.items.map((item: any, i: number) => {
+                                  const pInfo = products.find((p:any) => p.name === item.name);
+                                  const catName = item.category || pInfo?.category || 'General';
+                                  return (
+                                  <div key={i} className="flex justify-between items-start text-sm">
+                                    <div className="flex flex-col">
+                                      <span className="text-white font-bold">{item.quantity}x {item.name}</span>
+                                      <span className="text-[9px] text-[#00FFFF] uppercase tracking-widest mt-0.5">{catName}</span>
+                                    </div>
+                                    <span className="font-mono text-muted-foreground">₹{item.price * item.quantity}</span>
+                                  </div>
+                                )})}
                               </div>
                               <div className="mt-4 pt-4 border-t border-white/10 space-y-2">
                                {order.discount > 0 && (
