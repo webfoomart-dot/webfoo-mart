@@ -539,7 +539,7 @@ export default function AdminDashboard() {
             </motion.div>
           )}
 
-          {/* CATEGORIES */}
+          {/* CATEGORIES (UPDATED WITH ON/OFF TOGGLE) */}
           {activeTab === 'categories' && (
              <motion.div key="categories" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="space-y-6 max-w-2xl">
                 <Card className="glass-strong border-white/10">
@@ -565,12 +565,24 @@ export default function AdminDashboard() {
                     </form>
                     <div className="mt-6 space-y-3">
                       {categories.map((cat: any, idx: number) => (
-                        <div key={cat.id} className="flex justify-between items-center p-3 bg-white/5 border border-white/10 rounded-xl">
+                        <div key={cat.id} className={`flex justify-between items-center p-3 border rounded-xl transition-all ${cat.isActive !== false ? 'bg-white/5 border-white/10' : 'bg-white/5 border-white/5 opacity-50 grayscale'}`}>
                           <div className="flex items-center gap-3"><span className="text-xs text-muted-foreground font-mono">{idx + 1}.</span>
                              {cat.image ? <img src={cat.image} alt={cat.name} className="w-8 h-8 rounded-md object-cover border border-white/10" /> : <div className="w-8 h-8 rounded-md bg-white/10 flex items-center justify-center border border-white/10"><PackageIcon className="w-4 h-4 text-white/50" /></div>}
-                             <span className="font-bold text-white uppercase tracking-wider text-sm">{cat.name}</span>
+                             <div className="flex flex-col">
+                               <span className="font-bold text-white uppercase tracking-wider text-sm">{cat.name}</span>
+                               <Badge variant={cat.isActive !== false ? "outline" : "secondary"} className={`w-fit mt-0.5 text-[8px] font-black uppercase tracking-widest ${cat.isActive !== false ? 'text-[#CCFF00] border-[#CCFF00]/30' : 'text-muted-foreground border-white/10'}`}>{cat.isActive !== false ? 'ACTIVE' : 'OFF'}</Badge>
+                             </div>
                           </div>
-                          <div className="flex gap-1 items-center"><Button variant="ghost" size="icon" onClick={() => editCategoryUI(cat)} className="w-8 h-8 text-[#CCFF00] hover:bg-[#CCFF00]/20"><Edit className="w-4 h-4" /></Button><Button variant="ghost" size="icon" onClick={() => reorderCategory(cat.id, 'up')} disabled={idx === 0} className="w-8 h-8 text-[#00FFFF] hover:bg-[#00FFFF]/20"><ArrowUp className="w-4 h-4" /></Button><Button variant="ghost" size="icon" onClick={() => reorderCategory(cat.id, 'down')} disabled={idx === categories.length - 1} className="w-8 h-8 text-[#00FFFF] hover:bg-[#00FFFF]/20"><ArrowDown className="w-4 h-4" /></Button><div className="w-px h-5 bg-white/10 mx-1"></div><Button variant="ghost" size="icon" onClick={() => { if(confirm("Delete category?")) deleteCategory(cat.id) }} className="w-8 h-8 text-red-500 hover:text-white hover:bg-red-500"><Trash2 className="w-4 h-4" /></Button></div>
+                          <div className="flex gap-1 items-center">
+                            <Button variant="ghost" size="icon" onClick={() => updateCategory(cat.id, { isActive: cat.isActive === false ? true : false })} className={`w-8 h-8 ${cat.isActive !== false ? 'text-white hover:text-red-400 hover:bg-red-400/10' : 'text-[#CCFF00] hover:bg-[#CCFF00]/20'}`} title={cat.isActive !== false ? "Turn Off" : "Turn On"}>
+                               <Power className="w-4 h-4" />
+                            </Button>
+                            <Button variant="ghost" size="icon" onClick={() => editCategoryUI(cat)} className="w-8 h-8 text-[#CCFF00] hover:bg-[#CCFF00]/20"><Edit className="w-4 h-4" /></Button>
+                            <Button variant="ghost" size="icon" onClick={() => reorderCategory(cat.id, 'up')} disabled={idx === 0} className="w-8 h-8 text-[#00FFFF] hover:bg-[#00FFFF]/20"><ArrowUp className="w-4 h-4" /></Button>
+                            <Button variant="ghost" size="icon" onClick={() => reorderCategory(cat.id, 'down')} disabled={idx === categories.length - 1} className="w-8 h-8 text-[#00FFFF] hover:bg-[#00FFFF]/20"><ArrowDown className="w-4 h-4" /></Button>
+                            <div className="w-px h-5 bg-white/10 mx-1"></div>
+                            <Button variant="ghost" size="icon" onClick={() => { if(confirm("Delete category?")) deleteCategory(cat.id) }} className="w-8 h-8 text-red-500 hover:text-white hover:bg-red-500"><Trash2 className="w-4 h-4" /></Button>
+                          </div>
                         </div>
                       ))}
                     </div>
