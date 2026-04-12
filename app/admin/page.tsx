@@ -9,7 +9,7 @@ import {
   MapPin, Phone, Truck, XCircle, Plus, Trash2, Edit, PowerOff, Power,
   Star, Ban, MessageCircle, FileText, Send, CheckSquare, Square, Smartphone,
   TrendingUp, Target, BarChart, ShieldAlert, LockKeyhole, Calendar, Settings, AlertTriangle, MoonStar, LayoutGrid,
-  ArrowUp, ArrowDown, Palette, Volume2, Wallet, UserCircle, Link as LinkIcon, Search
+  ArrowUp, ArrowDown, Palette, Volume2, Wallet, UserCircle, Link as LinkIcon, Search, PlusCircle, X
 } from "lucide-react"
 import { createClient } from '@supabase/supabase-js' 
 
@@ -75,9 +75,10 @@ export default function AdminDashboard() {
   const [isProductSheetOpen, setIsProductSheetOpen] = React.useState(false)
   const [editingId, setEditingId] = React.useState<string | null>(null)
   const [selectedCategoryView, setSelectedCategoryView] = React.useState<string | null>(null)
+  const [selectedSubcategoryFilter, setSelectedSubcategoryFilter] = React.useState<string | null>(null)
 
   const [formData, setFormData] = React.useState({
-    name: '', price: '', mrp: '', cost_price: '', category: '', image: '', inStock: true,
+    name: '', price: '', mrp: '', cost_price: '', category: '', subcategory: '', image: '', inStock: true,
     description: '', galleryImages: [] as string[], foodPref: 'none' as 'veg' | 'non-veg' | 'none'
   })
 
@@ -88,6 +89,7 @@ export default function AdminDashboard() {
   const [editingCategoryId, setEditingCategoryId] = React.useState<string | null>(null)
   const [newCategoryName, setNewCategoryName] = React.useState('')
   const [newCategoryImage, setNewCategoryImage] = React.useState('')
+  const [subCatInputs, setSubCatInputs] = React.useState<Record<string, string>>({})
 
   const [settingsFormData, setSettingsFormData] = React.useState({
     storeMode: 'manual', openTime: '08:00', closeTime: '22:00',
@@ -102,7 +104,6 @@ export default function AdminDashboard() {
   })
   const [isThemeSaving, setIsThemeSaving] = React.useState(false)
 
-  // Customer Filtering & Sorting States
   const [customerSearchQuery, setCustomerSearchQuery] = React.useState('')
   const [customerSortOption, setCustomerSortOption] = React.useState('spent_desc')
 
@@ -292,7 +293,7 @@ export default function AdminDashboard() {
     e.preventDefault()
     if (!newCategoryName.trim()) return;
     if (editingCategoryId) await updateCategory(editingCategoryId, { name: newCategoryName.trim(), image: newCategoryImage });
-    else await addCategory({ name: newCategoryName.trim(), image: newCategoryImage });
+    else await addCategory({ name: newCategoryName.trim(), image: newCategoryImage, subcategories: [] });
     setNewCategoryName(''); setNewCategoryImage(''); setEditingCategoryId(null);
   }
 
@@ -303,15 +304,39 @@ export default function AdminDashboard() {
 
   const resetCategoryForm = () => { setEditingCategoryId(null); setNewCategoryName(''); setNewCategoryImage(''); }
 
+  const handleAddSubcat = (catId: string, currentSubs: string[]) => {
+    const newSub = subCatInputs[catId];
+    if (!newSub || !newSub.trim()) return;
+    const updatedSubs = [...(currentSubs || []), newSub.trim()];
+    updateCategory(catId, { subcategories: updatedSubs });
+    setSubCatInputs({...subCatInputs, [catId]: ''});
+  }
+
+  const handleRemoveSubcat = (catId: string, currentSubs: string[], subToRemove: string) => {
+    if(confirm(`Remove sub-category "${subToRemove}"?`)) {
+      const updatedSubs = (currentSubs || []).filter(s => s !== subToRemove);
+      updateCategory(catId, { subcategories: updatedSubs });
+    }
+  }
+
+  const handleDeleteCustomerWipe = (phone: string) => {
+    if(confirm("🚨 WARNING: This will wipe/hide the customer from your Admin CRM view. \n\nNote: If they forgot their password, this will NOT delete their Supabase Auth account. You must delete Auth from the Supabase Dashboard. \n\nProceed with CRM wipe?")) {
+      updateCustomerMeta(phone, { isDeleted: true });
+      alert("✅ Customer data wiped from panel.");
+    }
+  }
+
   const liveOrders = orders.filter((o: any) => o.status === 'Pending' || o.status === 'In Transit').reverse()
   
-  // CUSTOMER MAPPING & PROCESSING
+  // CUSTOMER MAPPING & PROCESSING (Filtering out isDeleted)
   const customersMap = new Map()
   Object.keys(customerMeta).forEach(phone => {
     const meta = customerMeta[phone]
+    if (meta.isDeleted) return; // Hide deleted customers
     customersMap.set(phone, { name: meta.name || 'Unknown', phone: phone, address: meta.address || 'Address not added', totalOrders: 0, totalSpent: 0, ordersList: [], firstSeen: 9999999 })
   })
   orders.forEach((order: any, index: number) => {
+    if (customerMeta[order.phone]?.isDeleted) return; // Skip compiling stats for deleted
     if (!customersMap.has(order.phone)) {
       customersMap.set(order.phone, { name: order.customer, phone: order.phone, address: order.landmark, totalOrders: 0, totalSpent: 0, ordersList: [], firstSeen: index })
     } else {
@@ -324,7 +349,6 @@ export default function AdminDashboard() {
     cust.ordersList.push(order)
   })
 
-  // SEARCH AND SORT LOGIC
   let customersList = Array.from(customersMap.values())
   
   if (customerSearchQuery.trim() !== '') {
@@ -443,7 +467,7 @@ export default function AdminDashboard() {
   const handleSaveProduct = (e: React.FormEvent) => {
     e.preventDefault()
     const productPayload = { 
-      name: formData.name, price: Number(formData.price), mrp: Number(formData.mrp), cost_price: Number(formData.cost_price), category: formData.category, image: formData.image || '/placeholder.jpg', inStock: formData.inStock,
+      name: formData.name, price: Number(formData.price), mrp: Number(formData.mrp), cost_price: Number(formData.cost_price), category: formData.category, subcategory: formData.subcategory, image: formData.image || '/placeholder.jpg', inStock: formData.inStock,
       description: formData.description, galleryImages: formData.galleryImages, foodPref: formData.foodPref
     }
     if (editingId) updateProduct(editingId, productPayload)
@@ -454,7 +478,7 @@ export default function AdminDashboard() {
   const openEdit = (product: any) => { 
     setEditingId(product.id); 
     setFormData({ 
-      name: product.name, price: product.price.toString(), mrp: product.mrp.toString(), cost_price: product.cost_price?.toString() || '', category: product.category, image: product.image, inStock: product.inStock,
+      name: product.name, price: product.price.toString(), mrp: product.mrp.toString(), cost_price: product.cost_price?.toString() || '', category: product.category, subcategory: product.subcategory || '', image: product.image, inStock: product.inStock,
       description: product.description || '', galleryImages: product.galleryImages || [], foodPref: product.foodPref || 'none'
     }); 
     setIsProductSheetOpen(true) 
@@ -462,7 +486,7 @@ export default function AdminDashboard() {
 
   const resetForm = () => { 
     setEditingId(null); 
-    setFormData({ name: '', price: '', mrp: '', cost_price: '', category: (selectedCategoryView || displayCategories[0] || '') as string, image: '', inStock: true, description: '', galleryImages: [], foodPref: 'none' }); 
+    setFormData({ name: '', price: '', mrp: '', cost_price: '', category: (selectedCategoryView || displayCategories[0] || '') as string, subcategory: '', image: '', inStock: true, description: '', galleryImages: [], foodPref: 'none' }); 
     setNewGalleryUrl(''); 
   }
 
@@ -476,6 +500,17 @@ export default function AdminDashboard() {
     setFormData(prev => ({ ...prev, galleryImages: prev.galleryImages.filter((_, i) => i !== index) }))
   }
 
+  const activeCategoryObject = categories?.find((c: any) => c.name === formData.category);
+  const activeSubcategories = activeCategoryObject?.subcategories || [];
+
+  const viewCategoryObject = categories?.find((c: any) => c.name === selectedCategoryView);
+  const viewSubcategories = viewCategoryObject?.subcategories || [];
+
+  const displayedProducts = products.filter((p:any) => 
+    p.category === selectedCategoryView && 
+    (!selectedSubcategoryFilter || p.subcategory === selectedSubcategoryFilter)
+  );
+
   const SidebarNav = () => (
     <div className="flex flex-col h-full bg-black">
       <div className="p-6 border-b border-white/10 flex items-center gap-3">
@@ -484,7 +519,7 @@ export default function AdminDashboard() {
       </div>
       <nav className="flex-1 overflow-y-auto py-6 px-4 space-y-2 scrollbar-hide">
         {MENU_ITEMS.map((item) => (
-          <button key={item.id} onClick={() => { setActiveTab(item.id); setIsMobileMenuOpen(false); setSelectedCategoryView(null); }} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${activeTab === item.id ? 'bg-[#00FFFF]/10 text-[#00FFFF] border border-[#00FFFF]/30 shadow-[0_0_15px_rgba(0,255,255,0.1)]' : 'text-muted-foreground hover:bg-white/5 hover:text-white'}`}>
+          <button key={item.id} onClick={() => { setActiveTab(item.id); setIsMobileMenuOpen(false); setSelectedCategoryView(null); setSelectedSubcategoryFilter(null); }} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${activeTab === item.id ? 'bg-[#00FFFF]/10 text-[#00FFFF] border border-[#00FFFF]/30 shadow-[0_0_15px_rgba(0,255,255,0.1)]' : 'text-muted-foreground hover:bg-white/5 hover:text-white'}`}>
             <item.icon className="w-5 h-5" />
             <span className="font-bold text-sm uppercase tracking-widest">{item.label}</span>
             {item.id === 'live_orders' && liveOrders.length > 0 && (
@@ -572,53 +607,78 @@ export default function AdminDashboard() {
 
           {/* CATEGORIES */}
           {activeTab === 'categories' && (
-             <motion.div key="categories" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="space-y-6 max-w-2xl">
-                <Card className="glass-strong border-white/10">
+             <motion.div key="categories" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="space-y-6">
+                <Card className="glass-strong border-white/10 mb-8">
                   <CardContent className="p-6 sm:p-8 space-y-6">
-                    <div className="flex items-center gap-3 border-b border-white/10 pb-4"><LayoutGrid className="w-6 h-6 text-[#00FFFF]" /><h3 className="text-xl font-black uppercase text-white">Manage Store Categories</h3></div>
+                    <div className="flex items-center gap-3 border-b border-white/10 pb-4"><LayoutGrid className="w-6 h-6 text-[#00FFFF]" /><h3 className="text-xl font-black uppercase text-white">Create Main Category</h3></div>
                     <form onSubmit={handleSaveCategory} className="flex flex-col gap-4">
                       {/* ONLY URL ALLOWED */}
                       <div className="space-y-4 bg-[#00FFFF]/5 p-4 rounded-xl border border-[#00FFFF]/20">
                         <Label className="text-xs font-black uppercase tracking-widest text-[#00FFFF] flex items-center gap-2"><LinkIcon className="w-4 h-4"/> Paste Category Image URL</Label>
-                        <p className="text-[10px] text-white/50">Host image on ImageKit.io and paste direct URL here. NO DIRECT UPLOADS.</p>
+                        <p className="text-[10px] text-white/50">Host image on ImageKit.io and paste direct URL here.</p>
                         <Input type="url" placeholder="https://ik.imagekit.io/..." value={newCategoryImage} onChange={(e) => setNewCategoryImage(e.target.value)} className="bg-black border-white/20 text-xs focus-visible:border-[#00FFFF] h-12 text-white" />
                         {newCategoryImage && (
-                          <div className="mt-2 relative w-full h-24 rounded-lg overflow-hidden border border-[#00FFFF]/20 bg-black/50">
+                          <div className="mt-2 relative w-full sm:w-48 h-24 rounded-lg overflow-hidden border border-[#00FFFF]/20 bg-black/50">
                             <img src={newCategoryImage} alt="URL Preview" className="w-full h-full object-contain" onError={(e) => { e.currentTarget.src = '' }} />
                           </div>
                         )}
                       </div>
-                      <div className="flex gap-4 items-end mt-2">
-                        <div className="flex-1 space-y-2"><Label className="text-xs uppercase tracking-widest text-[#00FFFF]">{editingCategoryId ? 'Edit Category Name' : 'New Category Name'}</Label><Input required placeholder="e.g. Fresh Fruits" value={newCategoryName} onChange={(e) => setNewCategoryName(e.target.value)} className="bg-black/50 border-white/20 text-white h-12" /></div>
-                        <Button type="submit" className="h-12 bg-[#CCFF00] text-black font-black uppercase tracking-widest px-6 hover:bg-[#CCFF00]/90">{editingCategoryId ? 'UPDATE' : 'ADD'}</Button>
-                        {editingCategoryId && <Button type="button" onClick={resetCategoryForm} variant="outline" className="h-12 border-white/20 text-white hover:bg-white/10">CANCEL</Button>}
+                      <div className="flex flex-col sm:flex-row gap-4 items-end mt-2">
+                        <div className="flex-1 w-full space-y-2"><Label className="text-xs uppercase tracking-widest text-[#00FFFF]">{editingCategoryId ? 'Edit Category Name' : 'New Category Name'}</Label><Input required placeholder="e.g. Fast Food" value={newCategoryName} onChange={(e) => setNewCategoryName(e.target.value)} className="bg-black/50 border-white/20 text-white h-12" /></div>
+                        <Button type="submit" className="h-12 w-full sm:w-auto bg-[#CCFF00] text-black font-black uppercase tracking-widest px-8 hover:bg-[#CCFF00]/90">{editingCategoryId ? 'UPDATE' : 'ADD CATEGORY'}</Button>
+                        {editingCategoryId && <Button type="button" onClick={resetCategoryForm} variant="outline" className="h-12 w-full sm:w-auto border-white/20 text-white hover:bg-white/10">CANCEL</Button>}
                       </div>
                     </form>
-                    <div className="mt-6 space-y-3">
-                      {categories.map((cat: any, idx: number) => (
-                        <div key={cat.id} className={`flex justify-between items-center p-3 border rounded-xl transition-all ${cat.isActive !== false ? 'bg-white/5 border-white/10' : 'bg-white/5 border-white/5 opacity-50 grayscale'}`}>
-                          <div className="flex items-center gap-3"><span className="text-xs text-muted-foreground font-mono">{idx + 1}.</span>
-                             {cat.image ? <img src={cat.image} alt={cat.name} className="w-8 h-8 rounded-md object-cover border border-white/10" /> : <div className="w-8 h-8 rounded-md bg-white/10 flex items-center justify-center border border-white/10"><PackageIcon className="w-4 h-4 text-white/50" /></div>}
-                             <div className="flex flex-col">
-                               <span className="font-bold text-white uppercase tracking-wider text-sm">{cat.name}</span>
-                               <Badge variant={cat.isActive !== false ? "outline" : "secondary"} className={`w-fit mt-0.5 text-[8px] font-black uppercase tracking-widest ${cat.isActive !== false ? 'text-[#CCFF00] border-[#CCFF00]/30' : 'text-muted-foreground border-white/10'}`}>{cat.isActive !== false ? 'ACTIVE' : 'OFF'}</Badge>
-                             </div>
+                  </CardContent>
+                </Card>
+
+                {/* CATEGORY BLOCKS (CARDS) */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {categories.map((cat: any, idx: number) => {
+                    const subCats = cat.subcategories || [];
+                    return (
+                    <Card key={cat.id} className={`glass-strong border transition-all ${cat.isActive !== false ? 'border-white/10' : 'border-white/5 opacity-60 grayscale'}`}>
+                      <CardContent className="p-0">
+                        <div className="p-5 border-b border-white/5 flex justify-between items-start bg-white/5">
+                          <div className="flex items-center gap-4">
+                            {cat.image ? <img src={cat.image} alt={cat.name} className="w-12 h-12 rounded-lg object-cover border border-white/20 bg-black" /> : <div className="w-12 h-12 rounded-lg bg-black flex items-center justify-center border border-white/20"><PackageIcon className="w-6 h-6 text-white/50" /></div>}
+                            <div>
+                              <h4 className="font-black text-white uppercase tracking-wider text-lg">{cat.name}</h4>
+                              <Badge variant={cat.isActive !== false ? "outline" : "secondary"} className={`mt-1 text-[8px] font-black uppercase tracking-widest ${cat.isActive !== false ? 'text-[#CCFF00] border-[#CCFF00]/30' : 'text-muted-foreground border-white/10'}`}>{cat.isActive !== false ? 'ACTIVE' : 'OFF'}</Badge>
+                            </div>
                           </div>
-                          <div className="flex gap-1 items-center">
-                            <Button variant="ghost" size="icon" onClick={() => updateCategory(cat.id, { isActive: cat.isActive === false ? true : false })} className={`w-8 h-8 ${cat.isActive !== false ? 'text-white hover:text-red-400 hover:bg-red-400/10' : 'text-[#CCFF00] hover:bg-[#CCFF00]/20'}`} title={cat.isActive !== false ? "Turn Off" : "Turn On"}>
-                               <Power className="w-4 h-4" />
-                            </Button>
+                          <div className="flex flex-wrap justify-end gap-1 w-24">
+                            <Button variant="ghost" size="icon" onClick={() => updateCategory(cat.id, { isActive: cat.isActive === false ? true : false })} className={`w-8 h-8 ${cat.isActive !== false ? 'text-white hover:text-red-400 hover:bg-red-400/10' : 'text-[#CCFF00] hover:bg-[#CCFF00]/20'}`} title={cat.isActive !== false ? "Turn Off" : "Turn On"}><Power className="w-4 h-4" /></Button>
                             <Button variant="ghost" size="icon" onClick={() => editCategoryUI(cat)} className="w-8 h-8 text-[#CCFF00] hover:bg-[#CCFF00]/20"><Edit className="w-4 h-4" /></Button>
                             <Button variant="ghost" size="icon" onClick={() => reorderCategory(cat.id, 'up')} disabled={idx === 0} className="w-8 h-8 text-[#00FFFF] hover:bg-[#00FFFF]/20"><ArrowUp className="w-4 h-4" /></Button>
                             <Button variant="ghost" size="icon" onClick={() => reorderCategory(cat.id, 'down')} disabled={idx === categories.length - 1} className="w-8 h-8 text-[#00FFFF] hover:bg-[#00FFFF]/20"><ArrowDown className="w-4 h-4" /></Button>
-                            <div className="w-px h-5 bg-white/10 mx-1"></div>
-                            <Button variant="ghost" size="icon" onClick={() => { if(confirm("Delete category?")) deleteCategory(cat.id) }} className="w-8 h-8 text-red-500 hover:text-white hover:bg-red-500"><Trash2 className="w-4 h-4" /></Button>
+                            <Button variant="ghost" size="icon" onClick={() => { if(confirm("Delete entire category?")) deleteCategory(cat.id) }} className="w-8 h-8 text-red-500 hover:text-white hover:bg-red-500"><Trash2 className="w-4 h-4" /></Button>
                           </div>
                         </div>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
+                        
+                        <div className="p-5 bg-black/30">
+                          <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-3 flex items-center gap-2"><LayoutGrid className="w-3 h-3"/> Sub-Categories</p>
+                          {subCats.length > 0 ? (
+                            <div className="flex flex-wrap gap-2 mb-4">
+                              {subCats.map((sub: string, i: number) => (
+                                <Badge key={i} variant="outline" className="bg-[#00FFFF]/5 border-[#00FFFF]/30 text-white pl-3 pr-1 py-1 flex items-center gap-2">
+                                  {sub} <button onClick={() => handleRemoveSubcat(cat.id, subCats, sub)} className="text-[#00FFFF] hover:text-red-500 hover:bg-red-500/20 rounded-full p-0.5"><X className="w-3 h-3"/></button>
+                                </Badge>
+                              ))}
+                            </div>
+                          ) : (
+                            <p className="text-xs text-white/30 italic mb-4">No sub-categories added.</p>
+                          )}
+                          
+                          <div className="flex gap-2">
+                            <Input placeholder="Add new sub-category..." value={subCatInputs[cat.id] || ''} onChange={(e) => setSubCatInputs({...subCatInputs, [cat.id]: e.target.value})} className="bg-black/50 border-white/10 text-xs h-9 focus-visible:border-[#00FFFF] text-white" />
+                            <Button onClick={() => handleAddSubcat(cat.id, subCats)} className="h-9 bg-[#00FFFF] text-black font-black hover:bg-[#00FFFF]/80 px-4 text-xs"><PlusCircle className="w-4 h-4 mr-1"/> ADD</Button>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )})}
+                </div>
              </motion.div>
           )}
 
@@ -762,11 +822,12 @@ export default function AdminDashboard() {
                                {order.items.map((item: any, i: number) => {
                                  const pInfo = products.find((p:any) => p.name === item.name);
                                  const catName = item.category || pInfo?.category || 'General';
+                                 const subcatName = item.subcategory || pInfo?.subcategory || '';
                                  return (
                                  <div key={i} className="flex justify-between items-start text-sm">
                                    <div className="flex flex-col">
                                      <span className="text-white font-bold">{item.quantity}x {item.name}</span>
-                                     <span className="text-[9px] text-[#00FFFF] uppercase tracking-widest mt-0.5">{catName}</span>
+                                     <span className="text-[9px] text-[#00FFFF] uppercase tracking-widest mt-0.5">{catName} {subcatName && `> ${subcatName}`}</span>
                                    </div>
                                    <span className="font-mono text-muted-foreground">₹{item.price * item.quantity}</span>
                                  </div>
@@ -832,11 +893,12 @@ export default function AdminDashboard() {
                                 {order.items.map((item: any, i: number) => {
                                   const pInfo = products.find((p:any) => p.name === item.name);
                                   const catName = item.category || pInfo?.category || 'General';
+                                  const subcatName = item.subcategory || pInfo?.subcategory || '';
                                   return (
                                   <div key={i} className="flex justify-between items-start text-sm">
                                     <div className="flex flex-col">
                                       <span className="text-white font-bold">{item.quantity}x {item.name}</span>
-                                      <span className="text-[9px] text-[#00FFFF] uppercase tracking-widest mt-0.5">{catName}</span>
+                                      <span className="text-[9px] text-[#00FFFF] uppercase tracking-widest mt-0.5">{catName} {subcatName && `> ${subcatName}`}</span>
                                     </div>
                                     <span className="font-mono text-muted-foreground">₹{item.price * item.quantity}</span>
                                   </div>
@@ -964,7 +1026,7 @@ export default function AdminDashboard() {
             </motion.div>
           )}
 
-          {/* CUSTOMERS (UPDATED WITH SEARCH & SORT) */}
+          {/* CUSTOMERS */}
           {activeTab === 'customers' && (
              <motion.div key="customers" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
                
@@ -1028,6 +1090,15 @@ export default function AdminDashboard() {
                                     <Button onClick={() => updateCustomerMeta(cust.phone, { isVip: !isVip })} className={`flex-1 ${isVip ? 'bg-white/10 text-white' : 'bg-[#CCFF00]/10 text-[#CCFF00] hover:bg-[#CCFF00] hover:text-black'} border border-[#CCFF00]/30`}><Star className="w-4 h-4 mr-2" /> {isVip ? 'Remove VIP' : 'Mark as VIP'}</Button>
                                     <Button onClick={() => updateCustomerMeta(cust.phone, { isBlocked: !isBlocked })} className={`flex-1 ${isBlocked ? 'bg-white/10 text-white' : 'bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white'} border border-red-500/30`}><Ban className="w-4 h-4 mr-2" /> {isBlocked ? 'Unblock' : 'Block'}</Button>
                                   </div>
+                                  
+                                  {/* DELETE DATA BUTTON */}
+                                  <div className="pt-2 border-t border-white/10">
+                                    <Button onClick={() => handleDeleteCustomerWipe(cust.phone)} variant="outline" className="w-full bg-red-500/5 text-red-500 border-red-500/30 hover:bg-red-500 hover:text-white">
+                                      <Trash2 className="w-4 h-4 mr-2" /> Delete Customer Data
+                                    </Button>
+                                    <p className="text-[9px] text-muted-foreground mt-2 text-center uppercase tracking-widest leading-tight">Note: This removes data from CRM. To delete their Auth Login, use Supabase Dashboard.</p>
+                                  </div>
+
                                   <div>
                                     <h4 className="text-xs font-black text-muted-foreground uppercase tracking-widest mb-3 border-b border-white/10 pb-2">Order History</h4>
                                     {cust.totalOrders === 0 ? (
@@ -1053,12 +1124,12 @@ export default function AdminDashboard() {
              </motion.div>
           )}
 
-          {/* PRODUCTS */}
+          {/* PRODUCTS (UPDATED WITH SUBCATEGORY FILTER TABS) */}
           {activeTab === 'products' && (
              <motion.div key="products" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="space-y-6">
                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                  {selectedCategoryView ? (
-                   <Button variant="ghost" onClick={() => setSelectedCategoryView(null)} className="text-[#00FFFF] hover:bg-[#00FFFF]/10 px-0 hover:text-white transition-all"><ArrowLeft className="w-5 h-5 mr-2" /> <span className="font-black uppercase tracking-widest text-lg">{selectedCategoryView}</span></Button>
+                   <Button variant="ghost" onClick={() => { setSelectedCategoryView(null); setSelectedSubcategoryFilter(null); }} className="text-[#00FFFF] hover:bg-[#00FFFF]/10 px-0 hover:text-white transition-all"><ArrowLeft className="w-5 h-5 mr-2" /> <span className="font-black uppercase tracking-widest text-lg">{selectedCategoryView}</span></Button>
                  ) : (
                    <p className="text-muted-foreground font-mono text-sm">Select a category folder to manage its items.</p>
                  )}
@@ -1069,7 +1140,6 @@ export default function AdminDashboard() {
                        <SheetHeader className="text-left mb-6 mt-6"><SheetTitle className="text-3xl font-black italic uppercase text-[#00FFFF]">{editingId ? 'Edit Product' : 'New Product'}</SheetTitle></SheetHeader>
                        <form onSubmit={handleSaveProduct} className="flex flex-col gap-6 pb-20">
                          
-                         {/* 🔥 BULLETPROOF: MAIN IMAGE URL ONLY (For ImageKit) */}
                          <div className="space-y-4 bg-[#00FFFF]/5 p-5 rounded-xl border border-[#00FFFF]/20">
                            <Label className="text-xs font-black uppercase tracking-widest text-[#00FFFF] flex items-center gap-2"><LinkIcon className="w-4 h-4"/> Main Product Image URL</Label>
                            <p className="text-[10px] text-white/50 leading-tight">Paste ImageKit URL here. NO DIRECT UPLOADS.</p>
@@ -1081,14 +1151,12 @@ export default function AdminDashboard() {
                            )}
                          </div>
 
-                         {/* 🔥 BULLETPROOF: GALLERY URL ONLY */}
                          <div className="space-y-4 bg-[#CCFF00]/5 p-5 rounded-xl border border-[#CCFF00]/20">
                            <Label className="text-xs font-black uppercase tracking-widest text-[#CCFF00] flex items-center gap-2"><LinkIcon className="w-4 h-4"/> Extra Gallery Image URLs</Label>
                            <div className="flex gap-2"><Input type="url" placeholder="Paste extra ImageKit URL..." value={newGalleryUrl} onChange={(e) => setNewGalleryUrl(e.target.value)} className="bg-black border-white/20 text-xs focus-visible:border-[#CCFF00] h-10 flex-1 text-white" /><Button type="button" onClick={addGalleryUrl} className="h-10 bg-[#CCFF00] text-black font-black hover:bg-[#CCFF00]/80 px-4">ADD</Button></div>
                            {formData.galleryImages.length > 0 && (<div className="flex gap-3 overflow-x-auto pt-2 pb-2 scrollbar-hide">{formData.galleryImages.map((img, i) => (<div key={i} className="relative w-20 h-20 shrink-0 rounded-lg overflow-hidden border border-white/20"><img src={img} alt={`Gallery ${i}`} className="w-full h-full object-cover" /><button type="button" onClick={() => removeGalleryImage(i)} className="absolute top-1 right-1 bg-red-500 rounded-full p-1 text-white hover:scale-110"><XCircle className="w-3 h-3" /></button></div>))}</div>)}
                          </div>
 
-                         {/* BASIC DETAILS */}
                          <div className="space-y-4">
                            <div className="space-y-2"><Label>Product Name</Label><Input required value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className="bg-white/5 border-white/10" /></div>
                            <div className="space-y-2"><Label>Description / Specifications</Label><textarea value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} placeholder="Write details here..." className="w-full bg-white/5 border border-white/10 focus-visible:border-[#00FFFF] rounded-xl p-3 min-h-[100px] text-sm text-white resize-y" /></div>
@@ -1097,8 +1165,15 @@ export default function AdminDashboard() {
                              <div className="space-y-2"><Label>Sell Price (₹)</Label><Input required type="number" value={formData.price} onChange={e => setFormData({...formData, price: e.target.value})} className="bg-white/5 border-white/10" /></div>
                              <div className="space-y-2"><Label>MRP (₹)</Label><Input required type="number" value={formData.mrp} onChange={e => setFormData({...formData, mrp: e.target.value})} className="bg-white/5 border-white/10" /></div>
                            </div>
-                           <div className="grid grid-cols-2 gap-4">
-                             <div className="space-y-2"><Label>Category</Label><select required value={formData.category} onChange={e => setFormData({...formData, category: e.target.value})} className="w-full h-10 bg-white/5 border border-white/10 rounded-md px-3 text-sm text-white focus:outline-none focus:border-[#00FFFF]">{displayCategories.map((catName: any, idx: number) => (<option key={idx} value={catName} className="bg-black text-white">{catName}</option>))}</select></div>
+                           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                             <div className="space-y-2"><Label>Category</Label><select required value={formData.category} onChange={e => setFormData({...formData, category: e.target.value, subcategory: ''})} className="w-full h-10 bg-white/5 border border-white/10 rounded-md px-3 text-sm text-white focus:outline-none focus:border-[#00FFFF]">{displayCategories.map((catName: any, idx: number) => (<option key={idx} value={catName} className="bg-black text-white">{catName}</option>))}</select></div>
+                             
+                             {activeSubcategories.length > 0 ? (
+                               <div className="space-y-2"><Label className="text-[#CCFF00]">Sub-Category</Label><select value={formData.subcategory} onChange={e => setFormData({...formData, subcategory: e.target.value})} className="w-full h-10 bg-white/5 border border-[#CCFF00]/50 rounded-md px-3 text-sm text-white focus:outline-none focus:border-[#CCFF00]"><option value="" className="bg-black text-muted-foreground">Select Sub...</option>{activeSubcategories.map((subName: string, idx: number) => (<option key={idx} value={subName} className="bg-black text-white">{subName}</option>))}</select></div>
+                             ) : (
+                               <div className="space-y-2"><Label className="text-white/30">Sub-Category</Label><div className="w-full h-10 bg-white/5 border border-white/5 rounded-md px-3 text-xs text-white/30 flex items-center">No Sub-categories</div></div>
+                             )}
+
                              <div className="space-y-2"><Label>Food Type</Label><select required value={formData.foodPref} onChange={e => setFormData({...formData, foodPref: e.target.value as any})} className="w-full h-10 bg-white/5 border border-white/10 rounded-md px-3 text-sm text-white focus:outline-none focus:border-[#00FFFF]"><option value="none" className="bg-black text-white">None (Gadgets)</option><option value="veg" className="bg-black text-green-400">Vegetarian 🟢</option><option value="non-veg" className="bg-black text-red-400">Non-Veg 🔴</option></select></div>
                            </div>
                          </div>
@@ -1115,29 +1190,55 @@ export default function AdminDashboard() {
                    {displayCategories.map((catName: any, idx: number) => {
                      const itemCount = products.filter((p:any) => p.category === catName).length;
                      return (
-                       <Card key={idx} onClick={() => setSelectedCategoryView(catName)} className="glass-strong border-white/10 hover:border-[#00FFFF]/50 transition-all cursor-pointer group">
+                       <Card key={idx} onClick={() => { setSelectedCategoryView(catName); setSelectedSubcategoryFilter(null); }} className="glass-strong border-white/10 hover:border-[#00FFFF]/50 transition-all cursor-pointer group">
                          <CardContent className="p-6 flex flex-col items-center justify-center text-center h-32 relative overflow-hidden"><PackageIcon className="w-8 h-8 text-[#00FFFF] mb-3 group-hover:scale-110 transition-transform" /><h3 className="font-black text-white text-sm uppercase tracking-widest z-10">{catName}</h3><Badge variant="outline" className="mt-2 text-[10px] text-muted-foreground border-white/20 z-10 bg-black/50">{itemCount} Items</Badge></CardContent>
                        </Card>
                      )
                    })}
                  </div>
                ) : (
-                 <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 mt-6">
-                   {products.filter((p:any) => p.category === selectedCategoryView).map((product: any) => (
-                     <Card key={product.id} className={`glass-strong border-white/10 overflow-hidden group transition-all ${!product.inStock ? 'opacity-60 grayscale' : 'hover:border-[#00FFFF]/30'}`}>
-                       <div className="relative h-40 w-full bg-white/5"><img src={product.image || "/placeholder.jpg"} alt={product.name} className="object-cover w-full h-full" onError={(e) => { e.currentTarget.src = '/placeholder.jpg' }} />
-                         {product.foodPref === 'veg' && <div className="absolute top-2 left-2 bg-white rounded-sm p-0.5"><div className="w-3 h-3 border-2 border-green-600 flex items-center justify-center"><div className="w-1.5 h-1.5 bg-green-600 rounded-full"></div></div></div>}
-                         {product.foodPref === 'non-veg' && <div className="absolute top-2 left-2 bg-white rounded-sm p-0.5"><div className="w-3 h-3 border-2 border-red-600 flex items-center justify-center"><div className="w-1.5 h-1.5 bg-red-600 rounded-full"></div></div></div>}
-                         {!product.inStock && <div className="absolute inset-0 bg-black/60 flex items-center justify-center z-10"><span className="bg-red-500 text-white font-black text-[10px] px-2 py-1 uppercase rounded">Out of Stock</span></div>}
-                         <div className="absolute top-2 right-2 flex gap-2 z-20"><button onClick={(e) => { e.stopPropagation(); openEdit(product) }} className="w-8 h-8 rounded-full bg-black/90 border border-[#00FFFF]/50 flex items-center justify-center text-[#00FFFF] shadow-[0_0_10px_rgba(0,255,255,0.2)] hover:bg-[#00FFFF] hover:text-black transition-all"><Edit className="w-4 h-4" /></button><button onClick={(e) => { e.stopPropagation(); if(confirm("Delete this product?")) deleteProduct(product.id) }} className="w-8 h-8 rounded-full bg-black/90 border border-red-500/50 flex items-center justify-center text-red-500 shadow-[0_0_10px_rgba(255,0,0,0.2)] hover:bg-red-500 hover:text-white transition-all"><Trash2 className="w-4 h-4" /></button></div>
-                       </div>
-                       <CardContent className="p-4">
-                         <div className="flex justify-between items-start mb-2"><p className="text-[10px] text-muted-foreground uppercase tracking-widest flex items-center gap-1">{product.category}</p><button onClick={() => toggleStock(product.id)} className={`text-[10px] font-bold px-2 py-0.5 rounded border uppercase flex items-center gap-1 ${product.inStock ? 'text-green-400 border-green-400/30 bg-green-400/10' : 'text-red-400 border-red-400/30 bg-red-400/10'}`}>{product.inStock ? 'In Stock' : 'Out'}</button></div>
-                         <h3 className="font-bold text-white text-sm leading-tight truncate">{product.name}</h3><div className="flex items-center gap-2 mt-2"><span className="font-mono font-black text-[#00FFFF]">₹{product.price}</span>{product.mrp > product.price && <span className="text-xs text-muted-foreground line-through font-mono">₹{product.mrp}</span>}</div>
-                       </CardContent>
-                     </Card>
-                   ))}
-                   {products.filter((p:any) => p.category === selectedCategoryView).length === 0 && <div className="col-span-full py-10 text-center opacity-50"><p className="text-xs uppercase tracking-widest font-bold">No items in this category yet.</p></div>}
+                 <div className="mt-6">
+                   {/* SUBCATEGORY FILTER TABS */}
+                   {viewSubcategories.length > 0 && (
+                     <div className="flex gap-3 overflow-x-auto pb-4 mb-4 border-b border-white/10 scrollbar-hide">
+                        <Button 
+                          onClick={() => setSelectedSubcategoryFilter(null)} 
+                          variant={!selectedSubcategoryFilter ? 'default' : 'outline'} 
+                          className={!selectedSubcategoryFilter ? 'bg-[#00FFFF] text-black font-black uppercase tracking-widest text-xs h-9' : 'border-white/20 text-white hover:bg-white/10 font-bold uppercase tracking-widest text-xs h-9'}
+                        >
+                          Show All
+                        </Button>
+                        {viewSubcategories.map((sub: string, idx: number) => (
+                          <Button 
+                            key={idx} 
+                            onClick={() => setSelectedSubcategoryFilter(sub)} 
+                            variant={selectedSubcategoryFilter === sub ? 'default' : 'outline'} 
+                            className={selectedSubcategoryFilter === sub ? 'bg-[#CCFF00] text-black font-black uppercase tracking-widest text-xs h-9' : 'border-white/20 text-white hover:bg-white/10 font-bold uppercase tracking-widest text-xs h-9'}
+                          >
+                            {sub}
+                          </Button>
+                        ))}
+                     </div>
+                   )}
+
+                   {/* PRODUCTS GRID */}
+                   <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+                     {displayedProducts.map((product: any) => (
+                       <Card key={product.id} className={`glass-strong border-white/10 overflow-hidden group transition-all ${!product.inStock ? 'opacity-60 grayscale' : 'hover:border-[#00FFFF]/30'}`}>
+                         <div className="relative h-40 w-full bg-white/5"><img src={product.image || "/placeholder.jpg"} alt={product.name} className="object-cover w-full h-full" onError={(e) => { e.currentTarget.src = '/placeholder.jpg' }} />
+                           {product.foodPref === 'veg' && <div className="absolute top-2 left-2 bg-white rounded-sm p-0.5"><div className="w-3 h-3 border-2 border-green-600 flex items-center justify-center"><div className="w-1.5 h-1.5 bg-green-600 rounded-full"></div></div></div>}
+                           {product.foodPref === 'non-veg' && <div className="absolute top-2 left-2 bg-white rounded-sm p-0.5"><div className="w-3 h-3 border-2 border-red-600 flex items-center justify-center"><div className="w-1.5 h-1.5 bg-red-600 rounded-full"></div></div></div>}
+                           {!product.inStock && <div className="absolute inset-0 bg-black/60 flex items-center justify-center z-10"><span className="bg-red-500 text-white font-black text-[10px] px-2 py-1 uppercase rounded">Out of Stock</span></div>}
+                           <div className="absolute top-2 right-2 flex gap-2 z-20"><button onClick={(e) => { e.stopPropagation(); openEdit(product) }} className="w-8 h-8 rounded-full bg-black/90 border border-[#00FFFF]/50 flex items-center justify-center text-[#00FFFF] shadow-[0_0_10px_rgba(0,255,255,0.2)] hover:bg-[#00FFFF] hover:text-black transition-all"><Edit className="w-4 h-4" /></button><button onClick={(e) => { e.stopPropagation(); if(confirm("Delete this product?")) deleteProduct(product.id) }} className="w-8 h-8 rounded-full bg-black/90 border border-red-500/50 flex items-center justify-center text-red-500 shadow-[0_0_10px_rgba(255,0,0,0.2)] hover:bg-red-500 hover:text-white transition-all"><Trash2 className="w-4 h-4" /></button></div>
+                         </div>
+                         <CardContent className="p-4">
+                           <div className="flex justify-between items-start mb-2"><p className="text-[10px] text-muted-foreground uppercase tracking-widest flex items-center gap-1 truncate pr-2">{product.category} {product.subcategory && `> ${product.subcategory}`}</p><button onClick={() => toggleStock(product.id)} className={`shrink-0 text-[10px] font-bold px-2 py-0.5 rounded border uppercase flex items-center gap-1 ${product.inStock ? 'text-green-400 border-green-400/30 bg-green-400/10' : 'text-red-400 border-red-400/30 bg-red-400/10'}`}>{product.inStock ? 'In Stock' : 'Out'}</button></div>
+                           <h3 className="font-bold text-white text-sm leading-tight truncate">{product.name}</h3><div className="flex items-center gap-2 mt-2"><span className="font-mono font-black text-[#00FFFF]">₹{product.price}</span>{product.mrp > product.price && <span className="text-xs text-muted-foreground line-through font-mono">₹{product.mrp}</span>}</div>
+                         </CardContent>
+                       </Card>
+                     ))}
+                     {displayedProducts.length === 0 && <div className="col-span-full py-10 text-center opacity-50"><p className="text-xs uppercase tracking-widest font-bold">No items found for this filter.</p></div>}
+                   </div>
                  </div>
                )}
              </motion.div>
