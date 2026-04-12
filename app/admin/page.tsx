@@ -9,7 +9,7 @@ import {
   MapPin, Phone, Truck, XCircle, Plus, Trash2, Edit, PowerOff, Power,
   Star, Ban, MessageCircle, FileText, Send, CheckSquare, Square, Smartphone,
   TrendingUp, Target, BarChart, ShieldAlert, LockKeyhole, Calendar, Settings, AlertTriangle, MoonStar, LayoutGrid,
-  ArrowUp, ArrowDown, Palette, Volume2, Wallet, UserCircle, Link as LinkIcon, Search, PlusCircle, X
+  ArrowUp, ArrowDown, Palette, Volume2, Wallet, UserCircle, Link as LinkIcon, Search, PlusCircle, X, CornerDownRight
 } from "lucide-react"
 import { createClient } from '@supabase/supabase-js' 
 
@@ -90,6 +90,10 @@ export default function AdminDashboard() {
   const [newCategoryName, setNewCategoryName] = React.useState('')
   const [newCategoryImage, setNewCategoryImage] = React.useState('')
   const [subCatInputs, setSubCatInputs] = React.useState<Record<string, string>>({})
+  
+  // MERGE CATEGORY STATES
+  const [convertingCategory, setConvertingCategory] = React.useState<any>(null)
+  const [targetParentCategory, setTargetParentCategory] = React.useState<string>('')
 
   const [settingsFormData, setSettingsFormData] = React.useState({
     storeMode: 'manual', openTime: '08:00', closeTime: '22:00',
@@ -316,6 +320,37 @@ export default function AdminDashboard() {
     if(confirm(`Remove sub-category "${subToRemove}"?`)) {
       const updatedSubs = (currentSubs || []).filter(s => s !== subToRemove);
       updateCategory(catId, { subcategories: updatedSubs });
+    }
+  }
+
+  // 🔥 THE MAGIC MERGE & MOVE FUNCTION 🔥
+  const handleConvertCategory = async (oldCat: any) => {
+    if (!targetParentCategory) return alert("Please select a target parent category first!");
+    if (confirm(`🚨 CAUTION: This will move all products from '${oldCat.name}' into '${targetParentCategory}' and delete the main category '${oldCat.name}'. Continue?`)) {
+      try {
+        const parentCat = categories.find((c: any) => c.name === targetParentCategory);
+        if (!parentCat) return;
+
+        // Step 1: Add old category name as sub-category to Parent
+        const updatedSubs = [...(parentCat.subcategories || []), oldCat.name];
+        const uniqueSubs = Array.from(new Set(updatedSubs));
+        await updateCategory(parentCat.id, { subcategories: uniqueSubs });
+
+        // Step 2: Move all products
+        const productsToUpdate = products.filter((p: any) => p.category === oldCat.name);
+        await Promise.all(productsToUpdate.map((p: any) => 
+          updateProduct(p.id, { category: parentCat.name, subcategory: oldCat.name })
+        ));
+
+        // Step 3: Delete the old empty category
+        await deleteCategory(oldCat.id);
+
+        setConvertingCategory(null);
+        setTargetParentCategory('');
+        alert(`✅ Success! '${oldCat.name}' is now a sub-category under '${parentCat.name}', and all products were moved safely.`);
+      } catch (error) {
+        alert("⚠️ Error moving category data.");
+      }
     }
   }
 
@@ -605,7 +640,7 @@ export default function AdminDashboard() {
             </motion.div>
           )}
 
-          {/* CATEGORIES */}
+          {/* CATEGORIES (UPDATED WITH MERGE/MOVE BUTTON) */}
           {activeTab === 'categories' && (
              <motion.div key="categories" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="space-y-6">
                 <Card className="glass-strong border-white/10 mb-8">
@@ -636,8 +671,10 @@ export default function AdminDashboard() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   {categories.map((cat: any, idx: number) => {
                     const subCats = cat.subcategories || [];
+                    const isConverting = convertingCategory?.id === cat.id;
+
                     return (
-                    <Card key={cat.id} className={`glass-strong border transition-all ${cat.isActive !== false ? 'border-white/10' : 'border-white/5 opacity-60 grayscale'}`}>
+                    <Card key={cat.id} className={`glass-strong border transition-all ${cat.isActive !== false ? 'border-white/10' : 'border-white/5 opacity-60 grayscale'} ${isConverting ? 'ring-2 ring-orange-500/50' : ''}`}>
                       <CardContent className="p-0">
                         <div className="p-5 border-b border-white/5 flex justify-between items-start bg-white/5">
                           <div className="flex items-center gap-4">
@@ -647,7 +684,12 @@ export default function AdminDashboard() {
                               <Badge variant={cat.isActive !== false ? "outline" : "secondary"} className={`mt-1 text-[8px] font-black uppercase tracking-widest ${cat.isActive !== false ? 'text-[#CCFF00] border-[#CCFF00]/30' : 'text-muted-foreground border-white/10'}`}>{cat.isActive !== false ? 'ACTIVE' : 'OFF'}</Badge>
                             </div>
                           </div>
+                          
+                          {/* CONTROL BUTTONS */}
                           <div className="flex flex-wrap justify-end gap-1 w-24">
+                            <Button variant="ghost" size="icon" onClick={() => setConvertingCategory(cat)} className="w-8 h-8 text-orange-400 hover:bg-orange-400/20" title="Move to Sub-category">
+                               <CornerDownRight className="w-4 h-4" />
+                            </Button>
                             <Button variant="ghost" size="icon" onClick={() => updateCategory(cat.id, { isActive: cat.isActive === false ? true : false })} className={`w-8 h-8 ${cat.isActive !== false ? 'text-white hover:text-red-400 hover:bg-red-400/10' : 'text-[#CCFF00] hover:bg-[#CCFF00]/20'}`} title={cat.isActive !== false ? "Turn Off" : "Turn On"}><Power className="w-4 h-4" /></Button>
                             <Button variant="ghost" size="icon" onClick={() => editCategoryUI(cat)} className="w-8 h-8 text-[#CCFF00] hover:bg-[#CCFF00]/20"><Edit className="w-4 h-4" /></Button>
                             <Button variant="ghost" size="icon" onClick={() => reorderCategory(cat.id, 'up')} disabled={idx === 0} className="w-8 h-8 text-[#00FFFF] hover:bg-[#00FFFF]/20"><ArrowUp className="w-4 h-4" /></Button>
@@ -656,6 +698,22 @@ export default function AdminDashboard() {
                           </div>
                         </div>
                         
+                        {/* MAGIC MERGE UI */}
+                        {isConverting && (
+                          <div className="p-4 bg-orange-500/10 border-b border-orange-500/30">
+                            <Label className="text-orange-400 text-[10px] font-black uppercase tracking-widest mb-2 block flex items-center gap-2"><CornerDownRight className="w-3 h-3"/> Move '{cat.name}' into Parent folder:</Label>
+                            <div className="flex gap-2">
+                              <select value={targetParentCategory} onChange={e => setTargetParentCategory(e.target.value)} className="flex-1 bg-black border border-orange-500/30 text-white text-xs h-10 rounded-lg px-3 focus:outline-none focus:border-orange-500">
+                                <option value="">Select Parent Category...</option>
+                                {categories.filter((c: any) => c.id !== cat.id).map((c: any) => <option key={c.id} value={c.name}>{c.name}</option>)}
+                              </select>
+                              <Button onClick={() => handleConvertCategory(cat)} className="h-10 bg-orange-500 hover:bg-orange-600 text-white text-xs font-black px-4 uppercase tracking-widest">Merge</Button>
+                              <Button onClick={() => {setConvertingCategory(null); setTargetParentCategory('');}} variant="ghost" className="h-10 text-muted-foreground hover:text-white"><X className="w-4 h-4"/></Button>
+                            </div>
+                            <p className="text-[9px] text-orange-400/70 mt-3 uppercase tracking-widest leading-tight">⚠️ All products inside '{cat.name}' will be automatically moved to the new parent. This category block will be deleted.</p>
+                          </div>
+                        )}
+
                         <div className="p-5 bg-black/30">
                           <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-3 flex items-center gap-2"><LayoutGrid className="w-3 h-3"/> Sub-Categories</p>
                           {subCats.length > 0 ? (
@@ -922,110 +980,6 @@ export default function AdminDashboard() {
             </motion.div>
           )}
 
-          {/* OFFERS */}
-          {activeTab === 'offers' && (
-            <motion.div key="offers" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="space-y-6">
-              <Card className="glass-strong border-[#CCFF00]/30 hover:border-[#CCFF00]/50 transition-all mb-6">
-                <CardContent className="p-6 flex flex-col sm:flex-row items-center gap-4 justify-between">
-                  <div><h3 className="text-lg font-black text-[#CCFF00] uppercase flex items-center gap-2"><LockKeyhole className="w-5 h-5"/> Global Minimum Order</h3><p className="text-xs text-muted-foreground mt-1">Set the strict minimum cart value required to checkout.</p></div>
-                  <div className="flex gap-2 w-full sm:w-auto"><Input type="number" value={globalMinOrder} onChange={e => setGlobalMinOrder(Number(e.target.value))} className="bg-black/50 border-white/10 w-full sm:w-32 text-center text-[#CCFF00] font-mono font-black text-lg" /><Button onClick={handleSaveGlobalMinOrder} className="bg-[#CCFF00] text-black font-black hover:bg-[#CCFF00]/80 px-6 uppercase">Save</Button></div>
-                </CardContent>
-              </Card>
-
-              <div className="flex justify-between items-center gap-4 pt-4 border-t border-white/10">
-                <div><h3 className="text-lg font-black text-[#00FFFF] uppercase flex items-center gap-2"><Truck className="w-5 h-5"/> Delivery Areas & Fees</h3></div>
-                <Sheet>
-                  <SheetTrigger asChild><Button className="bg-[#00FFFF] text-black font-black hover:bg-[#00FFFF]/90 shadow-[0_0_15px_rgba(0,255,255,0.3)] h-12 rounded-xl px-6"><Plus className="w-5 h-5 mr-2" /> NEW AREA</Button></SheetTrigger>
-                  <SheetContent className="bg-black/95 backdrop-blur-2xl border-l border-[#00FFFF]/30 sm:max-w-md w-full overflow-y-auto">
-                    <SheetHeader className="text-left mb-8 mt-6"><SheetTitle className="text-3xl font-black italic uppercase text-[#00FFFF]">Add Delivery Area</SheetTitle></SheetHeader>
-                    <form onSubmit={(e: any) => { e.preventDefault(); const data = new FormData(e.target); addDeliveryZone({ areaName: data.get('areaName')?.toString().toUpperCase() || '', fee: Number(data.get('fee')), isActive: true }); e.target.reset(); }} className="flex flex-col gap-6">
-                      <div className="space-y-2"><Label>Area Name</Label><Input name="areaName" required className="bg-white/5 border-white/10 uppercase font-mono text-[#00FFFF]" /></div>
-                      <div className="space-y-2"><Label>Delivery Fee (₹)</Label><Input name="fee" type="number" required min="0" className="bg-white/5 border-white/10" /></div>
-                      <Button type="submit" className="w-full h-14 bg-[#00FFFF] text-black font-black hover:bg-[#00FFFF]/80">SAVE AREA</Button>
-                    </form>
-                  </SheetContent>
-                </Sheet>
-              </div>
-              
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-6">
-                {(!deliveryZones || deliveryZones.length === 0) ? (
-                  <div className="col-span-full py-10 text-center opacity-30"><Truck className="w-12 h-12 mx-auto mb-4" /><p className="font-black uppercase tracking-widest text-xl">No Delivery Zones</p></div>
-                ) : (
-                  deliveryZones.map((zone: any) => (
-                    <Card key={zone.id} className={`glass-strong border-white/10 transition-all ${!zone.isActive ? 'opacity-50 grayscale' : 'hover:border-[#00FFFF]/30'}`}>
-                      <CardContent className="p-5">
-                        <div className="flex justify-between items-start mb-4">
-                          <p className="text-xl font-black text-[#00FFFF] font-mono tracking-widest">{zone.areaName}</p>
-                          <Badge variant={zone.isActive ? "outline" : "secondary"} className={`text-[10px] font-black uppercase tracking-widest ${zone.isActive ? 'text-[#CCFF00] border-[#CCFF00]/30' : ''}`}>{zone.isActive ? 'ACTIVE' : 'OFF'}</Badge>
-                        </div>
-                        <div className="space-y-1 mb-6"><p className="font-bold text-white text-sm">Delivery Fee: <span className="text-[#CCFF00] font-mono">₹{zone.fee}</span></p></div>
-                        <div className="flex gap-2 pt-4 border-t border-white/10">
-                          <Button variant="ghost" className={`flex-1 text-xs font-black border ${zone.isActive ? 'border-white/10 text-white hover:bg-white/10' : 'border-[#CCFF00]/30 text-[#CCFF00] hover:bg-[#CCFF00] hover:text-black'}`} onClick={() => toggleDeliveryZoneStatus(zone.id)}>{zone.isActive ? 'TURN OFF' : 'ACTIVATE'}</Button>
-                          <Button variant="ghost" size="icon" className="border border-red-500/30 text-red-500 hover:bg-red-500 hover:text-white" onClick={() => { if(confirm("Delete?")) deleteDeliveryZone(zone.id) }}><Trash2 className="w-4 h-4" /></Button>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))
-                )}
-              </div>
-
-              <div className="flex justify-between items-center gap-4 pt-8 border-t border-white/10">
-                <div><p className="text-muted-foreground font-mono">Manage discount coupons.</p></div>
-                <Sheet>
-                  <SheetTrigger asChild><Button className="bg-[#00FFFF] text-black font-black hover:bg-[#00FFFF]/90 shadow-[0_0_15px_rgba(0,255,255,0.3)] h-12 rounded-xl px-6"><Plus className="w-5 h-5 mr-2" /> NEW OFFER</Button></SheetTrigger>
-                  <SheetContent className="bg-black/95 backdrop-blur-2xl border-l border-[#00FFFF]/30 sm:max-w-md w-full overflow-y-auto">
-                    <SheetHeader className="text-left mb-8 mt-6"><SheetTitle className="text-3xl font-black italic uppercase text-[#00FFFF]">Create Coupon</SheetTitle></SheetHeader>
-                    <form onSubmit={(e: any) => { e.preventDefault(); const data = new FormData(e.target); addPromoCode({ code: data.get('code')?.toString().toUpperCase() || '', type: data.get('type') as any, value: Number(data.get('value')), minOrder: Number(data.get('minOrder')), isActive: true }); e.target.reset(); }} className="flex flex-col gap-6">
-                      <div className="space-y-2"><Label>Coupon Code</Label><Input name="code" required className="bg-white/5 border-white/10 uppercase font-mono text-[#00FFFF]" /></div>
-                      <div className="grid grid-cols-2 gap-4"><div className="space-y-2"><Label>Discount Type</Label><select name="type" className="w-full h-10 bg-white/5 border border-white/10 rounded-md px-3 text-sm text-white focus:outline-none focus:border-[#00FFFF]"><option value="flat" className="bg-black">Flat Amount (₹)</option><option value="percent" className="bg-black">Percentage (%)</option></select></div><div className="space-y-2"><Label>Value</Label><Input name="value" type="number" required min="1" className="bg-white/5 border-white/10" /></div></div>
-                      <div className="space-y-2"><Label>Min Order (₹)</Label><Input name="minOrder" type="number" required min="0" className="bg-white/5 border-white/10" /></div>
-                      <Button type="submit" className="w-full h-14 bg-[#00FFFF] text-black font-black hover:bg-[#00FFFF]/80">SAVE OFFER</Button>
-                    </form>
-                  </SheetContent>
-                </Sheet>
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-6">
-                {(!promoCodes || promoCodes.length === 0) ? (
-                  <div className="col-span-full py-20 text-center opacity-30"><Tag className="w-12 h-12 mx-auto mb-4" /><p className="font-black uppercase tracking-widest text-xl">No Active Offers</p></div>
-                ) : (
-                  promoCodes.map((promo: any) => (
-                    <Card key={promo.id} className={`glass-strong border-white/10 transition-all ${!promo.isActive ? 'opacity-50 grayscale' : 'hover:border-[#00FFFF]/30'}`}>
-                      <CardContent className="p-5">
-                        <div className="flex justify-between items-start mb-4"><div className="flex items-center gap-2"><p className="text-xl font-black text-[#00FFFF] font-mono tracking-widest">{promo.code}</p></div><Badge variant={promo.isActive ? "outline" : "secondary"} className={`text-[10px] font-black uppercase tracking-widest ${promo.isActive ? 'text-[#CCFF00] border-[#CCFF00]/30' : ''}`}>{promo.isActive ? 'ACTIVE' : 'OFF'}</Badge></div>
-                        <div className="space-y-1 mb-6"><p className="font-bold text-white text-sm">{promo.type === 'flat' ? `₹${promo.value} Flat Off` : `${promo.value}% Instant Discount`}</p><p className="text-[10px] text-muted-foreground uppercase tracking-widest">Valid on orders above ₹{promo.minOrder}</p></div>
-                        <div className="flex gap-2 pt-4 border-t border-white/10"><Button variant="ghost" className={`flex-1 text-xs font-black border ${promo.isActive ? 'border-white/10 text-white hover:bg-white/10' : 'border-[#CCFF00]/30 text-[#CCFF00] hover:bg-[#CCFF00] hover:text-black'}`} onClick={() => togglePromoStatus(promo.id)}>{promo.isActive ? 'TURN OFF' : 'ACTIVATE'}</Button><Button variant="ghost" size="icon" className="border border-red-500/30 text-red-500 hover:bg-red-500 hover:text-white" onClick={() => { if(confirm("Delete?")) deletePromo(promo.id) }}><Trash2 className="w-4 h-4" /></Button></div>
-                      </CardContent>
-                    </Card>
-                  ))
-                )}
-              </div>
-            </motion.div>
-          )}
-
-          {/* MESSAGES */}
-          {activeTab === 'messages' && (
-            <motion.div key="messages" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              <Card className="glass-strong border-[#00FFFF]/20 lg:col-span-1 h-fit"><CardContent className="p-6 space-y-6"><div><h3 className="text-xl font-black text-white uppercase tracking-tight mb-2 flex items-center gap-2"><MessageSquare className="w-5 h-5 text-[#00FFFF]"/> Broadcast Center</h3></div><div className="space-y-3"><Label className="text-xs uppercase tracking-widest text-[#00FFFF]">Message Content</Label><textarea value={messageText} onChange={(e) => setMessageText(e.target.value)} className="w-full bg-black/50 border border-white/10 focus-visible:border-[#00FFFF] rounded-xl p-4 min-h-[200px] text-sm text-white resize-none" /><div className="flex justify-between text-[10px] text-muted-foreground uppercase tracking-widest"><span>{messageText.length} chars</span><span>{selectedCustomers.length} selected</span></div></div><div className="flex flex-col gap-3"><Button onClick={handleSendToApp} disabled={selectedCustomers.length === 0 || !messageText.trim()} className="w-full h-12 bg-[#CCFF00] text-black font-black hover:bg-[#CCFF00]/80 disabled:opacity-50"><Smartphone className="w-4 h-4 mr-2" /> PUSH TO APP</Button><Button onClick={handleSendToWhatsApp} disabled={selectedCustomers.length === 0 || !messageText.trim()} className="w-full h-12 bg-[#25D366] text-white font-black hover:bg-[#25D366]/80 disabled:opacity-50"><MessageCircle className="w-4 h-4 mr-2" /> PUSH TO WHATSAPP</Button></div></CardContent></Card>
-              <Card className="glass-strong border-white/10 lg:col-span-2">
-                <CardContent className="p-6 space-y-4">
-                  <div className="flex justify-between items-center border-b border-white/10 pb-4"><h3 className="text-sm font-black text-white uppercase tracking-widest">Select Recipients</h3><button onClick={handleSelectAll} className="flex items-center gap-2 text-xs font-bold text-[#00FFFF] hover:text-white uppercase tracking-widest">{selectedCustomers.length === customersList.length && customersList.length > 0 ? <CheckSquare className="w-4 h-4" /> : <Square className="w-4 h-4" />} {selectedCustomers.length === customersList.length && customersList.length > 0 ? 'Deselect All' : 'Select All'}</button></div>
-                  {customersList.length === 0 ? (
-                    <Empty className="py-12 border-none"><EmptyContent><Users className="w-12 h-12 text-muted-foreground mb-4 opacity-50" /><EmptyTitle className="text-lg uppercase">No customers</EmptyTitle></EmptyContent></Empty>
-                  ) : (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-[500px] overflow-y-auto pr-2 scrollbar-hide">
-                      {customersList.map((cust: any) => {
-                        const isSelected = selectedCustomers.includes(cust.phone); const isVip = customerMeta[cust.phone]?.isVip;
-                        return (
-                          <div key={cust.phone} onClick={() => handleSelectCustomer(cust.phone)} className={`p-3 rounded-xl border cursor-pointer flex items-center gap-4 transition-all ${isSelected ? 'bg-[#00FFFF]/10 border-[#00FFFF]/50 shadow-[0_0_15px_rgba(0,255,255,0.1)]' : 'bg-white/5 border-white/5 hover:border-white/20'}`}><div className={`shrink-0 transition-colors ${isSelected ? 'text-[#00FFFF]' : 'text-muted-foreground'}`}>{isSelected ? <CheckSquare className="w-5 h-5" /> : <Square className="w-5 h-5" />}</div><div className="flex-1 overflow-hidden"><div className="flex items-center gap-2"><p className={`font-bold uppercase truncate ${isSelected ? 'text-white' : 'text-white/80'}`}>{cust.name}</p>{isVip && <Star className="w-3 h-3 text-[#CCFF00] shrink-0" />}</div><p className="text-xs font-mono text-muted-foreground mt-0.5">{cust.phone}</p></div></div>
-                        )
-                      })}
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            </motion.div>
-          )}
-
           {/* CUSTOMERS */}
           {activeTab === 'customers' && (
              <motion.div key="customers" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
@@ -1124,7 +1078,7 @@ export default function AdminDashboard() {
              </motion.div>
           )}
 
-          {/* PRODUCTS (UPDATED WITH SUBCATEGORY FILTER TABS) */}
+          {/* PRODUCTS */}
           {activeTab === 'products' && (
              <motion.div key="products" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="space-y-6">
                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
