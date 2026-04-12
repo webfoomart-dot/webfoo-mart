@@ -9,7 +9,7 @@ import {
   MapPin, Phone, Truck, XCircle, Plus, Trash2, Edit, PowerOff, Power,
   Star, Ban, MessageCircle, FileText, Send, CheckSquare, Square, Smartphone,
   TrendingUp, Target, BarChart, ShieldAlert, LockKeyhole, Calendar, Settings, AlertTriangle, MoonStar, LayoutGrid,
-  ArrowUp, ArrowDown, Palette, Volume2, Wallet, UserCircle, Link as LinkIcon
+  ArrowUp, ArrowDown, Palette, Volume2, Wallet, UserCircle, Link as LinkIcon, Search
 } from "lucide-react"
 import { createClient } from '@supabase/supabase-js' 
 
@@ -101,6 +101,10 @@ export default function AdminDashboard() {
     primary_color: '#00FFFF', background_color: '#050505', text_color: '#ffffff', button_color: '#CCFF00'
   })
   const [isThemeSaving, setIsThemeSaving] = React.useState(false)
+
+  // Customer Filtering & Sorting States
+  const [customerSearchQuery, setCustomerSearchQuery] = React.useState('')
+  const [customerSortOption, setCustomerSortOption] = React.useState('spent_desc')
 
   React.useEffect(() => { 
     setIsMounted(true) 
@@ -301,6 +305,51 @@ export default function AdminDashboard() {
 
   const liveOrders = orders.filter((o: any) => o.status === 'Pending' || o.status === 'In Transit').reverse()
   
+  // CUSTOMER MAPPING & PROCESSING
+  const customersMap = new Map()
+  Object.keys(customerMeta).forEach(phone => {
+    const meta = customerMeta[phone]
+    customersMap.set(phone, { name: meta.name || 'Unknown', phone: phone, address: meta.address || 'Address not added', totalOrders: 0, totalSpent: 0, ordersList: [], firstSeen: 9999999 })
+  })
+  orders.forEach((order: any, index: number) => {
+    if (!customersMap.has(order.phone)) {
+      customersMap.set(order.phone, { name: order.customer, phone: order.phone, address: order.landmark, totalOrders: 0, totalSpent: 0, ordersList: [], firstSeen: index })
+    } else {
+      if (order.landmark) customersMap.get(order.phone).address = order.landmark
+      if (index < customersMap.get(order.phone).firstSeen) customersMap.get(order.phone).firstSeen = index
+    }
+    const cust = customersMap.get(order.phone)
+    cust.totalOrders += 1
+    if (order.status === 'Delivered') cust.totalSpent += order.amount
+    cust.ordersList.push(order)
+  })
+
+  // SEARCH AND SORT LOGIC
+  let customersList = Array.from(customersMap.values())
+  
+  if (customerSearchQuery.trim() !== '') {
+    const query = customerSearchQuery.toLowerCase()
+    customersList = customersList.filter(c => 
+      c.name.toLowerCase().includes(query) || 
+      c.phone.includes(query)
+    )
+  }
+
+  customersList.sort((a, b) => {
+    if (customerSortOption === 'spent_desc') {
+      if (b.totalSpent !== a.totalSpent) return b.totalSpent - a.totalSpent
+      return b.totalOrders - a.totalOrders
+    } else if (customerSortOption === 'spent_asc') {
+      if (a.totalSpent !== b.totalSpent) return a.totalSpent - b.totalSpent
+      return a.totalOrders - b.totalOrders
+    } else if (customerSortOption === 'new_to_old') {
+      return b.firstSeen - a.firstSeen
+    } else if (customerSortOption === 'old_to_new') {
+      return a.firstSeen - b.firstSeen
+    }
+    return 0
+  })
+
   if (!isMounted) return null
 
   if (!isAuthorized) {
@@ -358,24 +407,6 @@ export default function AdminDashboard() {
   });
   const totalBilledProfit = totalBilledRevenue - totalSupplierCost;
   const billedItemsArray = Array.from(billedItemsMap.entries()).map(([name, data]) => ({ name, ...data as any })).sort((a, b) => b.totalCost - a.totalCost);
-
-  const customersMap = new Map()
-  Object.keys(customerMeta).forEach(phone => {
-    const meta = customerMeta[phone]
-    customersMap.set(phone, { name: meta.name || 'Unknown', phone: phone, address: meta.address || 'Address not added', totalOrders: 0, totalSpent: 0, ordersList: [] })
-  })
-  orders.forEach((order: any) => {
-    if (!customersMap.has(order.phone)) customersMap.set(order.phone, { name: order.customer, phone: order.phone, address: order.landmark, totalOrders: 0, totalSpent: 0, ordersList: [] })
-    else if(order.landmark) customersMap.get(order.phone).address = order.landmark
-    const cust = customersMap.get(order.phone)
-    cust.totalOrders += 1
-    if (order.status === 'Delivered') cust.totalSpent += order.amount
-    cust.ordersList.push(order)
-  })
-  const customersList = Array.from(customersMap.values()).sort((a, b) => {
-    if (b.totalSpent !== a.totalSpent) return b.totalSpent - a.totalSpent
-    return b.totalOrders - a.totalOrders
-  })
 
   const getStatusColor = (status: string) => {
     switch(status) {
@@ -539,7 +570,7 @@ export default function AdminDashboard() {
             </motion.div>
           )}
 
-          {/* CATEGORIES (UPDATED WITH ON/OFF TOGGLE) */}
+          {/* CATEGORIES */}
           {activeTab === 'categories' && (
              <motion.div key="categories" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="space-y-6 max-w-2xl">
                 <Card className="glass-strong border-white/10">
@@ -703,7 +734,7 @@ export default function AdminDashboard() {
             </motion.div>
           )}
 
-          {/* LIVE ORDERS (UPDATED WITH CATEGORY BADGE) */}
+          {/* LIVE ORDERS */}
           {activeTab === 'live_orders' && (
              <motion.div key="live_orders" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
                {liveOrders.length === 0 ? (
@@ -768,7 +799,7 @@ export default function AdminDashboard() {
              </motion.div>
           )}
 
-          {/* ORDER HISTORY (UPDATED WITH CATEGORY BADGE) */}
+          {/* ORDER HISTORY */}
           {activeTab === 'order_history' && (
             <motion.div key="order_history" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
@@ -933,17 +964,52 @@ export default function AdminDashboard() {
             </motion.div>
           )}
 
-          {/* CUSTOMERS */}
+          {/* CUSTOMERS (UPDATED WITH SEARCH & SORT) */}
           {activeTab === 'customers' && (
              <motion.div key="customers" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
+               
+               <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-6 glass-strong p-4 rounded-xl border border-white/10 shadow-[0_0_15px_rgba(255,255,255,0.02)]">
+                 <div className="flex items-center gap-4">
+                   <div className="w-12 h-12 rounded-xl bg-[#00FFFF]/10 flex items-center justify-center border border-[#00FFFF]/20">
+                      <Users className="w-6 h-6 text-[#00FFFF]" />
+                   </div>
+                   <div>
+                     <h3 className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Total Registered</h3>
+                     <p className="text-2xl font-mono font-black text-white">{customersMap.size}</p>
+                   </div>
+                 </div>
+
+                 <div className="flex flex-col sm:flex-row w-full md:w-auto gap-3 flex-1 md:justify-end">
+                    <div className="relative w-full sm:max-w-xs">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                      <Input
+                        placeholder="Search Name or Phone..."
+                        value={customerSearchQuery}
+                        onChange={(e) => setCustomerSearchQuery(e.target.value)}
+                        className="w-full bg-black/50 border-white/10 pl-9 text-white focus-visible:border-[#00FFFF]"
+                      />
+                    </div>
+                    <select
+                      value={customerSortOption}
+                      onChange={(e) => setCustomerSortOption(e.target.value)}
+                      className="bg-black/50 border border-white/10 rounded-lg px-3 h-10 text-xs font-bold text-white focus:outline-none focus:border-[#00FFFF] w-full sm:w-auto uppercase tracking-wider"
+                    >
+                      <option value="spent_desc" className="bg-black">High Spending</option>
+                      <option value="spent_asc" className="bg-black">Low Spending</option>
+                      <option value="new_to_old" className="bg-black">Newest First</option>
+                      <option value="old_to_new" className="bg-black">Oldest First</option>
+                    </select>
+                 </div>
+               </div>
+
                {customersList.length === 0 ? (
-                <Empty className="glass-strong border-white/10 py-20 mt-10 max-w-md mx-auto"><EmptyContent><Users className="w-12 h-12 text-muted-foreground mb-4 opacity-50" /><EmptyTitle className="text-xl uppercase tracking-tighter">No Customers Yet</EmptyTitle></EmptyContent></Empty>
+                <Empty className="glass-strong border-white/10 py-20 mt-6 max-w-md mx-auto"><EmptyContent><Search className="w-12 h-12 text-muted-foreground mb-4 opacity-50" /><EmptyTitle className="text-xl uppercase tracking-tighter">No Matches Found</EmptyTitle></EmptyContent></Empty>
               ) : (
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                   {customersList.map((cust: any, idx) => {
                     const meta = customerMeta[cust.phone] || {}; const isVip = meta.isVip; const isBlocked = meta.isBlocked;
                     return (
-                      <Card key={idx} className={`glass-strong border-white/10 overflow-hidden ${isBlocked ? 'opacity-50 grayscale' : ''}`}>
+                      <Card key={idx} className={`glass-strong border-white/10 overflow-hidden ${isBlocked ? 'opacity-50 grayscale' : 'hover:border-[#00FFFF]/20 transition-all'}`}>
                         <div className="p-5 flex flex-col sm:flex-row justify-between gap-4">
                           <div className="space-y-3 flex-1">
                             <div className="flex items-center gap-3"><h3 className="text-xl font-black text-white uppercase tracking-tight">{cust.name}</h3>{isVip && <Badge className="bg-[#CCFF00] text-black hover:bg-[#CCFF00] font-black uppercase tracking-widest text-[10px]">VIP</Badge>}{isBlocked && <Badge variant="destructive" className="font-black uppercase tracking-widest text-[10px]">BLOCKED</Badge>}</div>
