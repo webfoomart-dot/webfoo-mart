@@ -312,18 +312,35 @@ export default function AdminDashboard() {
 
   const resetCategoryForm = () => { setEditingCategoryId(null); setNewCategoryName(''); setNewCategoryImage(''); }
 
-  const handleAddSubcat = (catId: string, currentSubs: string[]) => {
+  // 🔥 NO AUTO REFRESH ADD SUB-CATEGORY FUNCTION 🔥
+  const handleAddSubcat = async (catId: string, currentSubs: string[]) => {
     const newSub = subCatInputs[catId];
     if (!newSub || !newSub.trim()) return;
+    
     const updatedSubs = [...(currentSubs || []), newSub.trim()];
-    updateCategory(catId, { subcategories: updatedSubs });
-    setSubCatInputs({...subCatInputs, [catId]: ''});
+    const uniqueSubs = Array.from(new Set(updatedSubs));
+    
+    try {
+      await updateCategory(catId, { subcategories: uniqueSubs });
+      setSubCatInputs({...subCatInputs, [catId]: ''});
+      alert("✅ Sub-category sent to Database. Please refresh the page manually to verify.");
+    } catch (error) {
+      console.error(error);
+      alert("⚠️ Error saving to Database. Check your Supabase DB format.");
+    }
   }
 
-  const handleRemoveSubcat = (catId: string, currentSubs: string[], subToRemove: string) => {
+  // 🔥 NO AUTO REFRESH REMOVE SUB-CATEGORY FUNCTION 🔥
+  const handleRemoveSubcat = async (catId: string, currentSubs: string[], subToRemove: string) => {
     if(confirm(`Remove sub-category "${subToRemove}"?`)) {
       const updatedSubs = (currentSubs || []).filter(s => s !== subToRemove);
-      updateCategory(catId, { subcategories: updatedSubs });
+      try {
+        await updateCategory(catId, { subcategories: updatedSubs });
+        alert("✅ Removed from Database. Please refresh the page manually to verify.");
+      } catch (error) {
+        console.error(error);
+        alert("⚠️ Error removing from Database.");
+      }
     }
   }
 
@@ -859,7 +876,7 @@ export default function AdminDashboard() {
             </motion.div>
           )}
 
-          {/* 🔥 LIVE ORDERS (UPDATED WITH PREPARING BUTTON) */}
+          {/* 🔥 LIVE ORDERS (WITH PREPARING BUTTON) */}
           {activeTab === 'live_orders' && (
              <motion.div key="live_orders" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
                {liveOrders.length === 0 ? (
@@ -911,7 +928,6 @@ export default function AdminDashboard() {
                            <div className="p-4 sm:p-6 space-y-6">
                              <div className="flex gap-3"><MapPin className="w-5 h-5 text-[#00FFFF]" /><div><p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Drop Details</p><p className="text-sm text-white mt-1">{order.landmark}</p></div></div>
                              
-                             {/* THE NEW CONTROL PANEL FOR ORDER STATUS */}
                              <div className="grid grid-cols-2 gap-3 pt-4 border-t border-white/10">
                                 <Button onClick={() => updateOrderStatus(orderIdToUpdate, 'Pending')} className={`h-10 text-xs font-black tracking-widest uppercase transition-all ${order.status === 'Pending' ? 'bg-yellow-500/20 text-yellow-400 border-yellow-500/50' : 'border-yellow-500/30 text-yellow-500 hover:bg-yellow-500/10'}`} variant="outline">
                                   <ChefHat className="w-4 h-4 mr-2"/> PREPARING
