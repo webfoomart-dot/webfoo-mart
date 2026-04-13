@@ -5,7 +5,7 @@ import Image from "next/image"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { motion, AnimatePresence } from "framer-motion"
-import { Search, Zap, MoonStar, TicketPercent, Plus, Minus, UserCircle, Phone, Mail, Bike, ClipboardCheck, ChevronRight, CheckCircle2 } from "lucide-react"
+import { Search, Zap, MoonStar, TicketPercent, Plus, Minus, UserCircle, Phone, Mail, ChefHat, Bike, ClipboardCheck, ChevronRight, CheckCircle2 } from "lucide-react"
 
 import { useAppStore } from "@/lib/store"
 import { Button } from "@/components/ui/button"
@@ -16,27 +16,6 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sh
 
 import { Header } from "@/components/header"
 import { BottomNav } from "@/components/bottom-nav"
-
-// 🔥 EK DUM ZOMATO STYLE CUSTOM ANIMATED ICON (STATIC POT, BOUNCING LID, STEAM) 🔥
-const PreparingIcon = ({ className }: { className?: string }) => (
-  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
-    {/* Steam / Smoke fading in and moving up */}
-    <motion.path d="M9 5v2" animate={{ opacity: [0, 1, 0], y: [0, -3] }} transition={{ repeat: Infinity, duration: 1.2, delay: 0 }} />
-    <motion.path d="M15 5v2" animate={{ opacity: [0, 1, 0], y: [0, -3] }} transition={{ repeat: Infinity, duration: 1.2, delay: 0.6 }} />
-    <motion.path d="M12 3v3" animate={{ opacity: [0, 1, 0], y: [0, -4] }} transition={{ repeat: Infinity, duration: 1.2, delay: 0.3 }} />
-
-    {/* Bouncing Lid (Dhakkan) - Rapid pressure bounce */}
-    <motion.g animate={{ y: [0, -2, 0] }} transition={{ repeat: Infinity, duration: 0.25, ease: "easeInOut" }}>
-      <path d="M3 11h18" /> {/* Lid base line */}
-      <path d="M7 11a5 5 0 0 1 10 0" /> {/* Lid dome */}
-      <path d="M11 6h2" /> {/* Handle top */}
-      <path d="M12 6v1" /> {/* Handle stem */}
-    </motion.g>
-
-    {/* Static Pot (Bartan ek jagah completely fixed) */}
-    <path d="M5 11v4a4 4 0 0 0 4 4h6a4 4 0 0 0 4-4v-4" />
-  </svg>
-);
 
 export default function HomePage() {
   const [isMounted, setIsMounted] = React.useState(false)
@@ -367,7 +346,7 @@ export default function HomePage() {
 
       </main>
 
-      {/* 🔥 ULTRA-PREMIUM DYNAMIC ISLAND TRACKER (FIXED POT, BOUNCING LID) 🔥 */}
+      {/* 🔥 ULTRA-PREMIUM DYNAMIC ISLAND TRACKER (SPEED LINES & WOBBLE) 🔥 */}
       <AnimatePresence>
         {activeOrder && (
           <motion.div 
@@ -387,19 +366,32 @@ export default function HomePage() {
               {/* Glowing Background */}
               <div className={`absolute inset-0 opacity-20 ${activeOrder.status === 'Pending' ? 'bg-gradient-to-r from-[#00FFFF] to-transparent' : 'bg-gradient-to-r from-[#CCFF00] to-transparent'}`} />
 
-              <div className="flex items-center gap-3 relative z-10">
-                {/* 👨‍🍳 STATIC CONTAINER, ANIMATION IS INSIDE THE ICON */}
-                <div className={`w-12 h-12 shrink-0 rounded-[1.2rem] flex items-center justify-center bg-black border ${activeOrder.status === 'Pending' ? 'border-[#00FFFF]/50 text-[#00FFFF] shadow-[0_0_10px_rgba(0,255,255,0.3)]' : 'border-[#CCFF00]/50 text-[#CCFF00] shadow-[0_0_10px_rgba(204,255,0,0.3)]'}`}>
+              <div className="flex items-center gap-3 relative z-10 w-full">
+                
+                {/* 👨‍🍳/🛵 ANIMATED ICON CONTAINER */}
+                <div className={`w-12 h-12 shrink-0 rounded-[1.2rem] flex items-center justify-center bg-black border relative overflow-hidden ${activeOrder.status === 'Pending' ? 'border-[#00FFFF]/50 text-[#00FFFF] shadow-[0_0_10px_rgba(0,255,255,0.3)]' : 'border-[#CCFF00]/50 text-[#CCFF00] shadow-[0_0_10px_rgba(204,255,0,0.3)]'}`}>
+                  
                   {activeOrder.status === 'Pending' ? (
-                    <PreparingIcon className="w-5 h-5" />
-                  ) : (
-                    <motion.div animate={{ y: [-1, 2, -1], x: [-1, 1, -1] }} transition={{ repeat: Infinity, duration: 1.5, ease: "easeInOut" }}>
-                      <Bike className="w-5 h-5" />
+                    // ORGANIC COOKING WOBBLE
+                    <motion.div animate={{ rotate: [-6, 6, -6], scale: [1, 1.1, 1] }} transition={{ repeat: Infinity, duration: 1.5, ease: "easeInOut" }}>
+                      <ChefHat className="w-5 h-5" />
                     </motion.div>
+                  ) : (
+                    // 🛵 FAST DRIVING BIKE WITH SPEED LINES
+                    <div className="relative w-full h-full flex items-center justify-center">
+                      {/* Wind Lines Behind Bike */}
+                      <motion.div animate={{ x: [15, -20], opacity: [0, 1, 0] }} transition={{ repeat: Infinity, duration: 0.5, ease: "linear" }} className="absolute top-3 right-0 w-3 h-[1px] bg-[#CCFF00] rounded-full"></motion.div>
+                      <motion.div animate={{ x: [15, -20], opacity: [0, 1, 0] }} transition={{ repeat: Infinity, duration: 0.7, delay: 0.2, ease: "linear" }} className="absolute bottom-3 right-0 w-4 h-[1px] bg-[#CCFF00] rounded-full"></motion.div>
+                      {/* Bouncing Bike */}
+                      <motion.div animate={{ y: [0, -2, 0], rotate: [0, -4, 0] }} transition={{ repeat: Infinity, duration: 0.3, ease: "linear" }} className="z-10 bg-black rounded-full">
+                        <Bike className="w-5 h-5" />
+                      </motion.div>
+                    </div>
                   )}
+
                 </div>
                 
-                <div className="flex flex-col justify-center">
+                <div className="flex flex-col justify-center flex-1">
                   <span className="font-black text-white text-sm tracking-tight leading-none mb-1">
                     {activeOrder.status === 'Pending' ? 'Preparing Order' : 'On the Way'}
                   </span>
@@ -407,11 +399,12 @@ export default function HomePage() {
                     Arriving in {activeOrder.status === 'Pending' ? '25-30' : '10-15'} mins
                   </span>
                 </div>
+
+                <div className="shrink-0 w-8 h-8 rounded-full bg-white/5 flex items-center justify-center group-hover:bg-white/10 transition-colors z-10">
+                   <ChevronRight className="w-4 h-4 text-white/50" />
+                </div>
               </div>
               
-              <div className="ml-auto shrink-0 w-8 h-8 rounded-full bg-white/5 flex items-center justify-center group-hover:bg-white/10 transition-colors z-10 relative">
-                 <ChevronRight className="w-4 h-4 text-white/50" />
-              </div>
             </div>
           </motion.div>
         )}
@@ -431,7 +424,7 @@ export default function HomePage() {
                     </Badge>
                   </div>
                   <span className="text-xl font-black text-white leading-tight line-clamp-2">
-                    {activeOrder?.items?.map((item: any) => `${item.quantity}x ${item.name}`).join(', ')}
+                    {activeOrder?.items?.map((item: any) => `${item.quantity}x ${item.name}`).join(' • ')}
                   </span>
                 </div>
               </SheetHeader>
@@ -452,10 +445,16 @@ export default function HomePage() {
                     </div>
                   </div>
 
-                  {/* STEP 2: PREPARING (NO EXTRA WOBBLE ON CONTAINER) */}
+                  {/* STEP 2: PREPARING */}
                   <div className="flex items-start gap-6">
-                    <div className={`w-12 h-12 rounded-full bg-black border-[3px] flex items-center justify-center shrink-0 z-10 transition-all duration-500 ${activeOrder.status === 'Pending' ? 'border-[#00FFFF] text-[#00FFFF] shadow-[0_0_20px_rgba(0,255,255,0.2)] scale-110' : activeOrder.status === 'In Transit' ? 'border-white/20 text-white scale-100' : 'border-white/5 text-white/20'}`}>
-                      <PreparingIcon className="w-6 h-6" />
+                    <div className={`w-12 h-12 rounded-full bg-black border-[3px] flex items-center justify-center shrink-0 z-10 transition-all duration-500 overflow-hidden ${activeOrder.status === 'Pending' ? 'border-[#00FFFF] text-[#00FFFF] shadow-[0_0_20px_rgba(0,255,255,0.2)] scale-110' : activeOrder.status === 'In Transit' ? 'border-white/20 text-white scale-100' : 'border-white/5 text-white/20'}`}>
+                      {activeOrder.status === 'Pending' ? (
+                         <motion.div animate={{ rotate: [-6, 6, -6], scale: [1, 1.1, 1] }} transition={{ repeat: Infinity, duration: 1.5, ease: "easeInOut" }}>
+                           <ChefHat className="w-5 h-5" />
+                         </motion.div>
+                      ) : (
+                         <ChefHat className="w-5 h-5" />
+                      )}
                     </div>
                     <div className="pt-2">
                       <h4 className={`font-bold text-lg leading-none transition-colors ${activeOrder.status === 'Pending' ? 'text-[#00FFFF]' : activeOrder.status === 'In Transit' ? 'text-white' : 'text-white/30'}`}>Food is being prepared</h4>
@@ -465,10 +464,18 @@ export default function HomePage() {
 
                   {/* STEP 3: ON THE WAY */}
                   <div className="flex items-start gap-6">
-                    <div className={`w-12 h-12 rounded-full bg-black border-[3px] flex items-center justify-center shrink-0 z-10 transition-all duration-500 ${activeOrder.status === 'In Transit' ? 'border-[#CCFF00] text-[#CCFF00] shadow-[0_0_20px_rgba(204,255,0,0.2)] scale-110' : 'border-white/5 text-white/20 scale-100'}`}>
-                      <motion.div animate={activeOrder.status === 'In Transit' ? { y: [-1, 2, -1], x: [-1, 1, -1] } : {}} transition={{ repeat: Infinity, duration: 1.5, ease: "easeInOut" }}>
+                    <div className={`relative w-12 h-12 rounded-full bg-black border-[3px] flex items-center justify-center shrink-0 z-10 transition-all duration-500 overflow-hidden ${activeOrder.status === 'In Transit' ? 'border-[#CCFF00] text-[#CCFF00] shadow-[0_0_20px_rgba(204,255,0,0.2)] scale-110' : 'border-white/5 text-white/20 scale-100'}`}>
+                      {activeOrder.status === 'In Transit' ? (
+                        <div className="relative w-full h-full flex items-center justify-center">
+                          <motion.div animate={{ x: [15, -20], opacity: [0, 1, 0] }} transition={{ repeat: Infinity, duration: 0.5, ease: "linear" }} className="absolute top-4 right-0 w-2 h-[1px] bg-[#CCFF00] rounded-full"></motion.div>
+                          <motion.div animate={{ x: [15, -20], opacity: [0, 1, 0] }} transition={{ repeat: Infinity, duration: 0.7, delay: 0.2, ease: "linear" }} className="absolute bottom-4 right-0 w-3 h-[1px] bg-[#CCFF00] rounded-full"></motion.div>
+                          <motion.div animate={{ y: [0, -2, 0], rotate: [0, -4, 0] }} transition={{ repeat: Infinity, duration: 0.3, ease: "linear" }} className="z-10 bg-black rounded-full">
+                            <Bike className="w-5 h-5" />
+                          </motion.div>
+                        </div>
+                      ) : (
                         <Bike className="w-5 h-5" />
-                      </motion.div>
+                      )}
                     </div>
                     <div className="pt-2">
                       <h4 className={`font-bold text-lg leading-none transition-colors ${activeOrder.status === 'In Transit' ? 'text-[#CCFF00]' : 'text-white/30'}`}>On the Way</h4>
