@@ -260,24 +260,20 @@ export default function HomePage() {
           </div>
         </div>
 
-        {/* LOADING STATE */}
         {(!products || products.length === 0) ? (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-5">
             {Array(8).fill(0).map((_, i) => <Skeleton key={i} className="h-72 rounded-[1.5rem] bg-white/5" />)}
           </div>
         ) : filteredProducts.length === 0 ? (
-          /* EMPTY SEARCH RESULT */
           <div className="py-20 text-center border border-dashed border-white/10 rounded-[1.5rem] bg-white/5">
             <p className="text-muted-foreground font-bold uppercase tracking-widest text-xs">No items found for "{searchQuery}"</p>
           </div>
         ) : (
           searchQuery.trim() !== "" ? (
-            // GRID VIEW FOR SEARCH RESULTS
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-5">
               {filteredProducts.map((product: any) => renderProductCard(product, false))}
             </div>
           ) : (
-            // SWIPE VIEW: SAARI DYNAMIC CATEGORIES AAYENGI
             <div className="space-y-8 pt-2">
               {uniqueCategories.map((categoryName: string) => {
                 const categoryProducts = products.filter((p: any) => 
@@ -293,7 +289,6 @@ export default function HomePage() {
                         {categoryName}
                       </h3>
                     </div>
-                    {/* Horizontal Scroll Container */}
                     <div className="flex overflow-x-auto gap-3 sm:gap-4 pb-4 snap-x snap-mandatory [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
                       {categoryProducts.map((p: any) => renderProductCard(p, true))}
                     </div>
@@ -304,7 +299,6 @@ export default function HomePage() {
           )
         )}
 
-        {/* 🔥 NAYA FOOTER: ABOUT SECTION */}
         {storeConfig && storeConfig.ownerName && (
           <div className="mt-16 pt-8 border-t border-white/10">
             <div className="max-w-md mx-auto glass-strong p-6 rounded-[2rem] border border-white/5 text-center flex flex-col items-center gap-4 relative overflow-hidden group">
@@ -352,80 +346,72 @@ export default function HomePage() {
 
       </main>
 
-      {/* 🔥 PREMIUM DYNAMIC ISLAND LIVE TRACKER 🔥 */}
+      {/* 🔥 ULTRA-PREMIUM GEN-Z DYNAMIC ISLAND TRACKER 🔥 */}
       <AnimatePresence>
         {activeOrder && (
           <motion.div 
-            initial={{ y: 100, opacity: 0, scale: 0.9 }} 
+            initial={{ y: 150, opacity: 0, scale: 0.8 }} 
             animate={{ y: 0, opacity: 1, scale: 1 }} 
-            exit={{ y: 100, opacity: 0, scale: 0.9 }}
-            transition={{ type: "spring", bounce: 0.4, duration: 0.6 }}
-            className="fixed bottom-[85px] left-0 right-0 z-40 px-4 flex justify-center pointer-events-none"
+            exit={{ y: 150, opacity: 0, scale: 0.8 }}
+            transition={{ type: "spring", stiffness: 300, damping: 25 }}
+            className="fixed bottom-[85px] left-0 right-0 z-50 px-4 flex justify-center pointer-events-none"
           >
             <div 
               onClick={() => setIsTrackingOpen(true)} 
-              className="pointer-events-auto w-full max-w-sm glass-strong rounded-full p-2 pr-5 flex items-center justify-between cursor-pointer border border-white/10 shadow-[0_10px_40px_rgba(0,0,0,0.8)] relative overflow-hidden group"
+              className="pointer-events-auto w-full max-w-[340px] bg-[#0A0A0A]/95 backdrop-blur-2xl rounded-[2rem] p-2 pr-4 flex items-center gap-4 cursor-pointer border border-white/10 shadow-[0_20px_50px_rgba(0,0,0,0.8)] overflow-hidden relative group"
             >
-              {/* Subtle Glowing Background */}
-              <div className={`absolute inset-0 opacity-20 ${activeOrder.status === 'Pending' ? 'bg-gradient-to-r from-[#00FFFF] to-transparent animate-pulse' : 'bg-gradient-to-r from-[#CCFF00] to-transparent animate-pulse'}`} />
+              {/* Subtle Progress Bar Edge */}
+              <div className={`absolute bottom-0 left-0 h-[3px] ${activeOrder.status === 'Pending' ? 'bg-[#00FFFF] w-[40%]' : 'bg-[#CCFF00] w-[85%]'} transition-all duration-1000 ease-in-out`}></div>
 
-              <div className="flex items-center gap-3 relative z-10">
-                {/* Sleek Icon Circle */}
-                <div className={`w-10 h-10 rounded-full flex items-center justify-center bg-black border ${activeOrder.status === 'Pending' ? 'border-[#00FFFF]/50 text-[#00FFFF] shadow-[0_0_10px_rgba(0,255,255,0.3)]' : 'border-[#CCFF00]/50 text-[#CCFF00] shadow-[0_0_10px_rgba(204,255,0,0.3)]'}`}>
-                  {activeOrder.status === 'Pending' ? <ChefHat className="w-5 h-5 animate-pulse" /> : <Bike className="w-5 h-5 animate-bounce" />}
-                </div>
-                <div className="flex flex-col justify-center">
-                  <span className="font-black text-white text-xs tracking-wide">
-                    {activeOrder.status === 'Pending' ? 'Preparing your food' : 'Order on the way'}
-                  </span>
-                  <span className={`text-[9px] font-mono font-bold uppercase tracking-widest ${activeOrder.status === 'Pending' ? 'text-[#00FFFF]' : 'text-[#CCFF00]'}`}>
-                    Arriving in {activeOrder.status === 'Pending' ? '25-30 mins' : '10-15 mins'}
-                  </span>
-                </div>
+              {/* Sleek Minimal Icon */}
+              <div className={`w-12 h-12 shrink-0 rounded-[1.2rem] flex items-center justify-center bg-white/5 border border-white/5 ${activeOrder.status === 'Pending' ? 'text-[#00FFFF]' : 'text-[#CCFF00]'}`}>
+                {activeOrder.status === 'Pending' ? <ChefHat className="w-5 h-5" /> : <Bike className="w-5 h-5" />}
               </div>
               
-              {/* Radar Pulsing Dot */}
-              <div className="relative flex items-center justify-center w-5 h-5 z-10">
-                 <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${activeOrder.status === 'Pending' ? 'bg-[#00FFFF]' : 'bg-[#CCFF00]'}`}></span>
-                 <span className={`relative inline-flex rounded-full h-2 w-2 ${activeOrder.status === 'Pending' ? 'bg-[#00FFFF]' : 'bg-[#CCFF00]'}`}></span>
+              <div className="flex flex-col flex-1 justify-center py-1">
+                <span className="font-black text-white text-sm tracking-tight leading-none mb-1">
+                  {activeOrder.status === 'Pending' ? 'Preparing Order' : 'On the Way'}
+                </span>
+                <span className={`text-[10px] font-bold uppercase tracking-widest ${activeOrder.status === 'Pending' ? 'text-[#00FFFF]/70' : 'text-[#CCFF00]/70'}`}>
+                  Arriving in {activeOrder.status === 'Pending' ? '25-30' : '10-15'} mins
+                </span>
+              </div>
+
+              <div className="shrink-0 w-8 h-8 rounded-full bg-white/5 flex items-center justify-center group-hover:bg-white/10 transition-colors">
+                 <ChevronRight className="w-4 h-4 text-white/50" />
               </div>
             </div>
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* 🔥 LIVE TRACKING SHEET (FULL TIMELINE & ITEMS) 🔥 */}
+      {/* 🔥 CLEAN & MINIMAL LIVE TRACKING SHEET 🔥 */}
       <Sheet open={isTrackingOpen} onOpenChange={setIsTrackingOpen}>
-        <SheetContent side="bottom" className="h-[85vh] sm:max-w-md mx-auto bg-[#050505] border-t border-white/10 rounded-t-[2rem] p-0 overflow-hidden flex flex-col">
+        <SheetContent side="bottom" className="h-[80vh] sm:max-w-md mx-auto bg-[#050505] border-t border-white/10 rounded-t-[2rem] p-0 overflow-hidden flex flex-col">
           {activeOrder && (
             <>
-              {/* HEADER WITH ORDER ITEMS INSTEAD OF ID */}
-              <SheetHeader className="p-6 border-b border-white/5 bg-white/5 relative overflow-hidden shrink-0">
-                <div className={`absolute -right-10 -top-10 w-40 h-40 blur-[50px] rounded-full opacity-20 ${activeOrder.status === 'Pending' ? 'bg-[#00FFFF]' : 'bg-[#CCFF00]'}`}></div>
-                <div className="relative z-10 text-left flex flex-col gap-1.5">
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="relative flex h-2 w-2">
-                      <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${activeOrder.status === 'Pending' ? 'bg-[#00FFFF]' : 'bg-[#CCFF00]'}`}></span>
-                      <span className={`relative inline-flex rounded-full h-2 w-2 ${activeOrder.status === 'Pending' ? 'bg-[#00FFFF]' : 'bg-[#CCFF00]'}`}></span>
-                    </span>
-                    <span className={`text-[10px] font-black uppercase tracking-widest ${activeOrder.status === 'Pending' ? 'text-[#00FFFF]' : 'text-[#CCFF00]'}`}>Live Tracking</span>
+              {/* CLEAN HEADER WITH ITEMS */}
+              <SheetHeader className="p-6 border-b border-white/5 bg-[#0A0A0A] shrink-0">
+                <div className="text-left flex flex-col gap-3">
+                  <div className="flex items-center gap-2">
+                    <Badge variant="outline" className={`bg-transparent border-white/10 ${activeOrder.status === 'Pending' ? 'text-[#00FFFF]' : 'text-[#CCFF00]'} text-[9px] uppercase tracking-widest font-black px-2 py-0.5`}>
+                      Live Status
+                    </Badge>
                   </div>
-                  
-                  {/* DYNAMIC ITEMS STRING HERE */}
                   <span className="text-xl font-black text-white leading-tight line-clamp-2">
-                    {activeOrder?.items?.map((item: any) => `${item.quantity}x ${item.name}`).join(' • ')}
+                    {activeOrder?.items?.map((item: any) => `${item.quantity}x ${item.name}`).join(', ')}
                   </span>
                 </div>
               </SheetHeader>
               
               <div className="flex-1 overflow-y-auto p-8 relative">
                 {/* TIMELINE LINE */}
-                <div className="absolute left-[47px] top-10 bottom-20 w-0.5 bg-white/10"></div>
+                <div className="absolute left-[47px] top-10 bottom-20 w-[2px] bg-white/5"></div>
 
-                <div className="space-y-10 relative z-10">
+                <div className="space-y-12 relative z-10">
                   {/* STEP 1: PLACED */}
                   <div className="flex items-start gap-6">
-                    <div className="w-12 h-12 rounded-full bg-black border-2 border-[#00FFFF] text-[#00FFFF] flex items-center justify-center shrink-0 z-10 shadow-[0_0_15px_rgba(0,255,255,0.2)]">
+                    <div className="w-12 h-12 rounded-full bg-black border-[3px] border-[#00FFFF]/30 text-[#00FFFF] flex items-center justify-center shrink-0 z-10 shadow-sm">
                       <ClipboardCheck className="w-5 h-5" />
                     </div>
                     <div className="pt-2">
@@ -436,8 +422,8 @@ export default function HomePage() {
 
                   {/* STEP 2: PREPARING */}
                   <div className="flex items-start gap-6">
-                    <div className={`w-12 h-12 rounded-full bg-black border-2 flex items-center justify-center shrink-0 z-10 transition-all duration-500 ${activeOrder.status === 'Pending' ? 'border-[#00FFFF] text-[#00FFFF] shadow-[0_0_20px_rgba(0,255,255,0.4)] scale-110' : activeOrder.status === 'In Transit' ? 'border-[#00FFFF]/40 text-[#00FFFF] scale-100' : 'border-white/10 text-white/20'}`}>
-                      <ChefHat className={`w-5 h-5 ${activeOrder.status === 'Pending' ? 'animate-pulse' : ''}`} />
+                    <div className={`w-12 h-12 rounded-full bg-black border-[3px] flex items-center justify-center shrink-0 z-10 transition-all duration-500 ${activeOrder.status === 'Pending' ? 'border-[#00FFFF] text-[#00FFFF] shadow-[0_0_20px_rgba(0,255,255,0.2)]' : activeOrder.status === 'In Transit' ? 'border-white/20 text-white' : 'border-white/5 text-white/20'}`}>
+                      <ChefHat className={`w-5 h-5`} />
                     </div>
                     <div className="pt-2">
                       <h4 className={`font-bold text-lg leading-none transition-colors ${activeOrder.status === 'Pending' ? 'text-[#00FFFF]' : activeOrder.status === 'In Transit' ? 'text-white' : 'text-white/30'}`}>Food is being prepared</h4>
@@ -447,8 +433,8 @@ export default function HomePage() {
 
                   {/* STEP 3: ON THE WAY */}
                   <div className="flex items-start gap-6">
-                    <div className={`w-12 h-12 rounded-full bg-black border-2 flex items-center justify-center shrink-0 z-10 transition-all duration-500 ${activeOrder.status === 'In Transit' ? 'border-[#CCFF00] text-[#CCFF00] shadow-[0_0_20px_rgba(204,255,0,0.4)] scale-110' : 'border-white/10 text-white/20 scale-100'}`}>
-                      <Bike className={`w-5 h-5 ${activeOrder.status === 'In Transit' ? 'animate-bounce' : ''}`} />
+                    <div className={`w-12 h-12 rounded-full bg-black border-[3px] flex items-center justify-center shrink-0 z-10 transition-all duration-500 ${activeOrder.status === 'In Transit' ? 'border-[#CCFF00] text-[#CCFF00] shadow-[0_0_20px_rgba(204,255,0,0.2)]' : 'border-white/5 text-white/20'}`}>
+                      <Bike className={`w-5 h-5`} />
                     </div>
                     <div className="pt-2">
                       <h4 className={`font-bold text-lg leading-none transition-colors ${activeOrder.status === 'In Transit' ? 'text-[#CCFF00]' : 'text-white/30'}`}>On the Way</h4>
@@ -456,9 +442,9 @@ export default function HomePage() {
                     </div>
                   </div>
 
-                  {/* STEP 4: DELIVERED (Ghost step until done) */}
+                  {/* STEP 4: DELIVERED */}
                   <div className="flex items-start gap-6 opacity-30">
-                    <div className="w-12 h-12 rounded-full bg-black border-2 border-white/10 text-white/20 flex items-center justify-center shrink-0 z-10">
+                    <div className="w-12 h-12 rounded-full bg-black border-[3px] border-white/5 text-white/20 flex items-center justify-center shrink-0 z-10">
                       <CheckCircle2 className="w-5 h-5" />
                     </div>
                     <div className="pt-2">
@@ -470,10 +456,10 @@ export default function HomePage() {
               </div>
 
               {/* SHEET FOOTER - CALL SUPPORT */}
-              <div className="p-6 border-t border-white/10 bg-white/5 shrink-0">
+              <div className="p-6 border-t border-white/5 bg-[#0A0A0A] shrink-0">
                 <a href={`tel:${storeConfig?.ownerPhone || ''}`}>
-                  <Button className="w-full h-14 bg-white/10 text-white hover:bg-white/20 border border-white/10 rounded-xl font-bold uppercase tracking-widest transition-all">
-                    <Phone className="w-4 h-4 mr-2" /> Contact Store
+                  <Button className="w-full h-14 bg-white/5 text-white hover:bg-white/10 border border-white/10 rounded-xl font-bold uppercase tracking-widest transition-all">
+                    <Phone className="w-4 h-4 mr-2" /> Contact Support
                   </Button>
                 </a>
               </div>
