@@ -32,7 +32,7 @@ export interface StoreConfig {
   openTime: string; 
   closeTime: string; 
   minOrderAmount: number;
-  // 🔥 NAYA: Footer Profile Fields
+  // Footer Profile Fields
   ownerName: string;
   ownerPhone: string;
   ownerEmail: string;
@@ -75,11 +75,14 @@ interface AppState {
   login: (phone: string, password: string) => Promise<{ success: boolean; message: string }>
   register: (phone: string, name: string, password: string) => Promise<{ success: boolean; message: string }>
   logout: () => void
-  categories: { id: string, name: string, sortOrder?: number, image?: string }[]
-  addCategory: (catData: {name: string, image: string}) => Promise<void>
-  updateCategory: (id: string, catData: {name: string, image: string}) => Promise<void>
+  
+  // 🔥 FIX: Added subcategories and isActive to interface
+  categories: { id: string, name: string, sortOrder?: number, image?: string, subcategories?: string[], isActive?: boolean }[]
+  addCategory: (catData: any) => Promise<void>
+  updateCategory: (id: string, catData: any) => Promise<void>
   deleteCategory: (id: string) => Promise<void>
   reorderCategory: (id: string, direction: 'up' | 'down') => Promise<void>
+  
   deliveryZones: DeliveryZone[]
   addDeliveryZone: (zone: Omit<DeliveryZone, 'id'>) => Promise<void>
   updateDeliveryZone: (id: string | number, zone: Partial<DeliveryZone>) => Promise<void>
@@ -115,7 +118,6 @@ export const useAppStore = create<AppState>()(
             openTime: data.open_time || '08:00',
             closeTime: data.close_time || '22:00',
             minOrderAmount: data.min_order_amount || 0,
-            // 🔥 NAYA: Fetching profile data
             ownerName: data.owner_name || 'Vineet Kumar',
             ownerPhone: data.owner_phone || '',
             ownerEmail: data.owner_email || '',
@@ -138,7 +140,6 @@ export const useAppStore = create<AppState>()(
         if (newConfig.closeTime !== undefined) updatePayload.close_time = newConfig.closeTime
         if (newConfig.minOrderAmount !== undefined) updatePayload.min_order_amount = newConfig.minOrderAmount
         
-        // 🔥 NAYA: Updating profile data
         if (newConfig.ownerName !== undefined) updatePayload.owner_name = newConfig.ownerName
         if (newConfig.ownerPhone !== undefined) updatePayload.owner_phone = newConfig.ownerPhone
         if (newConfig.ownerEmail !== undefined) updatePayload.owner_email = newConfig.ownerEmail
@@ -166,7 +167,7 @@ export const useAppStore = create<AppState>()(
         if (prods && prods.length > 0) {
           set({ products: prods.map(p => ({ 
             id: p.id, name: p.name, price: p.price, mrp: p.mrp, cost_price: p.cost_price || 0, category: p.category, image: p.image, inStock: p.in_stock,
-            description: p.description || '', galleryImages: p.gallery_images || [], foodPref: p.food_pref || 'none'
+            description: p.description || '', galleryImages: p.gallery_images || [], foodPref: p.food_pref || 'none', subcategory: p.subcategory || ''
           })) })
         } else {
           set({ products: defaultProducts }) 
@@ -192,8 +193,16 @@ export const useAppStore = create<AppState>()(
           set({ customerMeta: metaMap })
         }
 
+        // 🔥 FIX: Properly fetching subcategories and isActive from Database
         const { data: cats } = await supabase.from('webfoo_categories').select('*').order('sort_order', { ascending: true })
-        if (cats) set({ categories: cats.map(c => ({ id: c.id, name: c.name, sortOrder: c.sort_order || 0, image: c.image })) })
+        if (cats) set({ categories: cats.map(c => ({ 
+          id: c.id, 
+          name: c.name, 
+          sortOrder: c.sort_order || 0, 
+          image: c.image, 
+          subcategories: c.subcategories || [], 
+          isActive: c.is_active !== false 
+        })) })
 
         const { data: notifs } = await supabase.from('user_notifications').select('*').order('created_at', { ascending: false })
         if (notifs) {
@@ -213,7 +222,7 @@ export const useAppStore = create<AppState>()(
         
         const { data } = await supabase.from('products').insert({ 
           name: prod.name, price: prod.price, mrp: prod.mrp, cost_price: prod.cost_price || 0, category: prod.category, image: prod.image, in_stock: prod.inStock,
-          description: prod.description || '', gallery_images: prod.galleryImages || [], food_pref: prod.foodPref || 'none'
+          description: prod.description || '', gallery_images: prod.galleryImages || [], food_pref: prod.foodPref || 'none', subcategory: (prod as any).subcategory || ''
         }).select().single()
         
         if (data) set((state) => ({ products: state.products.map(p => p.id === tempId ? { ...p, id: data.id } : p) })) 
@@ -227,6 +236,7 @@ export const useAppStore = create<AppState>()(
         if (updatedProd.mrp !== undefined) updatePayload.mrp = updatedProd.mrp
         if (updatedProd.cost_price !== undefined) updatePayload.cost_price = updatedProd.cost_price
         if (updatedProd.category !== undefined) updatePayload.category = updatedProd.category
+        if ((updatedProd as any).subcategory !== undefined) updatePayload.subcategory = (updatedProd as any).subcategory
         if (updatedProd.image !== undefined) updatePayload.image = updatedProd.image
         if (updatedProd.inStock !== undefined) updatePayload.in_stock = updatedProd.inStock
         if (updatedProd.description !== undefined) updatePayload.description = updatedProd.description
@@ -344,19 +354,31 @@ export const useAppStore = create<AppState>()(
         const tempId = Date.now().toString();
         const current = get().categories;
         const sOrder = current.length > 0 ? Math.max(...current.map(c => c.sortOrder || 0)) + 1 : 0;
-        set((state) => ({ categories: [...state.categories, { id: tempId, name: catData.name, image: catData.image, sortOrder: sOrder }] }))
+        
+        // Ensure subcategories defaults to empty array on new add
+        set((state) => ({ categories: [...state.categories, { id: tempId, name: catData.name, image: catData.image, sortOrder: sOrder, subcategories: catData.subcategories || [], isActive: true }] }))
         
         const { data, error } = await supabase.from('webfoo_categories')
-          .insert({ name: catData.name, image: catData.image, sort_order: sOrder })
+          .insert({ name: catData.name, image: catData.image, sort_order: sOrder, subcategories: catData.subcategories || [] })
           .select().single()
         
         if (error) { console.error(error); return; }
         if (data) set((state) => ({ categories: state.categories.map(c => c.id === tempId ? { ...c, id: data.id } : c) }))
       },
+      
+      // 🔥 FIX: Completely dynamic update function for Categories 🔥
       updateCategory: async (id, catData) => {
-        set((state) => ({ categories: state.categories.map(c => c.id === id ? { ...c, name: catData.name, image: catData.image } : c) }))
-        await supabase.from('webfoo_categories').update({ name: catData.name, image: catData.image }).eq('id', id)
+        set((state) => ({ categories: state.categories.map(c => c.id === id ? { ...c, ...catData } : c) }))
+        
+        const updatePayload: any = {}
+        if (catData.name !== undefined) updatePayload.name = catData.name
+        if (catData.image !== undefined) updatePayload.image = catData.image
+        if (catData.subcategories !== undefined) updatePayload.subcategories = catData.subcategories
+        if (catData.isActive !== undefined) updatePayload.is_active = catData.isActive
+
+        await supabase.from('webfoo_categories').update(updatePayload).eq('id', id)
       },
+
       deleteCategory: async (id) => {
         set((state) => ({ categories: state.categories.filter(c => c.id !== id) }))
         await supabase.from('webfoo_categories').delete().eq('id', id)
