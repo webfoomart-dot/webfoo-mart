@@ -72,11 +72,14 @@ export default function AdminDashboard() {
   const [historyFilter, setHistoryFilter] = React.useState('all')
   const [historyCustomDate, setHistoryCustomDate] = React.useState('')
 
+  // PRODUCTS STATE
   const [isProductSheetOpen, setIsProductSheetOpen] = React.useState(false)
   const [editingId, setEditingId] = React.useState<string | null>(null)
   const [selectedCategoryView, setSelectedCategoryView] = React.useState<string | null>(null)
   const [selectedSubcategoryFilter, setSelectedSubcategoryFilter] = React.useState<string | null>(null)
   const [subcatViewMode, setSubcatViewMode] = React.useState<'folders' | 'tabs'>('folders')
+  const [productMasterView, setProductMasterView] = React.useState<'categories' | 'all'>('categories')
+  const [formPlacement, setFormPlacement] = React.useState<'main' | 'sub'>('main')
 
   const [formData, setFormData] = React.useState({
     name: '', price: '', mrp: '', cost_price: '', category: '', subcategory: '', image: '', inStock: true,
@@ -483,7 +486,9 @@ export default function AdminDashboard() {
   const handleSaveProduct = (e: React.FormEvent) => {
     e.preventDefault()
     const productPayload = { 
-      name: formData.name, price: Number(formData.price), mrp: Number(formData.mrp), cost_price: Number(formData.cost_price), category: formData.category, subcategory: formData.subcategory, image: formData.image || '/placeholder.jpg', inStock: formData.inStock,
+      name: formData.name, price: Number(formData.price), mrp: Number(formData.mrp), cost_price: Number(formData.cost_price), category: formData.category, 
+      subcategory: formPlacement === 'sub' ? formData.subcategory : '', // Respect the placement toggle
+      image: formData.image || '/placeholder.jpg', inStock: formData.inStock,
       description: formData.description, galleryImages: formData.galleryImages, foodPref: formData.foodPref
     }
     if (editingId) updateProduct(editingId, productPayload)
@@ -493,6 +498,7 @@ export default function AdminDashboard() {
 
   const openEdit = (product: any) => { 
     setEditingId(product.id); 
+    setFormPlacement(product.subcategory ? 'sub' : 'main');
     setFormData({ 
       name: product.name, price: product.price.toString(), mrp: product.mrp.toString(), cost_price: product.cost_price?.toString() || '', category: product.category, subcategory: product.subcategory || '', image: product.image, inStock: product.inStock,
       description: product.description || '', galleryImages: product.galleryImages || [], foodPref: product.foodPref || 'none'
@@ -502,6 +508,7 @@ export default function AdminDashboard() {
 
   const resetForm = () => { 
     setEditingId(null); 
+    setFormPlacement('main');
     setFormData({ name: '', price: '', mrp: '', cost_price: '', category: (selectedCategoryView || displayCategories[0] || '') as string, subcategory: '', image: '', inStock: true, description: '', galleryImages: [], foodPref: 'none' }); 
     setNewGalleryUrl(''); 
   }
@@ -522,7 +529,6 @@ export default function AdminDashboard() {
   const viewCategoryObject = categories?.find((c: any) => c.name === selectedCategoryView);
   const viewSubcategories = viewCategoryObject?.subcategories || [];
 
-  // 🔥 FILTER LOGIC FOR DISPLAY PRODUCTS (Tabs vs Folders Mode)
   const displayedProducts = products.filter((p:any) => {
     if (p.category !== selectedCategoryView) return false;
     
@@ -530,10 +536,8 @@ export default function AdminDashboard() {
       return p.subcategory === selectedSubcategoryFilter;
     } else {
       if (subcatViewMode === 'folders' && viewSubcategories.length > 0) {
-        // In Folder mode, only show loose items that have NO subcategory assigned
         return !p.subcategory || p.subcategory.trim() === '';
       } else {
-        // In Tabs mode, "Show All" means show all items in the main category
         return true;
       }
     }
@@ -562,6 +566,21 @@ export default function AdminDashboard() {
         </Button>
       </div>
     </div>
+  )
+
+  const renderProductCard = (product: any) => (
+    <Card key={product.id} className={`glass-strong border-white/10 overflow-hidden group transition-all ${!product.inStock ? 'opacity-60 grayscale' : 'hover:border-[#00FFFF]/30'}`}>
+      <div className="relative h-40 w-full bg-white/5"><img src={product.image || "/placeholder.jpg"} alt={product.name} className="object-cover w-full h-full" onError={(e) => { e.currentTarget.src = '/placeholder.jpg' }} />
+        {product.foodPref === 'veg' && <div className="absolute top-2 left-2 bg-white rounded-sm p-0.5"><div className="w-3 h-3 border-2 border-green-600 flex items-center justify-center"><div className="w-1.5 h-1.5 bg-green-600 rounded-full"></div></div></div>}
+        {product.foodPref === 'non-veg' && <div className="absolute top-2 left-2 bg-white rounded-sm p-0.5"><div className="w-3 h-3 border-2 border-red-600 flex items-center justify-center"><div className="w-1.5 h-1.5 bg-red-600 rounded-full"></div></div></div>}
+        {!product.inStock && <div className="absolute inset-0 bg-black/60 flex items-center justify-center z-10"><span className="bg-red-500 text-white font-black text-[10px] px-2 py-1 uppercase rounded">Out of Stock</span></div>}
+        <div className="absolute top-2 right-2 flex gap-2 z-20"><button onClick={(e) => { e.stopPropagation(); openEdit(product) }} className="w-8 h-8 rounded-full bg-black/90 border border-[#00FFFF]/50 flex items-center justify-center text-[#00FFFF] shadow-[0_0_10px_rgba(0,255,255,0.2)] hover:bg-[#00FFFF] hover:text-black transition-all"><Edit className="w-4 h-4" /></button><button onClick={(e) => { e.stopPropagation(); if(confirm("Delete this product?")) deleteProduct(product.id) }} className="w-8 h-8 rounded-full bg-black/90 border border-red-500/50 flex items-center justify-center text-red-500 shadow-[0_0_10px_rgba(255,0,0,0.2)] hover:bg-red-500 hover:text-white transition-all"><Trash2 className="w-4 h-4" /></button></div>
+      </div>
+      <CardContent className="p-4">
+        <div className="flex justify-between items-start mb-2"><p className="text-[10px] text-muted-foreground uppercase tracking-widest flex items-center gap-1 truncate pr-2">{product.category} {product.subcategory && `> ${product.subcategory}`}</p><button onClick={() => toggleStock(product.id)} className={`shrink-0 text-[10px] font-bold px-2 py-0.5 rounded border uppercase flex items-center gap-1 ${product.inStock ? 'text-green-400 border-green-400/30 bg-green-400/10' : 'text-red-400 border-red-400/30 bg-red-400/10'}`}>{product.inStock ? 'In Stock' : 'Out'}</button></div>
+        <h3 className="font-bold text-white text-sm leading-tight truncate">{product.name}</h3><div className="flex items-center gap-2 mt-2"><span className="font-mono font-black text-[#00FFFF]">₹{product.price}</span>{product.mrp > product.price && <span className="text-xs text-muted-foreground line-through font-mono">₹{product.mrp}</span>}</div>
+      </CardContent>
+    </Card>
   )
 
   return (
@@ -640,7 +659,6 @@ export default function AdminDashboard() {
                   <CardContent className="p-6 sm:p-8 space-y-6">
                     <div className="flex items-center gap-3 border-b border-white/10 pb-4"><LayoutGrid className="w-6 h-6 text-[#00FFFF]" /><h3 className="text-xl font-black uppercase text-white">Create Main Category</h3></div>
                     <form onSubmit={handleSaveCategory} className="flex flex-col gap-4">
-                      {/* ONLY URL ALLOWED */}
                       <div className="space-y-4 bg-[#00FFFF]/5 p-4 rounded-xl border border-[#00FFFF]/20">
                         <Label className="text-xs font-black uppercase tracking-widest text-[#00FFFF] flex items-center gap-2"><LinkIcon className="w-4 h-4"/> Paste Category Image URL</Label>
                         <p className="text-[10px] text-white/50">Host image on ImageKit.io and paste direct URL here.</p>
@@ -660,7 +678,6 @@ export default function AdminDashboard() {
                   </CardContent>
                 </Card>
 
-                {/* CATEGORY BLOCKS */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   {categories.map((cat: any, idx: number) => {
                     const subCats = cat.subcategories || [];
@@ -1068,11 +1085,12 @@ export default function AdminDashboard() {
              </motion.div>
           )}
 
-          {/* PRODUCTS (UPDATED WITH TABS/FOLDERS VIEW SWITCH) */}
+          {/* PRODUCTS (UPDATED WITH ALL ITEMS MASTER VIEW & PLACEMENT TOGGLE) */}
           {activeTab === 'products' && (
              <motion.div key="products" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="space-y-6">
+               
                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                 {/* BREADCRUMB / BACK BUTTON */}
+                 {/* BREADCRUMB OR MASTER TOGGLE */}
                  {selectedCategoryView ? (
                    <div className="flex items-center gap-2">
                      {selectedSubcategoryFilter ? (
@@ -1081,19 +1099,26 @@ export default function AdminDashboard() {
                          <span className="font-black uppercase tracking-widest text-lg">{selectedCategoryView} <span className="text-muted-foreground mx-2">/</span> <span className="text-[#CCFF00]">{selectedSubcategoryFilter}</span></span>
                        </Button>
                      ) : (
-                       <Button variant="ghost" onClick={() => { setSelectedCategoryView(null); setSelectedSubcategoryFilter(null); }} className="text-[#00FFFF] hover:bg-[#00FFFF]/10 px-0 hover:text-white transition-all">
+                       <Button variant="ghost" onClick={() => { setSelectedCategoryView(null); setSelectedSubcategoryFilter(null); setProductMasterView('categories'); }} className="text-[#00FFFF] hover:bg-[#00FFFF]/10 px-0 hover:text-white transition-all">
                          <ArrowLeft className="w-5 h-5 mr-2" /> 
                          <span className="font-black uppercase tracking-widest text-lg">{selectedCategoryView}</span>
                        </Button>
                      )}
                    </div>
                  ) : (
-                   <p className="text-muted-foreground font-mono text-sm">Select a category folder to manage its items.</p>
+                   <div className="bg-black/50 p-1 rounded-lg border border-white/10 flex gap-1">
+                      <Button onClick={() => setProductMasterView('categories')} variant={productMasterView === 'categories' ? 'default' : 'ghost'} className={productMasterView === 'categories' ? 'bg-[#00FFFF] text-black font-black uppercase tracking-widest text-xs h-10' : 'text-white/50 hover:text-white hover:bg-white/10 font-bold uppercase tracking-widest text-xs h-10'}>
+                         <Folder className="w-4 h-4 mr-2" /> Categories
+                      </Button>
+                      <Button onClick={() => setProductMasterView('all')} variant={productMasterView === 'all' ? 'default' : 'ghost'} className={productMasterView === 'all' ? 'bg-[#00FFFF] text-black font-black uppercase tracking-widest text-xs h-10' : 'text-white/50 hover:text-white hover:bg-white/10 font-bold uppercase tracking-widest text-xs h-10'}>
+                         <LayoutGrid className="w-4 h-4 mr-2" /> All Items
+                      </Button>
+                   </div>
                  )}
 
-                 {/* ADD PRODUCT BUTTON */}
+                 {/* ADD PRODUCT BUTTON & SHEET */}
                  <div className="flex items-center gap-2">
-                   <Sheet open={isProductSheetOpen} onOpenChange={(open) => { setIsProductSheetOpen(open); if(!open) resetForm(); if(open && selectedCategoryView) setFormData(prev => ({...prev, category: selectedCategoryView, subcategory: selectedSubcategoryFilter || ''})); }}>
+                   <Sheet open={isProductSheetOpen} onOpenChange={(open) => { setIsProductSheetOpen(open); if(!open) resetForm(); if(open && selectedCategoryView) { setFormPlacement(selectedSubcategoryFilter ? 'sub' : 'main'); setFormData(prev => ({...prev, category: selectedCategoryView, subcategory: selectedSubcategoryFilter || ''})); }}}>
                      <SheetTrigger asChild><Button onClick={resetForm} className="bg-[#CCFF00] text-black font-black hover:bg-[#CCFF00]/90 shadow-[0_0_15px_rgba(204,255,0,0.3)] h-12 rounded-xl px-6"><Plus className="w-5 h-5 mr-2" /> ADD PRODUCT</Button></SheetTrigger>
                      <SheetContent className="bg-black/95 backdrop-blur-2xl border-l border-[#00FFFF]/30 sm:max-w-xl w-full overflow-y-auto">
                        <SheetHeader className="text-left mb-6 mt-6"><SheetTitle className="text-3xl font-black italic uppercase text-[#00FFFF]">{editingId ? 'Edit Product' : 'New Product'}</SheetTitle></SheetHeader>
@@ -1124,16 +1149,42 @@ export default function AdminDashboard() {
                              <div className="space-y-2"><Label>Sell Price (₹)</Label><Input required type="number" value={formData.price} onChange={e => setFormData({...formData, price: e.target.value})} className="bg-white/5 border-white/10" /></div>
                              <div className="space-y-2"><Label>MRP (₹)</Label><Input required type="number" value={formData.mrp} onChange={e => setFormData({...formData, mrp: e.target.value})} className="bg-white/5 border-white/10" /></div>
                            </div>
-                           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                             <div className="space-y-2"><Label>Category</Label><select required value={formData.category} onChange={e => setFormData({...formData, category: e.target.value, subcategory: ''})} className="w-full h-10 bg-white/5 border border-white/10 rounded-md px-3 text-sm text-white focus:outline-none focus:border-[#00FFFF]">{displayCategories.map((catName: any, idx: number) => (<option key={idx} value={catName} className="bg-black text-white">{catName}</option>))}</select></div>
-                             
-                             {activeSubcategories.length > 0 ? (
-                               <div className="space-y-2"><Label className="text-[#CCFF00]">Sub-Category</Label><select value={formData.subcategory} onChange={e => setFormData({...formData, subcategory: e.target.value})} className="w-full h-10 bg-white/5 border border-[#CCFF00]/50 rounded-md px-3 text-sm text-white focus:outline-none focus:border-[#CCFF00]"><option value="" className="bg-black text-muted-foreground">Select Sub...</option>{activeSubcategories.map((subName: string, idx: number) => (<option key={idx} value={subName} className="bg-black text-white">{subName}</option>))}</select></div>
-                             ) : (
-                               <div className="space-y-2"><Label className="text-white/30">Sub-Category</Label><div className="w-full h-10 bg-white/5 border border-white/5 rounded-md px-3 text-xs text-white/30 flex items-center">No Sub-categories</div></div>
-                             )}
+                           
+                           {/* CATEGORY & PLACEMENT SECTION */}
+                           <div className="p-4 bg-white/5 rounded-xl border border-white/10 space-y-4 mt-2">
+                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                               <div className="space-y-2">
+                                 <Label className="text-[#00FFFF]">Main Category</Label>
+                                 <select required value={formData.category} onChange={e => { setFormData({...formData, category: e.target.value, subcategory: ''}); setFormPlacement('main'); }} className="w-full h-12 bg-black/50 border border-white/20 rounded-md px-3 text-sm text-white focus:outline-none focus:border-[#00FFFF]">
+                                   {displayCategories.map((catName: any, idx: number) => (<option key={idx} value={catName} className="bg-black text-white">{catName}</option>))}
+                                 </select>
+                               </div>
+                               <div className="space-y-2">
+                                  <Label>Food Type</Label>
+                                  <select required value={formData.foodPref} onChange={e => setFormData({...formData, foodPref: e.target.value as any})} className="w-full h-12 bg-black/50 border border-white/20 rounded-md px-3 text-sm text-white focus:outline-none focus:border-[#00FFFF]">
+                                    <option value="none" className="bg-black text-white">None (Gadgets)</option><option value="veg" className="bg-black text-green-400">Vegetarian 🟢</option><option value="non-veg" className="bg-black text-red-400">Non-Veg 🔴</option>
+                                  </select>
+                               </div>
+                             </div>
 
-                             <div className="space-y-2"><Label>Food Type</Label><select required value={formData.foodPref} onChange={e => setFormData({...formData, foodPref: e.target.value as any})} className="w-full h-10 bg-white/5 border border-white/10 rounded-md px-3 text-sm text-white focus:outline-none focus:border-[#00FFFF]"><option value="none" className="bg-black text-white">None (Gadgets)</option><option value="veg" className="bg-black text-green-400">Vegetarian 🟢</option><option value="non-veg" className="bg-black text-red-400">Non-Veg 🔴</option></select></div>
+                             {/* THE PLACEMENT TOGGLE */}
+                             <div className="space-y-2 pt-2 border-t border-white/10 mt-2">
+                               <Label className="text-muted-foreground uppercase text-[10px] font-black tracking-widest">Where to place this item?</Label>
+                               <div className="flex gap-2">
+                                 <Button type="button" onClick={() => { setFormPlacement('main'); setFormData({...formData, subcategory: ''}); }} variant={formPlacement === 'main' ? 'default' : 'outline'} className={`flex-1 text-xs font-bold uppercase tracking-widest ${formPlacement === 'main' ? 'bg-[#00FFFF] text-black' : 'border-white/20 text-white/50 hover:text-white'}`}>Direct in Main Category</Button>
+                                 <Button type="button" onClick={() => setFormPlacement('sub')} disabled={activeSubcategories.length === 0} variant={formPlacement === 'sub' ? 'default' : 'outline'} className={`flex-1 text-xs font-bold uppercase tracking-widest ${formPlacement === 'sub' ? 'bg-[#CCFF00] text-black' : 'border-white/20 text-white/50 hover:text-white disabled:opacity-30'}`}>Inside Sub-Category</Button>
+                               </div>
+                             </div>
+
+                             {formPlacement === 'sub' && (
+                               <div className="space-y-2 animate-in fade-in slide-in-from-top-2">
+                                 <Label className="text-[#CCFF00]">Choose Sub-Category</Label>
+                                 <select required value={formData.subcategory} onChange={e => setFormData({...formData, subcategory: e.target.value})} className="w-full h-12 bg-black/50 border border-[#CCFF00]/50 rounded-md px-3 text-sm text-white focus:outline-none focus:border-[#CCFF00]">
+                                    <option value="" className="bg-black text-muted-foreground">Select Sub...</option>
+                                    {activeSubcategories.map((subName: string, idx: number) => (<option key={idx} value={subName} className="bg-black text-white">{subName}</option>))}
+                                 </select>
+                               </div>
+                             )}
                            </div>
                          </div>
                          <Button type="submit" className="w-full h-14 bg-[#00FFFF] text-black font-black hover:bg-[#00FFFF]/80 mt-4">{editingId ? 'UPDATE PRODUCT' : 'SAVE TO INVENTORY'}</Button>
@@ -1143,81 +1194,84 @@ export default function AdminDashboard() {
                  </div>
                </div>
                
-               {/* MAIN CATEGORIES VIEW */}
-               {!selectedCategoryView ? (
-                 <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 mt-6">
-                   {displayCategories.map((catName: any, idx: number) => {
-                     const itemCount = products.filter((p:any) => p.category === catName).length;
-                     return (
-                       <Card key={idx} onClick={() => { setSelectedCategoryView(catName); setSelectedSubcategoryFilter(null); }} className="glass-strong border-white/10 hover:border-[#00FFFF]/50 transition-all cursor-pointer group">
-                         <CardContent className="p-6 flex flex-col items-center justify-center text-center h-32 relative overflow-hidden"><PackageIcon className="w-8 h-8 text-[#00FFFF] mb-3 group-hover:scale-110 transition-transform" /><h3 className="font-black text-white text-sm uppercase tracking-widest z-10">{catName}</h3><Badge variant="outline" className="mt-2 text-[10px] text-muted-foreground border-white/20 z-10 bg-black/50">{itemCount} Items</Badge></CardContent>
-                       </Card>
-                     )
-                   })}
+               {/* --------------------------------------------------------------------------------- */}
+               {/* MASTER VIEW MODE: ALL ITEMS */}
+               {productMasterView === 'all' && !selectedCategoryView ? (
+                 <div className="mt-6">
+                    {products.length === 0 ? (
+                      <Empty className="glass-strong border-white/10 py-20 mt-6 max-w-md mx-auto"><EmptyContent><PackageIcon className="w-12 h-12 text-muted-foreground mb-4 opacity-50" /><EmptyTitle className="text-xl uppercase tracking-tighter">Inventory is Empty</EmptyTitle></EmptyContent></Empty>
+                    ) : (
+                      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+                        {products.map((product: any) => renderProductCard(product))}
+                      </div>
+                    )}
                  </div>
                ) : (
-                 <div className="mt-6">
-                   
-                   {/* TOGGLE SWITCH FOR VIEW MODE */}
-                   {viewSubcategories.length > 0 && !selectedSubcategoryFilter && (
-                     <div className="flex justify-between items-center mb-6">
-                        <h4 className="text-xs font-black text-muted-foreground uppercase tracking-widest">Sub-Categories</h4>
-                        <div className="flex items-center gap-1 bg-white/5 p-1 rounded-lg border border-white/10">
-                           <button onClick={() => setSubcatViewMode('folders')} className={`px-3 py-1.5 text-[10px] font-bold rounded-md uppercase tracking-widest transition-all ${subcatViewMode === 'folders' ? 'bg-[#00FFFF] text-black shadow-[0_0_10px_rgba(0,255,255,0.2)]' : 'text-white/50 hover:text-white'}`}><Folder className="w-3 h-3 inline mr-1"/> Folders</button>
-                           <button onClick={() => setSubcatViewMode('tabs')} className={`px-3 py-1.5 text-[10px] font-bold rounded-md uppercase tracking-widest transition-all ${subcatViewMode === 'tabs' ? 'bg-[#00FFFF] text-black shadow-[0_0_10px_rgba(0,255,255,0.2)]' : 'text-white/50 hover:text-white'}`}><LayoutGrid className="w-3 h-3 inline mr-1"/> Direct Items</button>
-                        </div>
+                 /* MASTER VIEW MODE: CATEGORIES */
+                 <>
+                   {!selectedCategoryView ? (
+                     <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 mt-6">
+                       {displayCategories.map((catName: any, idx: number) => {
+                         const itemCount = products.filter((p:any) => p.category === catName).length;
+                         return (
+                           <Card key={idx} onClick={() => { setSelectedCategoryView(catName); setSelectedSubcategoryFilter(null); }} className="glass-strong border-white/10 hover:border-[#00FFFF]/50 transition-all cursor-pointer group">
+                             <CardContent className="p-6 flex flex-col items-center justify-center text-center h-32 relative overflow-hidden"><PackageIcon className="w-8 h-8 text-[#00FFFF] mb-3 group-hover:scale-110 transition-transform" /><h3 className="font-black text-white text-sm uppercase tracking-widest z-10">{catName}</h3><Badge variant="outline" className="mt-2 text-[10px] text-muted-foreground border-white/20 z-10 bg-black/50">{itemCount} Items</Badge></CardContent>
+                           </Card>
+                         )
+                       })}
+                     </div>
+                   ) : (
+                     <div className="mt-6">
+                       
+                       {/* TOGGLE SWITCH FOR SUB-CATEGORY VIEW MODE */}
+                       {viewSubcategories.length > 0 && !selectedSubcategoryFilter && (
+                         <div className="flex justify-between items-center mb-6">
+                            <h4 className="text-xs font-black text-muted-foreground uppercase tracking-widest">Sub-Categories</h4>
+                            <div className="flex items-center gap-1 bg-white/5 p-1 rounded-lg border border-white/10">
+                               <button onClick={() => setSubcatViewMode('folders')} className={`px-3 py-1.5 text-[10px] font-bold rounded-md uppercase tracking-widest transition-all ${subcatViewMode === 'folders' ? 'bg-[#00FFFF] text-black shadow-[0_0_10px_rgba(0,255,255,0.2)]' : 'text-white/50 hover:text-white'}`}><Folder className="w-3 h-3 inline mr-1"/> Folders</button>
+                               <button onClick={() => setSubcatViewMode('tabs')} className={`px-3 py-1.5 text-[10px] font-bold rounded-md uppercase tracking-widest transition-all ${subcatViewMode === 'tabs' ? 'bg-[#00FFFF] text-black shadow-[0_0_10px_rgba(0,255,255,0.2)]' : 'text-white/50 hover:text-white'}`}><LayoutGrid className="w-3 h-3 inline mr-1"/> Direct Items</button>
+                            </div>
+                         </div>
+                       )}
+
+                       {/* FOLDER VIEW: SHOW SUB-CATEGORY BOXES */}
+                       {subcatViewMode === 'folders' && !selectedSubcategoryFilter && viewSubcategories.length > 0 && (
+                          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 mb-8">
+                            {viewSubcategories.map((sub: string, idx: number) => {
+                               const count = products.filter((p:any) => p.category === selectedCategoryView && p.subcategory === sub).length;
+                               return (
+                                  <Card key={idx} onClick={() => setSelectedSubcategoryFilter(sub)} className="glass-strong border-white/10 hover:border-[#CCFF00]/50 transition-all cursor-pointer group">
+                                    <CardContent className="p-6 flex flex-col items-center justify-center text-center h-32 relative overflow-hidden">
+                                      <Folder className="w-8 h-8 text-[#CCFF00] mb-3 group-hover:scale-110 transition-transform" />
+                                      <h3 className="font-black text-white text-sm uppercase tracking-widest z-10">{sub}</h3>
+                                      <Badge variant="outline" className="mt-2 text-[10px] text-[#CCFF00] border-[#CCFF00]/30 z-10 bg-black/50">{count} Items</Badge>
+                                    </CardContent>
+                                  </Card>
+                               )
+                            })}
+                          </div>
+                       )}
+
+                       {/* TABS VIEW: SHOW SCROLLABLE BUTTONS */}
+                       {(subcatViewMode === 'tabs' || selectedSubcategoryFilter) && viewSubcategories.length > 0 && (
+                          <div className="flex gap-3 overflow-x-auto pb-4 mb-4 border-b border-white/10 scrollbar-hide">
+                            {subcatViewMode === 'tabs' && (
+                              <Button onClick={() => setSelectedSubcategoryFilter(null)} variant={!selectedSubcategoryFilter ? 'default' : 'outline'} className={!selectedSubcategoryFilter ? 'bg-[#00FFFF] text-black font-black uppercase tracking-widest text-xs h-9' : 'border-white/20 text-white hover:bg-white/10 font-bold uppercase tracking-widest text-xs h-9'}>Show All</Button>
+                            )}
+                            {viewSubcategories.map((sub: string, idx: number) => (
+                               <Button key={idx} onClick={() => setSelectedSubcategoryFilter(sub)} variant={selectedSubcategoryFilter === sub ? 'default' : 'outline'} className={selectedSubcategoryFilter === sub ? 'bg-[#CCFF00] text-black font-black uppercase tracking-widest text-xs h-9' : 'border-white/20 text-white hover:bg-white/10 font-bold uppercase tracking-widest text-xs h-9'}>{sub}</Button>
+                            ))}
+                          </div>
+                       )}
+
+                       {/* PRODUCTS GRID */}
+                       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+                         {displayedProducts.map((product: any) => renderProductCard(product))}
+                         {displayedProducts.length === 0 && <div className="col-span-full py-10 text-center opacity-50"><p className="text-xs uppercase tracking-widest font-bold">No items found for this filter.</p></div>}
+                       </div>
                      </div>
                    )}
-
-                   {/* FOLDER VIEW: SHOW SUB-CATEGORY BOXES */}
-                   {subcatViewMode === 'folders' && !selectedSubcategoryFilter && viewSubcategories.length > 0 && (
-                      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 mb-8">
-                        {viewSubcategories.map((sub: string, idx: number) => {
-                           const count = products.filter((p:any) => p.category === selectedCategoryView && p.subcategory === sub).length;
-                           return (
-                              <Card key={idx} onClick={() => setSelectedSubcategoryFilter(sub)} className="glass-strong border-white/10 hover:border-[#CCFF00]/50 transition-all cursor-pointer group">
-                                <CardContent className="p-6 flex flex-col items-center justify-center text-center h-32 relative overflow-hidden">
-                                  <Folder className="w-8 h-8 text-[#CCFF00] mb-3 group-hover:scale-110 transition-transform" />
-                                  <h3 className="font-black text-white text-sm uppercase tracking-widest z-10">{sub}</h3>
-                                  <Badge variant="outline" className="mt-2 text-[10px] text-[#CCFF00] border-[#CCFF00]/30 z-10 bg-black/50">{count} Items</Badge>
-                                </CardContent>
-                              </Card>
-                           )
-                        })}
-                      </div>
-                   )}
-
-                   {/* TABS VIEW: SHOW SCROLLABLE BUTTONS */}
-                   {(subcatViewMode === 'tabs' || selectedSubcategoryFilter) && viewSubcategories.length > 0 && (
-                      <div className="flex gap-3 overflow-x-auto pb-4 mb-4 border-b border-white/10 scrollbar-hide">
-                        {subcatViewMode === 'tabs' && (
-                          <Button onClick={() => setSelectedSubcategoryFilter(null)} variant={!selectedSubcategoryFilter ? 'default' : 'outline'} className={!selectedSubcategoryFilter ? 'bg-[#00FFFF] text-black font-black uppercase tracking-widest text-xs h-9' : 'border-white/20 text-white hover:bg-white/10 font-bold uppercase tracking-widest text-xs h-9'}>Show All</Button>
-                        )}
-                        {viewSubcategories.map((sub: string, idx: number) => (
-                           <Button key={idx} onClick={() => setSelectedSubcategoryFilter(sub)} variant={selectedSubcategoryFilter === sub ? 'default' : 'outline'} className={selectedSubcategoryFilter === sub ? 'bg-[#CCFF00] text-black font-black uppercase tracking-widest text-xs h-9' : 'border-white/20 text-white hover:bg-white/10 font-bold uppercase tracking-widest text-xs h-9'}>{sub}</Button>
-                        ))}
-                      </div>
-                   )}
-
-                   {/* PRODUCTS GRID */}
-                   <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-                     {displayedProducts.map((product: any) => (
-                       <Card key={product.id} className={`glass-strong border-white/10 overflow-hidden group transition-all ${!product.inStock ? 'opacity-60 grayscale' : 'hover:border-[#00FFFF]/30'}`}>
-                         <div className="relative h-40 w-full bg-white/5"><img src={product.image || "/placeholder.jpg"} alt={product.name} className="object-cover w-full h-full" onError={(e) => { e.currentTarget.src = '/placeholder.jpg' }} />
-                           {product.foodPref === 'veg' && <div className="absolute top-2 left-2 bg-white rounded-sm p-0.5"><div className="w-3 h-3 border-2 border-green-600 flex items-center justify-center"><div className="w-1.5 h-1.5 bg-green-600 rounded-full"></div></div></div>}
-                           {product.foodPref === 'non-veg' && <div className="absolute top-2 left-2 bg-white rounded-sm p-0.5"><div className="w-3 h-3 border-2 border-red-600 flex items-center justify-center"><div className="w-1.5 h-1.5 bg-red-600 rounded-full"></div></div></div>}
-                           {!product.inStock && <div className="absolute inset-0 bg-black/60 flex items-center justify-center z-10"><span className="bg-red-500 text-white font-black text-[10px] px-2 py-1 uppercase rounded">Out of Stock</span></div>}
-                           <div className="absolute top-2 right-2 flex gap-2 z-20"><button onClick={(e) => { e.stopPropagation(); openEdit(product) }} className="w-8 h-8 rounded-full bg-black/90 border border-[#00FFFF]/50 flex items-center justify-center text-[#00FFFF] shadow-[0_0_10px_rgba(0,255,255,0.2)] hover:bg-[#00FFFF] hover:text-black transition-all"><Edit className="w-4 h-4" /></button><button onClick={(e) => { e.stopPropagation(); if(confirm("Delete this product?")) deleteProduct(product.id) }} className="w-8 h-8 rounded-full bg-black/90 border border-red-500/50 flex items-center justify-center text-red-500 shadow-[0_0_10px_rgba(255,0,0,0.2)] hover:bg-red-500 hover:text-white transition-all"><Trash2 className="w-4 h-4" /></button></div>
-                         </div>
-                         <CardContent className="p-4">
-                           <div className="flex justify-between items-start mb-2"><p className="text-[10px] text-muted-foreground uppercase tracking-widest flex items-center gap-1 truncate pr-2">{product.category} {product.subcategory && `> ${product.subcategory}`}</p><button onClick={() => toggleStock(product.id)} className={`shrink-0 text-[10px] font-bold px-2 py-0.5 rounded border uppercase flex items-center gap-1 ${product.inStock ? 'text-green-400 border-green-400/30 bg-green-400/10' : 'text-red-400 border-red-400/30 bg-red-400/10'}`}>{product.inStock ? 'In Stock' : 'Out'}</button></div>
-                           <h3 className="font-bold text-white text-sm leading-tight truncate">{product.name}</h3><div className="flex items-center gap-2 mt-2"><span className="font-mono font-black text-[#00FFFF]">₹{product.price}</span>{product.mrp > product.price && <span className="text-xs text-muted-foreground line-through font-mono">₹{product.mrp}</span>}</div>
-                         </CardContent>
-                       </Card>
-                     ))}
-                     {displayedProducts.length === 0 && <div className="col-span-full py-10 text-center opacity-50"><p className="text-xs uppercase tracking-widest font-bold">No items found.</p></div>}
-                   </div>
-                 </div>
+                 </>
                )}
              </motion.div>
           )}
