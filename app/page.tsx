@@ -5,7 +5,7 @@ import Image from "next/image"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { motion, AnimatePresence } from "framer-motion"
-import { Search, Zap, MoonStar, TicketPercent, Plus, Minus, UserCircle, Phone, Mail, ChefHat, Bike, ClipboardCheck, ChevronRight, CheckCircle2 } from "lucide-react"
+import { Search, Zap, MoonStar, TicketPercent, Plus, Minus, UserCircle, Phone, Mail, Bike, ClipboardCheck, ChevronRight, CheckCircle2 } from "lucide-react"
 
 import { useAppStore } from "@/lib/store"
 import { Button } from "@/components/ui/button"
@@ -16,6 +16,22 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sh
 
 import { Header } from "@/components/header"
 import { BottomNav } from "@/components/bottom-nav"
+
+// 🔥 CUSTOM PREPARING ICON (BARTAN + SPOON + SMOKE) 🔥
+const PreparingIcon = ({ className }: { className?: string }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+    {/* Smoke/Steam */}
+    <path d="M9 3v4" />
+    <path d="M15 3v4" />
+    <path d="M12 5v2" />
+    {/* Spoon Sticking Out */}
+    <path d="M19 13V7a2 2 0 0 0-2-2h-1" />
+    {/* Cooking Pot */}
+    <path d="M4 11h16a1 1 0 0 1 1 1v2a6 6 0 0 1-6 6H9a6 6 0 0 1-6-6v-2a1 1 0 0 1 1-1Z" />
+    {/* Pot Lid/Rim Line */}
+    <path d="M2 11h20" />
+  </svg>
+);
 
 export default function HomePage() {
   const [isMounted, setIsMounted] = React.useState(false)
@@ -346,7 +362,7 @@ export default function HomePage() {
 
       </main>
 
-      {/* 🔥 ULTRA-PREMIUM GEN-Z DYNAMIC ISLAND TRACKER 🔥 */}
+      {/* 🔥 ULTRA-PREMIUM DYNAMIC ISLAND TRACKER (LIVE ANIMATED ICONS) 🔥 */}
       <AnimatePresence>
         {activeOrder && (
           <motion.div 
@@ -363,21 +379,34 @@ export default function HomePage() {
               {/* Subtle Progress Bar Edge */}
               <div className={`absolute bottom-0 left-0 h-[3px] ${activeOrder.status === 'Pending' ? 'bg-[#00FFFF] w-[40%]' : 'bg-[#CCFF00] w-[85%]'} transition-all duration-1000 ease-in-out`}></div>
 
-              {/* Sleek Minimal Icon */}
-              <div className={`w-12 h-12 shrink-0 rounded-[1.2rem] flex items-center justify-center bg-white/5 border border-white/5 ${activeOrder.status === 'Pending' ? 'text-[#00FFFF]' : 'text-[#CCFF00]'}`}>
-                {activeOrder.status === 'Pending' ? <ChefHat className="w-5 h-5" /> : <Bike className="w-5 h-5" />}
+              {/* Glowing Background */}
+              <div className={`absolute inset-0 opacity-20 ${activeOrder.status === 'Pending' ? 'bg-gradient-to-r from-[#00FFFF] to-transparent' : 'bg-gradient-to-r from-[#CCFF00] to-transparent'}`} />
+
+              <div className="flex items-center gap-3 relative z-10">
+                {/* 👨‍🍳 SMOOTH WOBBLING/BOBBING ICONS */}
+                <div className={`w-12 h-12 shrink-0 rounded-[1.2rem] flex items-center justify-center bg-black border ${activeOrder.status === 'Pending' ? 'border-[#00FFFF]/50 text-[#00FFFF] shadow-[0_0_10px_rgba(0,255,255,0.3)]' : 'border-[#CCFF00]/50 text-[#CCFF00] shadow-[0_0_10px_rgba(204,255,0,0.3)]'}`}>
+                  {activeOrder.status === 'Pending' ? (
+                    <motion.div animate={{ rotate: [-4, 4, -4], y: [-1, 1, -1] }} transition={{ repeat: Infinity, duration: 2, ease: "easeInOut" }}>
+                      <PreparingIcon className="w-6 h-6" />
+                    </motion.div>
+                  ) : (
+                    <motion.div animate={{ y: [-1, 2, -1], x: [-1, 1, -1] }} transition={{ repeat: Infinity, duration: 1.5, ease: "easeInOut" }}>
+                      <Bike className="w-5 h-5" />
+                    </motion.div>
+                  )}
+                </div>
+                
+                <div className="flex flex-col justify-center">
+                  <span className="font-black text-white text-sm tracking-tight leading-none mb-1">
+                    {activeOrder.status === 'Pending' ? 'Preparing Order' : 'On the Way'}
+                  </span>
+                  <span className={`text-[10px] font-bold uppercase tracking-widest ${activeOrder.status === 'Pending' ? 'text-[#00FFFF]/70' : 'text-[#CCFF00]/70'}`}>
+                    Arriving in {activeOrder.status === 'Pending' ? '25-30' : '10-15'} mins
+                  </span>
+                </div>
               </div>
               
-              <div className="flex flex-col flex-1 justify-center py-1">
-                <span className="font-black text-white text-sm tracking-tight leading-none mb-1">
-                  {activeOrder.status === 'Pending' ? 'Preparing Order' : 'On the Way'}
-                </span>
-                <span className={`text-[10px] font-bold uppercase tracking-widest ${activeOrder.status === 'Pending' ? 'text-[#00FFFF]/70' : 'text-[#CCFF00]/70'}`}>
-                  Arriving in {activeOrder.status === 'Pending' ? '25-30' : '10-15'} mins
-                </span>
-              </div>
-
-              <div className="shrink-0 w-8 h-8 rounded-full bg-white/5 flex items-center justify-center group-hover:bg-white/10 transition-colors">
+              <div className="ml-auto shrink-0 w-8 h-8 rounded-full bg-white/5 flex items-center justify-center group-hover:bg-white/10 transition-colors z-10 relative">
                  <ChevronRight className="w-4 h-4 text-white/50" />
               </div>
             </div>
@@ -422,8 +451,10 @@ export default function HomePage() {
 
                   {/* STEP 2: PREPARING */}
                   <div className="flex items-start gap-6">
-                    <div className={`w-12 h-12 rounded-full bg-black border-[3px] flex items-center justify-center shrink-0 z-10 transition-all duration-500 ${activeOrder.status === 'Pending' ? 'border-[#00FFFF] text-[#00FFFF] shadow-[0_0_20px_rgba(0,255,255,0.2)]' : activeOrder.status === 'In Transit' ? 'border-white/20 text-white' : 'border-white/5 text-white/20'}`}>
-                      <ChefHat className={`w-5 h-5`} />
+                    <div className={`w-12 h-12 rounded-full bg-black border-[3px] flex items-center justify-center shrink-0 z-10 transition-all duration-500 ${activeOrder.status === 'Pending' ? 'border-[#00FFFF] text-[#00FFFF] shadow-[0_0_20px_rgba(0,255,255,0.2)] scale-110' : activeOrder.status === 'In Transit' ? 'border-white/20 text-white scale-100' : 'border-white/5 text-white/20'}`}>
+                      <motion.div animate={activeOrder.status === 'Pending' ? { rotate: [-4, 4, -4], y: [-1, 1, -1] } : {}} transition={{ repeat: Infinity, duration: 2, ease: "easeInOut" }}>
+                        <PreparingIcon className="w-5 h-5" />
+                      </motion.div>
                     </div>
                     <div className="pt-2">
                       <h4 className={`font-bold text-lg leading-none transition-colors ${activeOrder.status === 'Pending' ? 'text-[#00FFFF]' : activeOrder.status === 'In Transit' ? 'text-white' : 'text-white/30'}`}>Food is being prepared</h4>
@@ -433,8 +464,10 @@ export default function HomePage() {
 
                   {/* STEP 3: ON THE WAY */}
                   <div className="flex items-start gap-6">
-                    <div className={`w-12 h-12 rounded-full bg-black border-[3px] flex items-center justify-center shrink-0 z-10 transition-all duration-500 ${activeOrder.status === 'In Transit' ? 'border-[#CCFF00] text-[#CCFF00] shadow-[0_0_20px_rgba(204,255,0,0.2)]' : 'border-white/5 text-white/20'}`}>
-                      <Bike className={`w-5 h-5`} />
+                    <div className={`w-12 h-12 rounded-full bg-black border-[3px] flex items-center justify-center shrink-0 z-10 transition-all duration-500 ${activeOrder.status === 'In Transit' ? 'border-[#CCFF00] text-[#CCFF00] shadow-[0_0_20px_rgba(204,255,0,0.2)] scale-110' : 'border-white/5 text-white/20 scale-100'}`}>
+                      <motion.div animate={activeOrder.status === 'In Transit' ? { y: [-1, 2, -1], x: [-1, 1, -1] } : {}} transition={{ repeat: Infinity, duration: 1.5, ease: "easeInOut" }}>
+                        <Bike className="w-5 h-5" />
+                      </motion.div>
                     </div>
                     <div className="pt-2">
                       <h4 className={`font-bold text-lg leading-none transition-colors ${activeOrder.status === 'In Transit' ? 'text-[#CCFF00]' : 'text-white/30'}`}>On the Way</h4>
