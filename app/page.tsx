@@ -5,7 +5,7 @@ import Image from "next/image"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { motion, AnimatePresence } from "framer-motion"
-import { Search, Zap, MoonStar, TicketPercent, Plus, Minus, UserCircle, Phone, Mail, ChefHat, Bike, ClipboardCheck, ChevronRight, CheckCircle2, Folder } from "lucide-react"
+import { Search, Zap, MoonStar, TicketPercent, Plus, Minus, UserCircle, Phone, Mail, ChefHat, Bike, ClipboardCheck, ChevronRight, CheckCircle2 } from "lucide-react"
 
 import { useAppStore } from "@/lib/store"
 import { Button } from "@/components/ui/button"
@@ -108,8 +108,14 @@ export default function HomePage() {
     return p.name.toLowerCase().includes(searchQuery.toLowerCase());
   })
 
-  // 🔥 YAHAN DATABASE WALI CATEGORIES USE HO RAHI HAIN 🔥
-  const activeCategories = (categories || []).filter((c: any) => c.isActive !== false).sort((a: any, b: any) => a.sortOrder - b.sortOrder);
+  const rawCategories: string[] = products.map((p: any) => String(p.category || ''));
+  const uniqueCategories: string[] = [...new Set(rawCategories)].sort((a: string, b: string) => {
+    const catA = (categories || []).find((c: any) => c.name.toLowerCase() === a.toLowerCase());
+    const catB = (categories || []).find((c: any) => c.name.toLowerCase() === b.toLowerCase());
+    const orderA = catA ? (catA.sortOrder || 0) : 999;
+    const orderB = catB ? (catB.sortOrder || 0) : 999;
+    return orderA - orderB;
+  });
 
   const handleAddToCart = (e: React.MouseEvent, product: any) => {
     e.stopPropagation() 
@@ -267,7 +273,7 @@ export default function HomePage() {
             <Search className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-white/40" />
             <Input 
               type="search" 
-              placeholder="Search for snacks, drinks, notes & more..." 
+              placeholder="Search for snacks, drinks & more..." 
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="h-14 pl-14 pr-6 bg-white/5 border-white/10 rounded-full text-sm text-white focus-visible:border-[#00FFFF] shadow-inner w-full"
@@ -289,59 +295,26 @@ export default function HomePage() {
               {filteredProducts.map((product: any) => renderProductCard(product, false))}
             </div>
           ) : (
-            // 🔥 NAYA SUB-CATEGORY WALA UI YAHAN HAI 🔥
-            <div className="space-y-10 pt-4">
-              {activeCategories.map((cat: any) => {
-                const catProducts = products.filter((p: any) => String(p.category).toLowerCase() === String(cat.name).toLowerCase());
-                const subcategories = cat.subcategories || [];
-
-                // Agar category puri tarah khali hai aur sub-categories bhi nahi hain, toh hide karo
-                if (catProducts.length === 0 && subcategories.length === 0) return null;
-
+            // 🔥 YAHAN WAPAS PURANA SWIPE VIEW LAGA DIYA HAI 🔥
+            <div className="space-y-8 pt-2">
+              {uniqueCategories.map((categoryName: string) => {
+                const categoryProducts = products.filter((p: any) => 
+                  String(p.category).toLowerCase() === categoryName.toLowerCase()
+                );
+                
+                if (categoryProducts.length === 0) return null;
+                
                 return (
-                  <div key={cat.id} className="space-y-6">
-                    {/* Main Category Title */}
+                  <div key={categoryName} className="space-y-4">
                     <div className="flex items-center justify-between">
-                      <h3 className="text-2xl font-black uppercase tracking-widest text-white pl-4 border-l-4 border-[#CCFF00] leading-none">
-                        {cat.name}
+                      <h3 className="text-xl font-black uppercase tracking-widest text-white pl-3 border-l-4 border-[#CCFF00] leading-none">
+                        {categoryName}
                       </h3>
                     </div>
-
-                    {/* Direct Products (Bina kisi subcategory ke) */}
-                    {catProducts.filter((p: any) => !p.subcategory).length > 0 && (
-                      <div className="flex overflow-x-auto gap-3 sm:gap-4 pb-4 snap-x snap-mandatory [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
-                        {catProducts.filter((p: any) => !p.subcategory).map((p: any) => renderProductCard(p, true))}
-                      </div>
-                    )}
-
-                    {/* Subcategories (Folders) */}
-                    {subcategories.length > 0 && (
-                      <div className="space-y-6 pl-4 border-l-2 border-white/5">
-                        {subcategories.map((sub: string) => {
-                          const subProducts = catProducts.filter((p: any) => p.subcategory === sub);
-                          
-                          return (
-                            <div key={sub} className="space-y-3">
-                              <h4 className="text-sm font-black text-[#00FFFF] uppercase tracking-widest flex items-center gap-2">
-                                <Folder className="w-4 h-4" /> {sub}
-                              </h4>
-                              
-                              {/* Agar subcategory mein item hai toh dikhao, warna empty dabba dikhao */}
-                              {subProducts.length > 0 ? (
-                                <div className="flex overflow-x-auto gap-3 sm:gap-4 pb-4 snap-x snap-mandatory [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
-                                  {subProducts.map((p: any) => renderProductCard(p, true))}
-                                </div>
-                              ) : (
-                                <div className="h-24 max-w-sm rounded-xl border border-dashed border-white/10 bg-white/5 flex flex-col items-center justify-center gap-2 opacity-60">
-                                   <Folder className="w-6 h-6 text-muted-foreground" />
-                                   <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-widest">No items in {sub} yet</p>
-                                </div>
-                              )}
-                            </div>
-                          )
-                        })}
-                      </div>
-                    )}
+                    {/* Horizontal Scroll Container */}
+                    <div className="flex overflow-x-auto gap-3 sm:gap-4 pb-4 snap-x snap-mandatory [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+                      {categoryProducts.map((p: any) => renderProductCard(p, true))}
+                    </div>
                   </div>
                 )
               })}
@@ -396,7 +369,7 @@ export default function HomePage() {
 
       </main>
 
-      {/* 🔥 ULTRA-PREMIUM DYNAMIC ISLAND TRACKER 🔥 */}
+      {/* 🔥 ULTRA-PREMIUM DYNAMIC ISLAND TRACKER (SPEED LINES & WOBBLE) 🔥 */}
       <AnimatePresence>
         {activeOrder && (
           <motion.div 
@@ -425,8 +398,10 @@ export default function HomePage() {
                     <PreparingIcon className="w-6 h-6" />
                   ) : (
                     <div className="relative w-full h-full flex items-center justify-center">
+                      {/* Wind Lines Behind Bike */}
                       <motion.div animate={{ x: [15, -20], opacity: [0, 1, 0] }} transition={{ repeat: Infinity, duration: 0.5, ease: "linear" }} className="absolute top-3 right-0 w-3 h-[1px] bg-[#CCFF00] rounded-full"></motion.div>
                       <motion.div animate={{ x: [15, -20], opacity: [0, 1, 0] }} transition={{ repeat: Infinity, duration: 0.7, delay: 0.2, ease: "linear" }} className="absolute bottom-3 right-0 w-4 h-[1px] bg-[#CCFF00] rounded-full"></motion.div>
+                      {/* Bouncing Bike */}
                       <motion.div animate={{ y: [0, -2, 0], rotate: [0, -4, 0] }} transition={{ repeat: Infinity, duration: 0.3, ease: "linear" }} className="z-10 bg-black rounded-full">
                         <Bike className="w-5 h-5" />
                       </motion.div>
@@ -489,14 +464,10 @@ export default function HomePage() {
                     </div>
                   </div>
 
-                  {/* STEP 2: PREPARING */}
+                  {/* STEP 2: PREPARING (NO EXTRA WOBBLE ON CONTAINER) */}
                   <div className="flex items-start gap-6">
-                    <div className={`w-12 h-12 rounded-full bg-black border-[3px] flex items-center justify-center shrink-0 z-10 transition-all duration-500 overflow-hidden ${activeOrder.status === 'Pending' ? 'border-[#00FFFF] text-[#00FFFF] shadow-[0_0_20px_rgba(0,255,255,0.2)] scale-110' : activeOrder.status === 'In Transit' ? 'border-white/20 text-white scale-100' : 'border-white/5 text-white/20'}`}>
-                      {activeOrder.status === 'Pending' ? (
-                         <PreparingIcon className="w-6 h-6" />
-                      ) : (
-                         <ChefHat className="w-5 h-5" />
-                      )}
+                    <div className={`w-12 h-12 rounded-full bg-black border-[3px] flex items-center justify-center shrink-0 z-10 transition-all duration-500 ${activeOrder.status === 'Pending' ? 'border-[#00FFFF] text-[#00FFFF] shadow-[0_0_20px_rgba(0,255,255,0.2)] scale-110' : activeOrder.status === 'In Transit' ? 'border-white/20 text-white scale-100' : 'border-white/5 text-white/20'}`}>
+                      <PreparingIcon className="w-6 h-6" />
                     </div>
                     <div className="pt-2">
                       <h4 className={`font-bold text-lg leading-none transition-colors ${activeOrder.status === 'Pending' ? 'text-[#00FFFF]' : activeOrder.status === 'In Transit' ? 'text-white' : 'text-white/30'}`}>Food is being prepared</h4>
