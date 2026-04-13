@@ -5,7 +5,7 @@ import Image from "next/image"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { motion, AnimatePresence } from "framer-motion"
-import { Search, Zap, MoonStar, TicketPercent, Plus, Minus, UserCircle, Phone, Mail, ChefHat, Bike, ClipboardCheck, ChevronRight, CheckCircle2 } from "lucide-react"
+import { Search, Zap, MoonStar, TicketPercent, Plus, Minus, UserCircle, Phone, Mail, ChefHat, Bike, ClipboardCheck, ChevronRight, CheckCircle2, Folder } from "lucide-react"
 
 import { useAppStore } from "@/lib/store"
 import { Button } from "@/components/ui/button"
@@ -16,6 +16,27 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sh
 
 import { Header } from "@/components/header"
 import { BottomNav } from "@/components/bottom-nav"
+
+// 🔥 EK DUM ZOMATO STYLE CUSTOM ANIMATED ICON (STATIC POT, BOUNCING LID, STEAM) 🔥
+const PreparingIcon = ({ className }: { className?: string }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+    {/* Steam / Smoke fading in and moving up */}
+    <motion.path d="M9 5v2" animate={{ opacity: [0, 1, 0], y: [0, -3] }} transition={{ repeat: Infinity, duration: 1.2, delay: 0 }} />
+    <motion.path d="M15 5v2" animate={{ opacity: [0, 1, 0], y: [0, -3] }} transition={{ repeat: Infinity, duration: 1.2, delay: 0.6 }} />
+    <motion.path d="M12 3v3" animate={{ opacity: [0, 1, 0], y: [0, -4] }} transition={{ repeat: Infinity, duration: 1.2, delay: 0.3 }} />
+
+    {/* Bouncing Lid (Dhakkan) - Rapid pressure bounce */}
+    <motion.g animate={{ y: [0, -2, 0] }} transition={{ repeat: Infinity, duration: 0.25, ease: "easeInOut" }}>
+      <path d="M3 11h18" /> {/* Lid base line */}
+      <path d="M7 11a5 5 0 0 1 10 0" /> {/* Lid dome */}
+      <path d="M11 6h2" /> {/* Handle top */}
+      <path d="M12 6v1" /> {/* Handle stem */}
+    </motion.g>
+
+    {/* Static Pot (Bartan ek jagah completely fixed) */}
+    <path d="M5 11v4a4 4 0 0 0 4 4h6a4 4 0 0 0 4-4v-4" />
+  </svg>
+);
 
 export default function HomePage() {
   const [isMounted, setIsMounted] = React.useState(false)
@@ -87,14 +108,8 @@ export default function HomePage() {
     return p.name.toLowerCase().includes(searchQuery.toLowerCase());
   })
 
-  const rawCategories: string[] = products.map((p: any) => String(p.category || ''));
-  const uniqueCategories: string[] = [...new Set(rawCategories)].sort((a: string, b: string) => {
-    const catA = (categories || []).find((c: any) => c.name.toLowerCase() === a.toLowerCase());
-    const catB = (categories || []).find((c: any) => c.name.toLowerCase() === b.toLowerCase());
-    const orderA = catA ? (catA.sortOrder || 0) : 999;
-    const orderB = catB ? (catB.sortOrder || 0) : 999;
-    return orderA - orderB;
-  });
+  // 🔥 YAHAN DATABASE WALI CATEGORIES USE HO RAHI HAIN 🔥
+  const activeCategories = (categories || []).filter((c: any) => c.isActive !== false).sort((a: any, b: any) => a.sortOrder - b.sortOrder);
 
   const handleAddToCart = (e: React.MouseEvent, product: any) => {
     e.stopPropagation() 
@@ -252,7 +267,7 @@ export default function HomePage() {
             <Search className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-white/40" />
             <Input 
               type="search" 
-              placeholder="Search for snacks, drinks & more..." 
+              placeholder="Search for snacks, drinks, notes & more..." 
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="h-14 pl-14 pr-6 bg-white/5 border-white/10 rounded-full text-sm text-white focus-visible:border-[#00FFFF] shadow-inner w-full"
@@ -274,24 +289,59 @@ export default function HomePage() {
               {filteredProducts.map((product: any) => renderProductCard(product, false))}
             </div>
           ) : (
-            <div className="space-y-8 pt-2">
-              {uniqueCategories.map((categoryName: string) => {
-                const categoryProducts = products.filter((p: any) => 
-                  String(p.category).toLowerCase() === categoryName.toLowerCase()
-                );
-                
-                if (categoryProducts.length === 0) return null;
-                
+            // 🔥 NAYA SUB-CATEGORY WALA UI YAHAN HAI 🔥
+            <div className="space-y-10 pt-4">
+              {activeCategories.map((cat: any) => {
+                const catProducts = products.filter((p: any) => String(p.category).toLowerCase() === String(cat.name).toLowerCase());
+                const subcategories = cat.subcategories || [];
+
+                // Agar category puri tarah khali hai aur sub-categories bhi nahi hain, toh hide karo
+                if (catProducts.length === 0 && subcategories.length === 0) return null;
+
                 return (
-                  <div key={categoryName} className="space-y-4">
+                  <div key={cat.id} className="space-y-6">
+                    {/* Main Category Title */}
                     <div className="flex items-center justify-between">
-                      <h3 className="text-xl font-black uppercase tracking-widest text-white pl-3 border-l-4 border-[#CCFF00] leading-none">
-                        {categoryName}
+                      <h3 className="text-2xl font-black uppercase tracking-widest text-white pl-4 border-l-4 border-[#CCFF00] leading-none">
+                        {cat.name}
                       </h3>
                     </div>
-                    <div className="flex overflow-x-auto gap-3 sm:gap-4 pb-4 snap-x snap-mandatory [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
-                      {categoryProducts.map((p: any) => renderProductCard(p, true))}
-                    </div>
+
+                    {/* Direct Products (Bina kisi subcategory ke) */}
+                    {catProducts.filter((p: any) => !p.subcategory).length > 0 && (
+                      <div className="flex overflow-x-auto gap-3 sm:gap-4 pb-4 snap-x snap-mandatory [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+                        {catProducts.filter((p: any) => !p.subcategory).map((p: any) => renderProductCard(p, true))}
+                      </div>
+                    )}
+
+                    {/* Subcategories (Folders) */}
+                    {subcategories.length > 0 && (
+                      <div className="space-y-6 pl-4 border-l-2 border-white/5">
+                        {subcategories.map((sub: string) => {
+                          const subProducts = catProducts.filter((p: any) => p.subcategory === sub);
+                          
+                          return (
+                            <div key={sub} className="space-y-3">
+                              <h4 className="text-sm font-black text-[#00FFFF] uppercase tracking-widest flex items-center gap-2">
+                                <Folder className="w-4 h-4" /> {sub}
+                              </h4>
+                              
+                              {/* Agar subcategory mein item hai toh dikhao, warna empty dabba dikhao */}
+                              {subProducts.length > 0 ? (
+                                <div className="flex overflow-x-auto gap-3 sm:gap-4 pb-4 snap-x snap-mandatory [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+                                  {subProducts.map((p: any) => renderProductCard(p, true))}
+                                </div>
+                              ) : (
+                                <div className="h-24 max-w-sm rounded-xl border border-dashed border-white/10 bg-white/5 flex flex-col items-center justify-center gap-2 opacity-60">
+                                   <Folder className="w-6 h-6 text-muted-foreground" />
+                                   <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-widest">No items in {sub} yet</p>
+                                </div>
+                              )}
+                            </div>
+                          )
+                        })}
+                      </div>
+                    )}
                   </div>
                 )
               })}
@@ -346,7 +396,7 @@ export default function HomePage() {
 
       </main>
 
-      {/* 🔥 ULTRA-PREMIUM DYNAMIC ISLAND TRACKER (SPEED LINES & WOBBLE) 🔥 */}
+      {/* 🔥 ULTRA-PREMIUM DYNAMIC ISLAND TRACKER 🔥 */}
       <AnimatePresence>
         {activeOrder && (
           <motion.div 
@@ -372,17 +422,11 @@ export default function HomePage() {
                 <div className={`w-12 h-12 shrink-0 rounded-[1.2rem] flex items-center justify-center bg-black border relative overflow-hidden ${activeOrder.status === 'Pending' ? 'border-[#00FFFF]/50 text-[#00FFFF] shadow-[0_0_10px_rgba(0,255,255,0.3)]' : 'border-[#CCFF00]/50 text-[#CCFF00] shadow-[0_0_10px_rgba(204,255,0,0.3)]'}`}>
                   
                   {activeOrder.status === 'Pending' ? (
-                    // ORGANIC COOKING WOBBLE
-                    <motion.div animate={{ rotate: [-6, 6, -6], scale: [1, 1.1, 1] }} transition={{ repeat: Infinity, duration: 1.5, ease: "easeInOut" }}>
-                      <ChefHat className="w-5 h-5" />
-                    </motion.div>
+                    <PreparingIcon className="w-6 h-6" />
                   ) : (
-                    // 🛵 FAST DRIVING BIKE WITH SPEED LINES
                     <div className="relative w-full h-full flex items-center justify-center">
-                      {/* Wind Lines Behind Bike */}
                       <motion.div animate={{ x: [15, -20], opacity: [0, 1, 0] }} transition={{ repeat: Infinity, duration: 0.5, ease: "linear" }} className="absolute top-3 right-0 w-3 h-[1px] bg-[#CCFF00] rounded-full"></motion.div>
                       <motion.div animate={{ x: [15, -20], opacity: [0, 1, 0] }} transition={{ repeat: Infinity, duration: 0.7, delay: 0.2, ease: "linear" }} className="absolute bottom-3 right-0 w-4 h-[1px] bg-[#CCFF00] rounded-full"></motion.div>
-                      {/* Bouncing Bike */}
                       <motion.div animate={{ y: [0, -2, 0], rotate: [0, -4, 0] }} transition={{ repeat: Infinity, duration: 0.3, ease: "linear" }} className="z-10 bg-black rounded-full">
                         <Bike className="w-5 h-5" />
                       </motion.div>
@@ -449,9 +493,7 @@ export default function HomePage() {
                   <div className="flex items-start gap-6">
                     <div className={`w-12 h-12 rounded-full bg-black border-[3px] flex items-center justify-center shrink-0 z-10 transition-all duration-500 overflow-hidden ${activeOrder.status === 'Pending' ? 'border-[#00FFFF] text-[#00FFFF] shadow-[0_0_20px_rgba(0,255,255,0.2)] scale-110' : activeOrder.status === 'In Transit' ? 'border-white/20 text-white scale-100' : 'border-white/5 text-white/20'}`}>
                       {activeOrder.status === 'Pending' ? (
-                         <motion.div animate={{ rotate: [-6, 6, -6], scale: [1, 1.1, 1] }} transition={{ repeat: Infinity, duration: 1.5, ease: "easeInOut" }}>
-                           <ChefHat className="w-5 h-5" />
-                         </motion.div>
+                         <PreparingIcon className="w-6 h-6" />
                       ) : (
                          <ChefHat className="w-5 h-5" />
                       )}
