@@ -16,6 +16,7 @@ import { BottomNav } from "@/components/bottom-nav"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
+import { Badge } from "@/components/ui/badge" // 🔥 YAHI MISSING THA 🔥
 
 export default function CategoriesPage() {
   const [isMounted, setIsMounted] = React.useState(false)
@@ -29,7 +30,6 @@ export default function CategoriesPage() {
 
   const [searchQuery, setSearchQuery] = React.useState('')
   const [selectedCategory, setSelectedCategory] = React.useState<any>(null)
-  // 🔥 NAYA STATE: Sub-category track karne ke liye
   const [selectedSubcategory, setSelectedSubcategory] = React.useState<string | null>(null)
   
   const [isStoreOpen, setIsStoreOpen] = React.useState(true)
@@ -67,7 +67,7 @@ export default function CategoriesPage() {
       name: dbCat.name,
       image: dbCat.image || null,
       sortOrder: dbCat.sortOrder ?? 0,
-      subcategories: dbCat.subcategories || [] // 🔥 Database se subcategories fetch kar rahe hain
+      subcategories: dbCat.subcategories || [] 
     })).sort((a, b) => a.sortOrder - b.sortOrder);
   }, [categories]);
 
@@ -77,7 +77,6 @@ export default function CategoriesPage() {
     cat.name.toLowerCase().includes(searchQuery.toLowerCase())
   )
 
-  // 🔥 LOGIC UPDATE: Agar sub-category selected hai, toh sirf uske items dikhao
   const categoryProducts = selectedCategory 
     ? products.filter((p: any) => {
         const matchCat = p.category.toLowerCase() === selectedCategory.name.toLowerCase();
@@ -125,9 +124,6 @@ export default function CategoriesPage() {
       <main className="container mx-auto pb-40 px-4 max-w-7xl">
         <AnimatePresence mode="wait">
           {!selectedCategory ? (
-            // ==========================================
-            // MAIN CATEGORY GRID (NO CATEGORY SELECTED)
-            // ==========================================
             <motion.div key="categories-view" initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="max-w-2xl mx-auto">
               <div className="flex items-center gap-4 mb-6">
                 <Link href="/"><Button variant="ghost" size="icon" className="rounded-full hover:bg-white/10 text-[#00FFFF]"><ArrowLeft className="h-6 w-6" /></Button></Link>
@@ -168,18 +164,14 @@ export default function CategoriesPage() {
               )}
             </motion.div>
           ) : (
-            // ==========================================
-            // INSIDE A CATEGORY
-            // ==========================================
             <motion.div key="products-view" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }}>
               <div className="flex items-center gap-4 mb-8">
-                {/* 🔥 DYNAMIC BACK BUTTON LOGIC 🔥 */}
                 <Button 
                   onClick={() => {
                     if (selectedSubcategory) {
-                      setSelectedSubcategory(null); // Agar subcategory me hain, toh back hoke category folder me aao
+                      setSelectedSubcategory(null); 
                     } else {
-                      setSelectedCategory(null); // Agar category folder me hain, toh main categories me aao
+                      setSelectedCategory(null); 
                     }
                   }} 
                   variant="ghost" 
@@ -199,7 +191,6 @@ export default function CategoriesPage() {
                 </div>
               </div>
               
-              {/* 🔥 TERA MAIN LOGIC: IF SUBCATEGORY EXISTS AND NOT CLICKED YET -> SHOW FOLDERS 🔥 */}
               {selectedCategory.subcategories && selectedCategory.subcategories.length > 0 && !selectedSubcategory ? (
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
                   {selectedCategory.subcategories.map((sub: string, index: number) => {
@@ -220,7 +211,6 @@ export default function CategoriesPage() {
                   })}
                 </div>
               ) : (
-                // 🔥 ELSE -> SHOW PRODUCTS DIRECTLY 🔥
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-5">
                   {categoryProducts.length === 0 ? (
                     <div className="col-span-full text-center py-20 bg-white/5 rounded-[2rem] border border-dashed border-white/10">
