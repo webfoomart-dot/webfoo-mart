@@ -9,7 +9,8 @@ import {
   MapPin, Phone, Truck, XCircle, Plus, Trash2, Edit, PowerOff, Power,
   Star, Ban, MessageCircle, FileText, Send, CheckSquare, Square, Smartphone,
   TrendingUp, Target, BarChart, ShieldAlert, LockKeyhole, Calendar, Settings, AlertTriangle, MoonStar, LayoutGrid,
-  ArrowUp, ArrowDown, Palette, Volume2, Wallet, UserCircle, Link as LinkIcon, Search, PlusCircle, X, CornerDownRight, Folder
+  ArrowUp, ArrowDown, Palette, Volume2, Wallet, UserCircle, Link as LinkIcon, Search, PlusCircle, X, CornerDownRight, Folder,
+  ChefHat, Bike
 } from "lucide-react"
 import { createClient } from '@supabase/supabase-js' 
 
@@ -487,7 +488,7 @@ export default function AdminDashboard() {
     e.preventDefault()
     const productPayload = { 
       name: formData.name, price: Number(formData.price), mrp: Number(formData.mrp), cost_price: Number(formData.cost_price), category: formData.category, 
-      subcategory: formPlacement === 'sub' ? formData.subcategory : '', // Respect the placement toggle
+      subcategory: formPlacement === 'sub' ? formData.subcategory : '', 
       image: formData.image || '/placeholder.jpg', inStock: formData.inStock,
       description: formData.description, galleryImages: formData.galleryImages, foodPref: formData.foodPref
     }
@@ -531,7 +532,6 @@ export default function AdminDashboard() {
 
   const displayedProducts = products.filter((p:any) => {
     if (p.category !== selectedCategoryView) return false;
-    
     if (selectedSubcategoryFilter) {
       return p.subcategory === selectedSubcategoryFilter;
     } else {
@@ -859,7 +859,7 @@ export default function AdminDashboard() {
             </motion.div>
           )}
 
-          {/* LIVE ORDERS */}
+          {/* 🔥 LIVE ORDERS (UPDATED WITH PREPARING BUTTON) */}
           {activeTab === 'live_orders' && (
              <motion.div key="live_orders" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
                {liveOrders.length === 0 ? (
@@ -877,7 +877,7 @@ export default function AdminDashboard() {
                            <h3 className="text-xl font-black text-white uppercase flex items-center gap-2">{order.customer} {isBlocked && <Badge variant="destructive" className="text-[10px]">BLOCKED</Badge>}</h3>
                            <div className="flex items-center gap-4 text-xs font-mono text-muted-foreground mt-1"><span className="flex items-center gap-1"><Clock className="w-3 h-3" /> {order.time}</span><span className="flex items-center gap-1 text-[#00FFFF]"><Phone className="w-3 h-3" /> {order.phone}</span></div>
                          </div>
-                         <span className={`px-4 py-1.5 rounded-md border text-[10px] font-black tracking-widest uppercase h-fit ${getStatusColor(order.status)}`}>{order.status}</span>
+                         <span className={`px-4 py-1.5 rounded-md border text-[10px] font-black tracking-widest uppercase h-fit ${getStatusColor(order.status)}`}>{order.status === 'Pending' ? 'Preparing' : order.status}</span>
                        </div>
                        <CardContent className="p-0">
                          <div className="grid grid-cols-1 lg:grid-cols-2">
@@ -910,10 +910,21 @@ export default function AdminDashboard() {
                            </div>
                            <div className="p-4 sm:p-6 space-y-6">
                              <div className="flex gap-3"><MapPin className="w-5 h-5 text-[#00FFFF]" /><div><p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Drop Details</p><p className="text-sm text-white mt-1">{order.landmark}</p></div></div>
+                             
+                             {/* THE NEW CONTROL PANEL FOR ORDER STATUS */}
                              <div className="grid grid-cols-2 gap-3 pt-4 border-t border-white/10">
-                                <Button onClick={() => updateOrderStatus(orderIdToUpdate, 'In Transit')} className="h-10 text-xs font-black border-blue-500/30 text-blue-400" variant="outline"><Truck className="w-4 h-4 mr-2"/> IN TRANSIT</Button>
-                                <Button onClick={() => updateOrderStatus(orderIdToUpdate, 'Delivered')} className="h-10 text-xs font-black bg-[#CCFF00] text-black"><CheckCircle2 className="w-4 h-4 mr-2"/> DELIVERED</Button>
-                                <Button onClick={() => updateOrderStatus(orderIdToUpdate, 'Cancelled')} className="h-10 text-xs font-black text-red-500 col-span-2" variant="ghost"><XCircle className="w-4 h-4 mr-2"/> CANCEL</Button>
+                                <Button onClick={() => updateOrderStatus(orderIdToUpdate, 'Pending')} className={`h-10 text-xs font-black tracking-widest uppercase transition-all ${order.status === 'Pending' ? 'bg-yellow-500/20 text-yellow-400 border-yellow-500/50' : 'border-yellow-500/30 text-yellow-500 hover:bg-yellow-500/10'}`} variant="outline">
+                                  <ChefHat className="w-4 h-4 mr-2"/> PREPARING
+                                </Button>
+                                <Button onClick={() => updateOrderStatus(orderIdToUpdate, 'In Transit')} className={`h-10 text-xs font-black tracking-widest uppercase transition-all ${order.status === 'In Transit' ? 'bg-blue-500/20 text-blue-400 border-blue-500/50' : 'border-blue-500/30 text-blue-400 hover:bg-blue-500/10'}`} variant="outline">
+                                  <Bike className="w-4 h-4 mr-2"/> ON THE WAY
+                                </Button>
+                                <Button onClick={() => updateOrderStatus(orderIdToUpdate, 'Delivered')} className="h-10 text-xs font-black bg-[#CCFF00] text-black tracking-widest uppercase hover:bg-[#CCFF00]/80">
+                                  <CheckCircle2 className="w-4 h-4 mr-2"/> DELIVERED
+                                </Button>
+                                <Button onClick={() => updateOrderStatus(orderIdToUpdate, 'Cancelled')} className="h-10 text-xs font-black text-red-500 tracking-widest uppercase hover:bg-red-500/10" variant="ghost">
+                                  <XCircle className="w-4 h-4 mr-2"/> CANCEL
+                                </Button>
                              </div>
                            </div>
                          </div>
@@ -1085,12 +1096,11 @@ export default function AdminDashboard() {
              </motion.div>
           )}
 
-          {/* PRODUCTS (UPDATED WITH ALL ITEMS MASTER VIEW & PLACEMENT TOGGLE) */}
+          {/* PRODUCTS */}
           {activeTab === 'products' && (
              <motion.div key="products" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="space-y-6">
                
                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                 {/* BREADCRUMB OR MASTER TOGGLE */}
                  {selectedCategoryView ? (
                    <div className="flex items-center gap-2">
                      {selectedSubcategoryFilter ? (
@@ -1116,7 +1126,6 @@ export default function AdminDashboard() {
                    </div>
                  )}
 
-                 {/* ADD PRODUCT BUTTON & SHEET */}
                  <div className="flex items-center gap-2">
                    <Sheet open={isProductSheetOpen} onOpenChange={(open) => { setIsProductSheetOpen(open); if(!open) resetForm(); if(open && selectedCategoryView) { setFormPlacement(selectedSubcategoryFilter ? 'sub' : 'main'); setFormData(prev => ({...prev, category: selectedCategoryView, subcategory: selectedSubcategoryFilter || ''})); }}}>
                      <SheetTrigger asChild><Button onClick={resetForm} className="bg-[#CCFF00] text-black font-black hover:bg-[#CCFF00]/90 shadow-[0_0_15px_rgba(204,255,0,0.3)] h-12 rounded-xl px-6"><Plus className="w-5 h-5 mr-2" /> ADD PRODUCT</Button></SheetTrigger>
@@ -1150,7 +1159,6 @@ export default function AdminDashboard() {
                              <div className="space-y-2"><Label>MRP (₹)</Label><Input required type="number" value={formData.mrp} onChange={e => setFormData({...formData, mrp: e.target.value})} className="bg-white/5 border-white/10" /></div>
                            </div>
                            
-                           {/* CATEGORY & PLACEMENT SECTION */}
                            <div className="p-4 bg-white/5 rounded-xl border border-white/10 space-y-4 mt-2">
                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                <div className="space-y-2">
@@ -1167,7 +1175,6 @@ export default function AdminDashboard() {
                                </div>
                              </div>
 
-                             {/* THE PLACEMENT TOGGLE */}
                              <div className="space-y-2 pt-2 border-t border-white/10 mt-2">
                                <Label className="text-muted-foreground uppercase text-[10px] font-black tracking-widest">Where to place this item?</Label>
                                <div className="flex gap-2">
@@ -1194,8 +1201,6 @@ export default function AdminDashboard() {
                  </div>
                </div>
                
-               {/* --------------------------------------------------------------------------------- */}
-               {/* MASTER VIEW MODE: ALL ITEMS */}
                {productMasterView === 'all' && !selectedCategoryView ? (
                  <div className="mt-6">
                     {products.length === 0 ? (
@@ -1207,7 +1212,6 @@ export default function AdminDashboard() {
                     )}
                  </div>
                ) : (
-                 /* MASTER VIEW MODE: CATEGORIES */
                  <>
                    {!selectedCategoryView ? (
                      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 mt-6">
@@ -1222,8 +1226,6 @@ export default function AdminDashboard() {
                      </div>
                    ) : (
                      <div className="mt-6">
-                       
-                       {/* TOGGLE SWITCH FOR SUB-CATEGORY VIEW MODE */}
                        {viewSubcategories.length > 0 && !selectedSubcategoryFilter && (
                          <div className="flex justify-between items-center mb-6">
                             <h4 className="text-xs font-black text-muted-foreground uppercase tracking-widest">Sub-Categories</h4>
@@ -1234,7 +1236,6 @@ export default function AdminDashboard() {
                          </div>
                        )}
 
-                       {/* FOLDER VIEW: SHOW SUB-CATEGORY BOXES */}
                        {subcatViewMode === 'folders' && !selectedSubcategoryFilter && viewSubcategories.length > 0 && (
                           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 mb-8">
                             {viewSubcategories.map((sub: string, idx: number) => {
@@ -1252,7 +1253,6 @@ export default function AdminDashboard() {
                           </div>
                        )}
 
-                       {/* TABS VIEW: SHOW SCROLLABLE BUTTONS */}
                        {(subcatViewMode === 'tabs' || selectedSubcategoryFilter) && viewSubcategories.length > 0 && (
                           <div className="flex gap-3 overflow-x-auto pb-4 mb-4 border-b border-white/10 scrollbar-hide">
                             {subcatViewMode === 'tabs' && (
@@ -1264,7 +1264,6 @@ export default function AdminDashboard() {
                           </div>
                        )}
 
-                       {/* PRODUCTS GRID */}
                        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
                          {displayedProducts.map((product: any) => renderProductCard(product))}
                          {displayedProducts.length === 0 && <div className="col-span-full py-10 text-center opacity-50"><p className="text-xs uppercase tracking-widest font-bold">No items found for this filter.</p></div>}
