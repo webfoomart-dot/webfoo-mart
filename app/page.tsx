@@ -24,7 +24,7 @@ export default function HomePage() {
   const { 
     orders, products, cart, addToCart, removeFromCart, updateQuantity,
     fetchData, storeConfig, fetchStoreConfig, checkIfStoreOpen,
-    triggerStoreClosedAlert, categories
+    triggerStoreClosedAlert, categories, user
   } = useAppStore() as any
 
   const [searchQuery, setSearchQuery] = React.useState("") 
@@ -51,15 +51,29 @@ export default function HomePage() {
     return () => clearInterval(interval);
   }, [storeConfig, checkIfStoreOpen]);
 
-  // FIND ACTIVE ORDER FOR LIVE TRACKING
+  // 🔥 THE FIX: FIND ACTIVE ORDER FOR LIVE TRACKING
   React.useEffect(() => {
     if (isMounted && orders && orders.length > 0) {
-      const userPhone = localStorage.getItem('webfoo_user_phone')
-      if (userPhone) {
+      // Priority 1: Check store user object first
+      let myPhone = user?.phone;
+      
+      // Priority 2: Check localStorage if store is empty
+      if (!myPhone) {
+        try {
+          const localProfile = JSON.parse(localStorage.getItem('webfoo_profile') || '{}');
+          if (localProfile && localProfile.phone) {
+            myPhone = localProfile.phone;
+          }
+        } catch(e) {}
+      }
+
+      if (myPhone) {
         // Find the latest order for this user that is either Pending or In Transit
-        const userOrders = orders.filter((o: any) => o.phone === userPhone && (o.status === 'Pending' || o.status === 'In Transit'))
+        const myPhoneStr = String(myPhone).trim();
+        const userOrders = orders.filter((o: any) => String(o.phone).trim() === myPhoneStr && (o.status === 'Pending' || o.status === 'In Transit'));
+        
         if (userOrders.length > 0) {
-          // Assuming the last one in the array is the latest
+          // Setting the most recent active order
           setActiveOrder(userOrders[userOrders.length - 1])
         } else {
           setActiveOrder(null)
@@ -67,7 +81,7 @@ export default function HomePage() {
         }
       }
     }
-  }, [orders, isMounted])
+  }, [orders, isMounted, user])
 
   if (!isMounted) return <div className="min-h-screen bg-[#050505]" />
 
@@ -143,7 +157,6 @@ export default function HomePage() {
           <p className="text-[#00FFFF] font-bold text-[9px] uppercase tracking-widest opacity-80">{product.category}</p>
           <p className="font-bold text-white text-xs leading-tight line-clamp-2">{product.name}</p>
           
-          {/* ORIGINAL FSSAI LOGOS: Perfect Rectangle Frames */}
           <div className="pt-0.5">
             {product.foodPref === 'veg' && (
               <div className="bg-white p-[2px] rounded-sm shadow-sm w-fit">
