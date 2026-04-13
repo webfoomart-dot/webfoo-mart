@@ -5,13 +5,14 @@ import Image from "next/image"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { motion, AnimatePresence } from "framer-motion"
-import { Search, Zap, MoonStar, TicketPercent, Plus, Minus, UserCircle, Phone, Mail } from "lucide-react"
+import { Search, Zap, MoonStar, TicketPercent, Plus, Minus, UserCircle, Phone, Mail, ChefHat, Bike, ClipboardCheck, ChevronRight, CheckCircle2 } from "lucide-react"
 
 import { useAppStore } from "@/lib/store"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Badge } from "@/components/ui/badge"
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet"
 
 import { Header } from "@/components/header"
 import { BottomNav } from "@/components/bottom-nav"
@@ -21,13 +22,17 @@ export default function HomePage() {
   const router = useRouter() 
 
   const { 
-    products, cart, addToCart, removeFromCart, updateQuantity,
+    orders, products, cart, addToCart, removeFromCart, updateQuantity,
     fetchData, storeConfig, fetchStoreConfig, checkIfStoreOpen,
     triggerStoreClosedAlert, categories
   } = useAppStore() as any
 
   const [searchQuery, setSearchQuery] = React.useState("") 
   const [isStoreOpen, setIsStoreOpen] = React.useState(true)
+  
+  // LIVE TRACKING STATES
+  const [activeOrder, setActiveOrder] = React.useState<any>(null)
+  const [isTrackingOpen, setIsTrackingOpen] = React.useState(false)
 
   React.useEffect(() => {
     setIsMounted(true)
@@ -45,6 +50,24 @@ export default function HomePage() {
     const interval = setInterval(checkTime, 60000); 
     return () => clearInterval(interval);
   }, [storeConfig, checkIfStoreOpen]);
+
+  // FIND ACTIVE ORDER FOR LIVE TRACKING
+  React.useEffect(() => {
+    if (isMounted && orders && orders.length > 0) {
+      const userPhone = localStorage.getItem('webfoo_user_phone')
+      if (userPhone) {
+        // Find the latest order for this user that is either Pending or In Transit
+        const userOrders = orders.filter((o: any) => o.phone === userPhone && (o.status === 'Pending' || o.status === 'In Transit'))
+        if (userOrders.length > 0) {
+          // Assuming the last one in the array is the latest
+          setActiveOrder(userOrders[userOrders.length - 1])
+        } else {
+          setActiveOrder(null)
+          setIsTrackingOpen(false)
+        }
+      }
+    }
+  }, [orders, isMounted])
 
   if (!isMounted) return <div className="min-h-screen bg-[#050505]" />
 
@@ -169,7 +192,7 @@ export default function HomePage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#050505] text-foreground font-sans selection:bg-[#00FFFF]/30 pb-32 pt-24">
+    <div className="min-h-screen bg-[#050505] text-foreground font-sans selection:bg-[#00FFFF]/30 pb-32 pt-24 relative">
       
       <Header />
 
@@ -321,6 +344,117 @@ export default function HomePage() {
         )}
 
       </main>
+
+      {/* 🔥 ZOMATO-STYLE LIVE ORDER TRACKER (FLOATING BAR) 🔥 */}
+      <AnimatePresence>
+        {activeOrder && (
+          <motion.div 
+            initial={{ y: 100, opacity: 0 }} 
+            animate={{ y: 0, opacity: 1 }} 
+            exit={{ y: 100, opacity: 0 }}
+            className="fixed bottom-[80px] left-4 right-4 z-40 max-w-lg mx-auto"
+          >
+            <div 
+              onClick={() => setIsTrackingOpen(true)} 
+              className={`glass-strong rounded-[1.5rem] p-4 flex items-center justify-between cursor-pointer border-2 transition-all shadow-[0_0_20px_rgba(0,0,0,0.5)] ${activeOrder.status === 'Pending' ? 'bg-[#00FFFF]/10 border-[#00FFFF]/50' : 'bg-[#CCFF00]/10 border-[#CCFF00]/50'}`}
+            >
+              <div className="flex items-center gap-4">
+                <div className={`w-12 h-12 rounded-full flex items-center justify-center bg-black border-2 shadow-inner ${activeOrder.status === 'Pending' ? 'border-[#00FFFF]/40 text-[#00FFFF]' : 'border-[#CCFF00]/40 text-[#CCFF00]'}`}>
+                  {activeOrder.status === 'Pending' ? <ChefHat className="w-6 h-6 animate-pulse" /> : <Bike className="w-6 h-6 animate-bounce" />}
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Order Status</span>
+                  <span className="font-bold text-white text-sm">
+                    {activeOrder.status === 'Pending' ? 'Preparing your food...' : 'Order is on the way!'}
+                  </span>
+                  <span className={`text-xs font-mono font-bold mt-0.5 ${activeOrder.status === 'Pending' ? 'text-[#00FFFF]' : 'text-[#CCFF00]'}`}>
+                    ETA: {activeOrder.status === 'Pending' ? '25-30 mins' : '10-15 mins'}
+                  </span>
+                </div>
+              </div>
+              <div className="bg-black/50 p-2 rounded-full border border-white/10">
+                 <ChevronRight className="w-5 h-5 text-white/70" />
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* 🔥 LIVE TRACKING SHEET (FULL TIMELINE) 🔥 */}
+      <Sheet open={isTrackingOpen} onOpenChange={setIsTrackingOpen}>
+        <SheetContent side="bottom" className="h-[80vh] sm:max-w-md mx-auto bg-[#050505] border-t border-white/10 rounded-t-[2rem] p-0 overflow-hidden">
+          {activeOrder && (
+            <div className="flex flex-col h-full">
+              <SheetHeader className="p-6 border-b border-white/5 bg-white/5">
+                <SheetTitle className="text-left flex flex-col gap-1">
+                  <span className="text-[10px] font-black uppercase tracking-widest text-[#00FFFF]">Live Tracking</span>
+                  <span className="text-2xl font-black text-white">Order #{activeOrder.id}</span>
+                </SheetTitle>
+              </SheetHeader>
+              
+              <div className="flex-1 overflow-y-auto p-8 relative">
+                {/* TIMELINE LINE */}
+                <div className="absolute left-[47px] top-10 bottom-20 w-0.5 bg-white/10"></div>
+
+                <div className="space-y-10 relative z-10">
+                  {/* STEP 1: PLACED */}
+                  <div className="flex items-start gap-6">
+                    <div className="w-12 h-12 rounded-full bg-black border-2 border-[#00FFFF] text-[#00FFFF] flex items-center justify-center shrink-0 z-10">
+                      <ClipboardCheck className="w-5 h-5" />
+                    </div>
+                    <div className="pt-2">
+                      <h4 className="text-white font-bold text-lg leading-none">Order Accepted</h4>
+                      <p className="text-xs text-muted-foreground mt-1">We have received your order.</p>
+                    </div>
+                  </div>
+
+                  {/* STEP 2: PREPARING */}
+                  <div className="flex items-start gap-6">
+                    <div className={`w-12 h-12 rounded-full bg-black border-2 flex items-center justify-center shrink-0 z-10 transition-colors ${activeOrder.status === 'Pending' ? 'border-[#00FFFF] text-[#00FFFF] shadow-[0_0_15px_rgba(0,255,255,0.3)]' : activeOrder.status === 'In Transit' ? 'border-white/40 text-white' : 'border-white/10 text-white/20'}`}>
+                      <ChefHat className={`w-5 h-5 ${activeOrder.status === 'Pending' ? 'animate-pulse' : ''}`} />
+                    </div>
+                    <div className="pt-2">
+                      <h4 className={`font-bold text-lg leading-none ${activeOrder.status === 'Pending' ? 'text-[#00FFFF]' : activeOrder.status === 'In Transit' ? 'text-white' : 'text-white/30'}`}>Food is being prepared</h4>
+                      <p className="text-xs text-muted-foreground mt-1">Our chef is on it.</p>
+                    </div>
+                  </div>
+
+                  {/* STEP 3: ON THE WAY */}
+                  <div className="flex items-start gap-6">
+                    <div className={`w-12 h-12 rounded-full bg-black border-2 flex items-center justify-center shrink-0 z-10 transition-colors ${activeOrder.status === 'In Transit' ? 'border-[#CCFF00] text-[#CCFF00] shadow-[0_0_15px_rgba(204,255,0,0.3)]' : 'border-white/10 text-white/20'}`}>
+                      <Bike className={`w-5 h-5 ${activeOrder.status === 'In Transit' ? 'animate-bounce' : ''}`} />
+                    </div>
+                    <div className="pt-2">
+                      <h4 className={`font-bold text-lg leading-none ${activeOrder.status === 'In Transit' ? 'text-[#CCFF00]' : 'text-white/30'}`}>On the Way</h4>
+                      <p className="text-xs text-muted-foreground mt-1">Rider is heading to your location.</p>
+                    </div>
+                  </div>
+
+                  {/* STEP 4: DELIVERED (Ghost step until done) */}
+                  <div className="flex items-start gap-6 opacity-30">
+                    <div className="w-12 h-12 rounded-full bg-black border-2 border-white/10 text-white/20 flex items-center justify-center shrink-0 z-10">
+                      <CheckCircle2 className="w-5 h-5" />
+                    </div>
+                    <div className="pt-2">
+                      <h4 className="font-bold text-lg leading-none text-white">Delivered</h4>
+                      <p className="text-xs text-muted-foreground mt-1">Enjoy your meal!</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* SHEET FOOTER - CALL SUPPORT */}
+              <div className="p-6 border-t border-white/10 bg-white/5">
+                <a href={`tel:${storeConfig?.ownerPhone || ''}`}>
+                  <Button className="w-full h-14 bg-white/10 text-white hover:bg-white/20 border border-white/10 rounded-xl font-bold uppercase tracking-widest">
+                    <Phone className="w-4 h-4 mr-2" /> Contact Store
+                  </Button>
+                </a>
+              </div>
+            </div>
+          )}
+        </SheetContent>
+      </Sheet>
 
       <BottomNav />
       
