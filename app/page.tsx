@@ -17,19 +17,24 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sh
 import { Header } from "@/components/header"
 import { BottomNav } from "@/components/bottom-nav"
 
-// 🔥 CUSTOM PREPARING ICON (BARTAN + SPOON + SMOKE) 🔥
+// 🔥 EK DUM ZOMATO STYLE CUSTOM ANIMATED ICON (STATIC POT, BOUNCING LID, STEAM) 🔥
 const PreparingIcon = ({ className }: { className?: string }) => (
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
-    {/* Smoke/Steam */}
-    <path d="M9 3v4" />
-    <path d="M15 3v4" />
-    <path d="M12 5v2" />
-    {/* Spoon Sticking Out */}
-    <path d="M19 13V7a2 2 0 0 0-2-2h-1" />
-    {/* Cooking Pot */}
-    <path d="M4 11h16a1 1 0 0 1 1 1v2a6 6 0 0 1-6 6H9a6 6 0 0 1-6-6v-2a1 1 0 0 1 1-1Z" />
-    {/* Pot Lid/Rim Line */}
-    <path d="M2 11h20" />
+    {/* Steam / Smoke fading in and moving up */}
+    <motion.path d="M9 5v2" animate={{ opacity: [0, 1, 0], y: [0, -3] }} transition={{ repeat: Infinity, duration: 1.2, delay: 0 }} />
+    <motion.path d="M15 5v2" animate={{ opacity: [0, 1, 0], y: [0, -3] }} transition={{ repeat: Infinity, duration: 1.2, delay: 0.6 }} />
+    <motion.path d="M12 3v3" animate={{ opacity: [0, 1, 0], y: [0, -4] }} transition={{ repeat: Infinity, duration: 1.2, delay: 0.3 }} />
+
+    {/* Bouncing Lid (Dhakkan) - Rapid pressure bounce */}
+    <motion.g animate={{ y: [0, -2, 0] }} transition={{ repeat: Infinity, duration: 0.25, ease: "easeInOut" }}>
+      <path d="M3 11h18" /> {/* Lid base line */}
+      <path d="M7 11a5 5 0 0 1 10 0" /> {/* Lid dome */}
+      <path d="M11 6h2" /> {/* Handle top */}
+      <path d="M12 6v1" /> {/* Handle stem */}
+    </motion.g>
+
+    {/* Static Pot (Bartan ek jagah completely fixed) */}
+    <path d="M5 11v4a4 4 0 0 0 4 4h6a4 4 0 0 0 4-4v-4" />
   </svg>
 );
 
@@ -362,7 +367,7 @@ export default function HomePage() {
 
       </main>
 
-      {/* 🔥 ULTRA-PREMIUM DYNAMIC ISLAND TRACKER (LIVE ANIMATED ICONS) 🔥 */}
+      {/* 🔥 ULTRA-PREMIUM DYNAMIC ISLAND TRACKER (FIXED POT, BOUNCING LID) 🔥 */}
       <AnimatePresence>
         {activeOrder && (
           <motion.div 
@@ -383,12 +388,10 @@ export default function HomePage() {
               <div className={`absolute inset-0 opacity-20 ${activeOrder.status === 'Pending' ? 'bg-gradient-to-r from-[#00FFFF] to-transparent' : 'bg-gradient-to-r from-[#CCFF00] to-transparent'}`} />
 
               <div className="flex items-center gap-3 relative z-10">
-                {/* 👨‍🍳 SMOOTH WOBBLING/BOBBING ICONS */}
+                {/* 👨‍🍳 STATIC CONTAINER, ANIMATION IS INSIDE THE ICON */}
                 <div className={`w-12 h-12 shrink-0 rounded-[1.2rem] flex items-center justify-center bg-black border ${activeOrder.status === 'Pending' ? 'border-[#00FFFF]/50 text-[#00FFFF] shadow-[0_0_10px_rgba(0,255,255,0.3)]' : 'border-[#CCFF00]/50 text-[#CCFF00] shadow-[0_0_10px_rgba(204,255,0,0.3)]'}`}>
                   {activeOrder.status === 'Pending' ? (
-                    <motion.div animate={{ rotate: [-4, 4, -4], y: [-1, 1, -1] }} transition={{ repeat: Infinity, duration: 2, ease: "easeInOut" }}>
-                      <PreparingIcon className="w-6 h-6" />
-                    </motion.div>
+                    <PreparingIcon className="w-5 h-5" />
                   ) : (
                     <motion.div animate={{ y: [-1, 2, -1], x: [-1, 1, -1] }} transition={{ repeat: Infinity, duration: 1.5, ease: "easeInOut" }}>
                       <Bike className="w-5 h-5" />
@@ -449,12 +452,10 @@ export default function HomePage() {
                     </div>
                   </div>
 
-                  {/* STEP 2: PREPARING */}
+                  {/* STEP 2: PREPARING (NO EXTRA WOBBLE ON CONTAINER) */}
                   <div className="flex items-start gap-6">
                     <div className={`w-12 h-12 rounded-full bg-black border-[3px] flex items-center justify-center shrink-0 z-10 transition-all duration-500 ${activeOrder.status === 'Pending' ? 'border-[#00FFFF] text-[#00FFFF] shadow-[0_0_20px_rgba(0,255,255,0.2)] scale-110' : activeOrder.status === 'In Transit' ? 'border-white/20 text-white scale-100' : 'border-white/5 text-white/20'}`}>
-                      <motion.div animate={activeOrder.status === 'Pending' ? { rotate: [-4, 4, -4], y: [-1, 1, -1] } : {}} transition={{ repeat: Infinity, duration: 2, ease: "easeInOut" }}>
-                        <PreparingIcon className="w-5 h-5" />
-                      </motion.div>
+                      <PreparingIcon className="w-6 h-6" />
                     </div>
                     <div className="pt-2">
                       <h4 className={`font-bold text-lg leading-none transition-colors ${activeOrder.status === 'Pending' ? 'text-[#00FFFF]' : activeOrder.status === 'In Transit' ? 'text-white' : 'text-white/30'}`}>Food is being prepared</h4>
