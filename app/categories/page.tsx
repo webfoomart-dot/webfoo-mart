@@ -7,7 +7,7 @@ import { useRouter } from "next/navigation"
 import { motion, AnimatePresence } from "framer-motion"
 import { 
   ArrowLeft, Search, ShoppingBasket, Plus, Lock, Zap, 
-  User as UserIcon, Phone as PhoneIcon, X, Minus, Folder
+  User as UserIcon, Phone as PhoneIcon, X, Minus, Folder, MessageCircle, PhoneCall
 } from "lucide-react"
 
 import { useAppStore } from "@/lib/store"
@@ -16,7 +16,7 @@ import { BottomNav } from "@/components/bottom-nav"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
-import { Badge } from "@/components/ui/badge" // 🔥 YAHI MISSING THA 🔥
+import { Badge } from "@/components/ui/badge"
 
 export default function CategoriesPage() {
   const [isMounted, setIsMounted] = React.useState(false)
@@ -58,6 +58,10 @@ export default function CategoriesPage() {
     const interval = setInterval(checkTime, 60000); 
     return () => clearInterval(interval);
   }, [storeConfig, checkIfStoreOpen]);
+
+  // 🔥 CUSTOM SERVICE CATEGORIES DEFINITION 🔥
+  // Agar category ka naam inme se kisi se match karta hai, toh "Add to Cart" hat jayega
+  const serviceCategories = ['notes', 'assignment', 'assignments', 'handwritten', 'projects', 'service'];
 
   const displayCategories = React.useMemo(() => {
     if (!categories || !Array.isArray(categories)) return [];
@@ -139,10 +143,10 @@ export default function CategoriesPage() {
                 <div className="grid grid-cols-2 gap-4">
                   {filteredCategories.map((category, index) => (
                     <motion.div key={category.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: index * 0.05 }}>
-                      <Card onClick={() => setSelectedCategory(category)} className="group glass-strong border-white/10 overflow-hidden cursor-pointer transition-all hover:border-[#00FFFF]/30 hover:-translate-y-1">
+                      <Card onClick={() => { setSelectedCategory(category); setSelectedSubcategory(null); }} className="group glass-strong border-white/10 overflow-hidden cursor-pointer transition-all hover:border-[#00FFFF]/30 hover:-translate-y-1">
                         <CardContent className="p-3 flex flex-col items-center justify-between text-center h-full aspect-[4/5] relative">
                           {category.image ? (
-                            <div className="w-[95%] aspect-square rounded-2xl overflow-hidden border border-white/10 mb-2 mt-1 transition-transform group-hover:scale-110 shadow-lg">
+                            <div className="w-[95%] aspect-square rounded-2xl overflow-hidden border border-white/10 mb-2 mt-1 transition-transform group-hover:scale-110 shadow-lg bg-black/40">
                               <img src={category.image} alt={category.name} className="w-full h-full object-cover" />
                             </div>
                           ) : (
@@ -186,11 +190,12 @@ export default function CategoriesPage() {
                     {selectedSubcategory ? selectedSubcategory : selectedCategory.name}
                   </h1>
                   <p className="text-[10px] font-bold uppercase tracking-widest text-[#00FFFF]">
-                    {selectedSubcategory ? `${selectedCategory.name} > ${selectedSubcategory}` : `${categoryProducts.length} Items Found`}
+                    {selectedSubcategory ? `${selectedCategory.name} > ${selectedSubcategory}` : `${categoryProducts.length} Items`}
                   </p>
                 </div>
               </div>
               
+              {/* 🔥 FOLDER VIEW FOR SUBCATEGORIES 🔥 */}
               {selectedCategory.subcategories && selectedCategory.subcategories.length > 0 && !selectedSubcategory ? (
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
                   {selectedCategory.subcategories.map((sub: string, index: number) => {
@@ -211,6 +216,7 @@ export default function CategoriesPage() {
                   })}
                 </div>
               ) : (
+                /* 🔥 PRODUCTS / SERVICES VIEW 🔥 */
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-5">
                   {categoryProducts.length === 0 ? (
                     <div className="col-span-full text-center py-20 bg-white/5 rounded-[2rem] border border-dashed border-white/10">
@@ -220,6 +226,13 @@ export default function CategoriesPage() {
                   ) : (
                     categoryProducts.map((product: any) => {
                       const cartItem = getCartItem(product.id)
+                      
+                      // 🔥 SMART DETECTION: Check if this item falls under a "Service" category
+                      const isService = serviceCategories.some(sc => 
+                        product.category.toLowerCase().includes(sc) || 
+                        (product.subcategory && product.subcategory.toLowerCase().includes(sc))
+                      );
+
                       return (
                         <motion.div 
                           key={product.id} 
@@ -246,27 +259,29 @@ export default function CategoriesPage() {
                           </div>
                           
                           <div className="mt-1 flex-1 flex flex-col justify-start space-y-1">
-                            <p className="text-[#00FFFF] font-bold text-[9px] uppercase tracking-widest opacity-80">{product.category}</p>
+                            <p className="text-[#00FFFF] font-bold text-[9px] uppercase tracking-widest opacity-80">{product.subcategory || product.category}</p>
                             <p className="font-bold text-white text-xs leading-tight line-clamp-2">{product.name}</p>
                             
-                            <div className="pt-0.5">
-                              {product.foodPref === 'veg' && (
-                                <div className="bg-white p-[2px] rounded-sm shadow-sm w-fit">
-                                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 16 16">
-                                    <path stroke="#008000" strokeWidth="1.5" fill="none" d="M 0.5,0.5 H 15.5 V 15.5 H 0.5 Z" />
-                                    <circle fill="#008000" cx="8" cy="8" r="4.5" />
-                                  </svg>
-                                </div>
-                              )}
-                              {product.foodPref === 'non-veg' && (
-                                <div className="bg-white p-[2px] rounded-sm shadow-sm w-fit">
-                                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 16 16">
-                                    <path stroke="#8B4513" strokeWidth="1.5" fill="none" d="M 0.5,0.5 H 15.5 V 15.5 H 0.5 Z" />
-                                    <path fill="#8B4513" d="M 8,3 L 13.5,12.5 H 2.5 Z" />
-                                  </svg>
-                                </div>
-                              )}
-                            </div>
+                            {!isService && (
+                              <div className="pt-0.5">
+                                {product.foodPref === 'veg' && (
+                                  <div className="bg-white p-[2px] rounded-sm shadow-sm w-fit">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 16 16">
+                                      <path stroke="#008000" strokeWidth="1.5" fill="none" d="M 0.5,0.5 H 15.5 V 15.5 H 0.5 Z" />
+                                      <circle fill="#008000" cx="8" cy="8" r="4.5" />
+                                    </svg>
+                                  </div>
+                                )}
+                                {product.foodPref === 'non-veg' && (
+                                  <div className="bg-white p-[2px] rounded-sm shadow-sm w-fit">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 16 16">
+                                      <path stroke="#8B4513" strokeWidth="1.5" fill="none" d="M 0.5,0.5 H 15.5 V 15.5 H 0.5 Z" />
+                                      <path fill="#8B4513" d="M 8,3 L 13.5,12.5 H 2.5 Z" />
+                                    </svg>
+                                  </div>
+                                )}
+                              </div>
+                            )}
                           </div>
 
                           <div className="flex items-center justify-between mt-1 pt-3 border-t border-white/10" onClick={(e) => e.stopPropagation()}>
@@ -275,21 +290,42 @@ export default function CategoriesPage() {
                               {product.mrp > product.price && <span className="text-[10px] text-muted-foreground line-through font-mono">₹{product.mrp}</span>}
                             </div>
                             
-                            {cartItem ? (
-                              <div className="flex items-center gap-2 bg-[#00FFFF]/10 border border-[#00FFFF]/30 rounded-lg p-1">
-                                <button onClick={(e) => handleMinusClick(e, product.id, cartItem.quantity)} className="w-7 h-7 flex items-center justify-center text-[#00FFFF] hover:bg-[#00FFFF]/20 rounded-md transition-colors"><Minus className="w-3 h-3" /></button>
-                                <span className="text-sm font-black w-4 text-center text-white">{cartItem.quantity}</span>
-                                <button onClick={(e) => handlePlusClick(e, product.id, cartItem.quantity)} className="w-7 h-7 flex items-center justify-center text-[#00FFFF] hover:bg-[#00FFFF]/20 rounded-md transition-colors"><Plus className="w-3 h-3" /></button>
+                            {isService ? (
+                              // 🔥 WHATSAPP & CALL BUTTONS FOR CUSTOM SERVICES 🔥
+                              <div className="flex gap-2">
+                                <a 
+                                  href={`https://wa.me/919142267442?text=${encodeURIComponent(`Hi Vineet, I want to get "${product.name}" done. \n\nMy topic/details are: `)}`} 
+                                  target="_blank" 
+                                  rel="noreferrer"
+                                >
+                                  <Button size="icon" className="w-9 h-9 bg-[#25D366] text-white hover:bg-[#25D366]/80 rounded-lg">
+                                    <MessageCircle className="w-4 h-4" />
+                                  </Button>
+                                </a>
+                                <a href="tel:9142267442">
+                                  <Button size="icon" className="w-9 h-9 bg-[#00FFFF] text-black hover:bg-[#00FFFF]/80 rounded-lg">
+                                    <PhoneCall className="w-4 h-4" />
+                                  </Button>
+                                </a>
                               </div>
                             ) : (
-                              <Button 
-                                disabled={!product.inStock} 
-                                onClick={(e) => handleCartClick(e, product)} 
-                                size="sm"
-                                className="h-9 bg-[#CCFF00] text-black font-black text-[11px] uppercase tracking-widest rounded-lg px-4 hover:bg-[#CCFF00]/80 disabled:bg-white/10 disabled:text-white/30 shadow-[0_0_15px_rgba(204,255,0,0.15)] hover:shadow-[0_0_20px_rgba(204,255,0,0.3)]"
-                              >
-                                ADD
-                              </Button>
+                              // 🔥 NORMAL ADD TO CART FOR FOOD/PRODUCTS 🔥
+                              cartItem ? (
+                                <div className="flex items-center gap-2 bg-[#00FFFF]/10 border border-[#00FFFF]/30 rounded-lg p-1">
+                                  <button onClick={(e) => handleMinusClick(e, product.id, cartItem.quantity)} className="w-7 h-7 flex items-center justify-center text-[#00FFFF] hover:bg-[#00FFFF]/20 rounded-md transition-colors"><Minus className="w-3 h-3" /></button>
+                                  <span className="text-sm font-black w-4 text-center text-white">{cartItem.quantity}</span>
+                                  <button onClick={(e) => handlePlusClick(e, product.id, cartItem.quantity)} className="w-7 h-7 flex items-center justify-center text-[#00FFFF] hover:bg-[#00FFFF]/20 rounded-md transition-colors"><Plus className="w-3 h-3" /></button>
+                                </div>
+                              ) : (
+                                <Button 
+                                  disabled={!product.inStock} 
+                                  onClick={(e) => handleCartClick(e, product)} 
+                                  size="sm"
+                                  className="h-9 bg-[#CCFF00] text-black font-black text-[11px] uppercase tracking-widest rounded-lg px-4 hover:bg-[#CCFF00]/80 disabled:bg-white/10 disabled:text-white/30 shadow-[0_0_15px_rgba(204,255,0,0.15)] hover:shadow-[0_0_20px_rgba(204,255,0,0.3)]"
+                                >
+                                  ADD
+                                </Button>
+                              )
                             )}
                           </div>
                         </motion.div>
