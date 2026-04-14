@@ -194,7 +194,7 @@ export default function CategoriesPage() {
                 </div>
               </div>
               
-              {/* 🔥 UPDATED SUB-CATEGORY / STUDY FOLDER VIEW 🔥 */}
+              {/* 🔥 FIXED SUB-CATEGORY / STUDY FOLDER VIEW 🔥 */}
               {selectedCategory.subcategories && selectedCategory.subcategories.length > 0 && !selectedSubcategory ? (
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
                   {selectedCategory.subcategories.map((sub: string, index: number) => {
@@ -202,10 +202,21 @@ export default function CategoriesPage() {
                     return (
                       <motion.div key={sub} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: index * 0.05 }}>
                         <Card onClick={() => setSelectedSubcategory(sub)} className="group glass-strong border-white/10 overflow-hidden cursor-pointer transition-all hover:border-[#CCFF00]/50 hover:-translate-y-1">
-                          <CardContent className="p-5 sm:p-6 flex flex-col items-center justify-center text-center min-h-[11rem] relative">
-                            <BookOpen className="w-10 h-10 sm:w-12 sm:h-12 text-[#CCFF00] mb-4 group-hover:scale-110 transition-transform" />
-                            <h3 className="font-black text-white uppercase tracking-wider text-xs sm:text-sm">{sub}</h3>
-                            <Badge variant="outline" className="mt-3 text-[10px] text-[#CCFF00] border-[#CCFF00]/30 bg-black/50">{count} Items</Badge>
+                          <CardContent className="p-4 sm:p-5 flex flex-col items-center text-center h-[12rem]">
+                            {/* Top Section: Icon always perfectly placed */}
+                            <div className="h-12 flex items-end justify-center shrink-0 mb-3">
+                              <BookOpen className="w-10 h-10 sm:w-12 sm:h-12 text-[#CCFF00] group-hover:scale-110 transition-transform" />
+                            </div>
+                            
+                            {/* Middle Section: Text always stays centered vertically */}
+                            <div className="flex-1 flex items-center justify-center w-full">
+                              <h3 className="font-black text-white uppercase tracking-wider text-xs sm:text-sm line-clamp-2">{sub}</h3>
+                            </div>
+                            
+                            {/* Bottom Section: Badge pinned to bottom */}
+                            <div className="shrink-0 mt-3">
+                              <Badge variant="outline" className="text-[10px] text-[#CCFF00] border-[#CCFF00]/30 bg-black/50">{count} Items</Badge>
+                            </div>
                           </CardContent>
                         </Card>
                       </motion.div>
