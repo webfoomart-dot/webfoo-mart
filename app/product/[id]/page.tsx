@@ -5,7 +5,7 @@ import Image from "next/image"
 import Link from "next/link"
 import { useParams, useRouter } from "next/navigation"
 import { motion, AnimatePresence } from "framer-motion"
-import { ArrowLeft, ShoppingBag, Minus, Plus, Zap, Info, ShieldCheck, ChevronRight } from "lucide-react"
+import { ArrowLeft, ShoppingBag, Minus, Plus, Zap, Info, ShieldCheck, MessageCircle, PhoneCall } from "lucide-react"
 
 import { useAppStore } from "@/lib/store"
 import { Button } from "@/components/ui/button"
@@ -57,6 +57,13 @@ export default function ProductDetailsPage() {
     )
   }
 
+  // 🔥 SERVICE CATEGORIES LIST 🔥
+  const serviceCategories = ['notes', 'assignment', 'assignments', 'handwritten', 'projects', 'service'];
+  const isService = serviceCategories.some(sc => 
+    product.category.toLowerCase().includes(sc) || 
+    (product.subcategory && product.subcategory.toLowerCase().includes(sc))
+  );
+
   // Combine main image with gallery images for the thumbnail slider
   const allImages = [product.image, ...(product.galleryImages || [])].filter(Boolean)
 
@@ -96,16 +103,18 @@ export default function ProductDetailsPage() {
         <Button onClick={() => router.back()} size="icon" className="w-10 h-10 rounded-full bg-black/50 backdrop-blur-md border border-white/10 text-white hover:bg-[#00FFFF] hover:text-black pointer-events-auto transition-all shadow-lg">
           <ArrowLeft className="w-5 h-5" />
         </Button>
-        <Link href="/cart" className="pointer-events-auto">
-          <div className="relative w-10 h-10 rounded-full bg-black/50 backdrop-blur-md border border-white/10 flex items-center justify-center text-[#CCFF00] hover:bg-[#CCFF00] hover:text-black transition-all shadow-lg">
-            <ShoppingBag className="w-5 h-5" />
-            {cartCount > 0 && (
-              <span className="absolute -top-1 -right-1 bg-[#FF0055] text-white text-[10px] font-black w-4 h-4 rounded-full flex items-center justify-center border border-black animate-bounce">
-                {cartCount}
-              </span>
-            )}
-          </div>
-        </Link>
+        {!isService && (
+          <Link href="/cart" className="pointer-events-auto">
+            <div className="relative w-10 h-10 rounded-full bg-black/50 backdrop-blur-md border border-white/10 flex items-center justify-center text-[#CCFF00] hover:bg-[#CCFF00] hover:text-black transition-all shadow-lg">
+              <ShoppingBag className="w-5 h-5" />
+              {cartCount > 0 && (
+                <span className="absolute -top-1 -right-1 bg-[#FF0055] text-white text-[10px] font-black w-4 h-4 rounded-full flex items-center justify-center border border-black animate-bounce">
+                  {cartCount}
+                </span>
+              )}
+            </div>
+          </Link>
+        )}
       </header>
 
       <main>
@@ -165,11 +174,11 @@ export default function ProductDetailsPage() {
           <div className="space-y-3 pt-4">
             <div className="flex items-center gap-2">
               <span className="text-[#00FFFF] font-bold text-[10px] uppercase tracking-widest border border-[#00FFFF]/30 px-2 py-0.5 rounded bg-[#00FFFF]/5">
-                {product.category}
+                {product.subcategory || product.category}
               </span>
               
               {/* ORIGINAL FSSAI LOGOS (Official rectangular frames) */}
-              {product.foodPref === 'veg' && (
+              {!isService && product.foodPref === 'veg' && (
                 <div className="bg-white p-[2px] rounded-sm shadow-sm flex items-center justify-center">
                   <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16">
                     <path stroke="#008000" strokeWidth="1.5" fill="none" d="M 0.5,0.5 H 15.5 V 15.5 H 0.5 Z" />
@@ -177,7 +186,7 @@ export default function ProductDetailsPage() {
                   </svg>
                 </div>
               )}
-              {product.foodPref === 'non-veg' && (
+              {!isService && product.foodPref === 'non-veg' && (
                 <div className="bg-white p-[2px] rounded-sm shadow-sm flex items-center justify-center">
                   <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16">
                     <path stroke="#8B4513" strokeWidth="1.5" fill="none" d="M 0.5,0.5 H 15.5 V 15.5 H 0.5 Z" />
@@ -219,29 +228,62 @@ export default function ProductDetailsPage() {
 
       {/* STICKY BOTTOM ACTION BAR */}
       <div className="fixed bottom-0 left-0 right-0 z-50 p-4 bg-black/80 backdrop-blur-xl border-t border-white/10 flex items-center justify-center">
-        <div className="w-full max-w-2xl flex items-center justify-between gap-4">
-          <div className="flex-1">
-            <p className="text-[10px] uppercase font-black text-muted-foreground tracking-widest">Total Price</p>
-            <p className="text-xl font-black text-white font-mono">₹{cartItem ? product.price * cartItem.quantity : product.price}</p>
-          </div>
+        <div className="w-full max-w-2xl flex flex-col sm:flex-row items-center justify-between gap-4">
           
-          <div className="flex-shrink-0 w-40 sm:w-48">
-            {cartItem ? (
-              <div className="flex items-center justify-between bg-[#CCFF00]/10 border-2 border-[#CCFF00] rounded-xl h-14 px-2 shadow-[0_0_15px_rgba(204,255,0,0.15)]">
-                <button onClick={() => handleMinusClick(cartItem.quantity)} className="w-10 h-10 flex items-center justify-center text-[#CCFF00] hover:bg-[#CCFF00]/20 rounded-lg transition-colors"><Minus className="w-5 h-5" /></button>
-                <span className="text-lg font-black w-8 text-center text-[#CCFF00]">{cartItem.quantity}</span>
-                <button onClick={() => handlePlusClick(cartItem.quantity)} className="w-10 h-10 flex items-center justify-center text-[#CCFF00] hover:bg-[#CCFF00]/20 rounded-lg transition-colors"><Plus className="w-5 h-5" /></button>
+          {isService ? (
+            // 🔥 SERVICE MODE ACTION BAR 🔥
+            <>
+              <div className="w-full sm:w-auto text-left">
+                <p className="text-[10px] uppercase font-black text-muted-foreground tracking-widest">Pricing</p>
+                <p className="text-xl font-black text-white font-mono">₹{product.price}</p>
               </div>
-            ) : (
-              <Button 
-                disabled={!product.inStock} 
-                onClick={handleAddToCart} 
-                className="w-full h-14 bg-[#CCFF00] text-black font-black text-sm uppercase tracking-widest rounded-xl hover:bg-[#CCFF00]/90 disabled:bg-white/10 disabled:text-white/30 shadow-[0_0_20px_rgba(204,255,0,0.3)] transition-all"
-              >
-                ADD TO CART
-              </Button>
-            )}
-          </div>
+              
+              <div className="w-full sm:flex-1 grid grid-cols-2 gap-3">
+                <a 
+                  href={`https://wa.me/919142267442?text=${encodeURIComponent(`Hi Vineet, I want to discuss and order "${product.name}". \n\nMy details are: `)}`} 
+                  target="_blank" 
+                  rel="noreferrer"
+                  className="w-full"
+                >
+                  <Button className="w-full h-14 bg-[#25D366] text-white font-black text-xs sm:text-sm uppercase tracking-widest rounded-xl hover:bg-[#25D366]/90 shadow-[0_0_20px_rgba(37,211,102,0.3)] transition-all">
+                    <MessageCircle className="w-5 h-5 mr-2" /> WHATSAPP
+                  </Button>
+                </a>
+                <a href="tel:9142267442" className="w-full">
+                  <Button className="w-full h-14 bg-[#00FFFF] text-black font-black text-xs sm:text-sm uppercase tracking-widest rounded-xl hover:bg-[#00FFFF]/90 shadow-[0_0_20px_rgba(0,255,255,0.3)] transition-all">
+                    <PhoneCall className="w-5 h-5 mr-2" /> CALL NOW
+                  </Button>
+                </a>
+              </div>
+            </>
+          ) : (
+            // 🔥 REGULAR FOOD/PRODUCT ACTION BAR 🔥
+            <>
+              <div className="flex-1 w-full text-left">
+                <p className="text-[10px] uppercase font-black text-muted-foreground tracking-widest">Total Price</p>
+                <p className="text-xl font-black text-white font-mono">₹{cartItem ? product.price * cartItem.quantity : product.price}</p>
+              </div>
+              
+              <div className="flex-shrink-0 w-full sm:w-48">
+                {cartItem ? (
+                  <div className="flex items-center justify-between bg-[#CCFF00]/10 border-2 border-[#CCFF00] rounded-xl h-14 px-2 shadow-[0_0_15px_rgba(204,255,0,0.15)]">
+                    <button onClick={() => handleMinusClick(cartItem.quantity)} className="w-10 h-10 flex items-center justify-center text-[#CCFF00] hover:bg-[#CCFF00]/20 rounded-lg transition-colors"><Minus className="w-5 h-5" /></button>
+                    <span className="text-lg font-black w-8 text-center text-[#CCFF00]">{cartItem.quantity}</span>
+                    <button onClick={() => handlePlusClick(cartItem.quantity)} className="w-10 h-10 flex items-center justify-center text-[#CCFF00] hover:bg-[#CCFF00]/20 rounded-lg transition-colors"><Plus className="w-5 h-5" /></button>
+                  </div>
+                ) : (
+                  <Button 
+                    disabled={!product.inStock} 
+                    onClick={handleAddToCart} 
+                    className="w-full h-14 bg-[#CCFF00] text-black font-black text-sm uppercase tracking-widest rounded-xl hover:bg-[#CCFF00]/90 disabled:bg-white/10 disabled:text-white/30 shadow-[0_0_20px_rgba(204,255,0,0.3)] transition-all"
+                  >
+                    ADD TO CART
+                  </Button>
+                )}
+              </div>
+            </>
+          )}
+
         </div>
       </div>
       
