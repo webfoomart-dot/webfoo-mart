@@ -7,7 +7,7 @@ import { useRouter } from "next/navigation"
 import { motion, AnimatePresence } from "framer-motion"
 import { 
   ArrowLeft, Search, ShoppingBasket, Plus, Lock, Zap, 
-  User as UserIcon, Phone as PhoneIcon, X, Minus, Folder, MessageCircle, PhoneCall
+  User as UserIcon, Phone as PhoneIcon, X, Minus, BookOpen, MessageCircle, PhoneCall
 } from "lucide-react"
 
 import { useAppStore } from "@/lib/store"
@@ -60,7 +60,6 @@ export default function CategoriesPage() {
   }, [storeConfig, checkIfStoreOpen]);
 
   // 🔥 CUSTOM SERVICE CATEGORIES DEFINITION 🔥
-  // Agar category ka naam inme se kisi se match karta hai, toh "Add to Cart" hat jayega
   const serviceCategories = ['notes', 'assignment', 'assignments', 'handwritten', 'projects', 'service'];
 
   const displayCategories = React.useMemo(() => {
@@ -195,28 +194,25 @@ export default function CategoriesPage() {
                 </div>
               </div>
               
-              {/* 🔥 FOLDER VIEW FOR SUBCATEGORIES 🔥 */}
+              {/* 🔥 UPDATED SUB-CATEGORY / STUDY FOLDER VIEW 🔥 */}
               {selectedCategory.subcategories && selectedCategory.subcategories.length > 0 && !selectedSubcategory ? (
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
                   {selectedCategory.subcategories.map((sub: string, index: number) => {
-                     const count = products.filter((p:any) => p.category === selectedCategory.name && p.subcategory === sub).length;
-                     return (
+                    const count = products.filter((p:any) => p.category === selectedCategory.name && p.subcategory === sub).length;
+                    return (
                       <motion.div key={sub} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: index * 0.05 }}>
                         <Card onClick={() => setSelectedSubcategory(sub)} className="group glass-strong border-white/10 overflow-hidden cursor-pointer transition-all hover:border-[#CCFF00]/50 hover:-translate-y-1">
-                          <CardContent className="p-6 flex flex-col items-center justify-center text-center h-40 relative">
-                            <Folder className="w-12 h-12 text-[#CCFF00] mb-3 group-hover:scale-110 transition-transform" />
-                            <h3 className="font-black text-white uppercase tracking-wider text-sm line-clamp-2">{sub}</h3>
-                            <Badge variant="outline" className="mt-2 text-[10px] text-[#CCFF00] border-[#CCFF00]/30 bg-black/50">
-                              {count} Items
-                            </Badge>
+                          <CardContent className="p-5 sm:p-6 flex flex-col items-center justify-center text-center min-h-[11rem] relative">
+                            <BookOpen className="w-10 h-10 sm:w-12 sm:h-12 text-[#CCFF00] mb-4 group-hover:scale-110 transition-transform" />
+                            <h3 className="font-black text-white uppercase tracking-wider text-xs sm:text-sm">{sub}</h3>
+                            <Badge variant="outline" className="mt-3 text-[10px] text-[#CCFF00] border-[#CCFF00]/30 bg-black/50">{count} Items</Badge>
                           </CardContent>
                         </Card>
                       </motion.div>
-                     )
+                    )
                   })}
                 </div>
               ) : (
-                /* 🔥 PRODUCTS / SERVICES VIEW 🔥 */
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-5">
                   {categoryProducts.length === 0 ? (
                     <div className="col-span-full text-center py-20 bg-white/5 rounded-[2rem] border border-dashed border-white/10">
@@ -227,7 +223,6 @@ export default function CategoriesPage() {
                     categoryProducts.map((product: any) => {
                       const cartItem = getCartItem(product.id)
                       
-                      // 🔥 SMART DETECTION: Check if this item falls under a "Service" category
                       const isService = serviceCategories.some(sc => 
                         product.category.toLowerCase().includes(sc) || 
                         (product.subcategory && product.subcategory.toLowerCase().includes(sc))
@@ -291,7 +286,6 @@ export default function CategoriesPage() {
                             </div>
                             
                             {isService ? (
-                              // 🔥 WHATSAPP & CALL BUTTONS FOR CUSTOM SERVICES 🔥
                               <div className="flex gap-2">
                                 <a 
                                   href={`https://wa.me/919142267442?text=${encodeURIComponent(`Hi Vineet, I want to get "${product.name}" done. \n\nMy topic/details are: `)}`} 
@@ -309,7 +303,6 @@ export default function CategoriesPage() {
                                 </a>
                               </div>
                             ) : (
-                              // 🔥 NORMAL ADD TO CART FOR FOOD/PRODUCTS 🔥
                               cartItem ? (
                                 <div className="flex items-center gap-2 bg-[#00FFFF]/10 border border-[#00FFFF]/30 rounded-lg p-1">
                                   <button onClick={(e) => handleMinusClick(e, product.id, cartItem.quantity)} className="w-7 h-7 flex items-center justify-center text-[#00FFFF] hover:bg-[#00FFFF]/20 rounded-md transition-colors"><Minus className="w-3 h-3" /></button>
