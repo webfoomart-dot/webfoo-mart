@@ -342,18 +342,6 @@ export default function AdminDashboard() {
     }
   }
 
-  // 🔥 ADDED TOGGLE FUNCTION FOR CATEGORIES 🔥
-  const handleToggleCategory = async (cat: any) => {
-    const newStatus = cat.isActive === false ? true : false;
-    try {
-      await updateCategory(cat.id, { isActive: newStatus });
-      if (fetchData) await fetchData(); 
-    } catch (error) {
-      console.error(error);
-      alert("⚠️ Error updating category status.");
-    }
-  }
-
   const handleConvertCategory = async (oldCat: any) => {
     if (!targetParentCategory) return alert("Please select a target parent category first!");
     if (confirm(`🚨 CAUTION: This will move all products from '${oldCat.name}' into '${targetParentCategory}' and delete the main category '${oldCat.name}'. Continue?`)) {
@@ -374,7 +362,7 @@ export default function AdminDashboard() {
   }
 
   const handleDeleteCustomerWipe = (phone: string) => {
-    if(confirm("🚨 WARNING: This will wipe/hide the customer from your Admin CRM view. \n\nNote: If they forgot their password, this will NOT delete their Auth account. You must delete Auth from the Supabase Dashboard. \n\nProceed with CRM wipe?")) {
+    if(confirm("🚨 WARNING: This will wipe/hide the customer from your Admin CRM view. \n\nNote: If they forgot their password, this will NOT delete their Supabase Auth account. You must delete Auth from the Supabase Dashboard. \n\nProceed with CRM wipe?")) {
       updateCustomerMeta(phone, { isDeleted: true });
       alert("✅ Customer data wiped from panel.");
     }
@@ -638,7 +626,7 @@ export default function AdminDashboard() {
             <Button variant="outline" onClick={() => fetchData && fetchData()} className="border-[#00FFFF]/30 text-[#00FFFF] hover:bg-[#00FFFF] hover:text-black font-black tracking-widest uppercase">
               <Zap className="w-4 h-4 mr-2" /> Refresh Data
             </Button>
-            <Button variant="outline" onClick={() => { alertAudioRef.current?.play(); alert("✅ Alert Sound Enabled!"); }} className="border-[#CCFF00]/30 text-[#CCFF00] hover:bg-[#CCFF00] hover:text-black font-black tracking-widest uppercase">
+            <Button variant="outline" onClick={() => { alertAudioRef.current?.play(); alert("✅ Alert Sound Enabled! Naye order par aawaz aayegi."); }} className="border-[#CCFF00]/30 text-[#CCFF00] hover:bg-[#CCFF00] hover:text-black font-black tracking-widest uppercase">
               <Volume2 className="w-4 h-4 mr-2" /> 🔔 Sound
             </Button>
           </div>
@@ -646,6 +634,29 @@ export default function AdminDashboard() {
 
         <AnimatePresence mode="wait">
           
+          {/* 🔥 ANALYTICS (RESTORED PERFECTLY) 🔥 */}
+          {activeTab === 'analytics' && (
+            <motion.div key="analytics" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="space-y-6">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 glass-strong p-4 rounded-xl border border-[#00FFFF]/20 shadow-[0_0_15px_rgba(0,255,255,0.05)]">
+                <div className="flex items-center gap-2"><Calendar className="w-5 h-5 text-[#00FFFF]" /><h3 className="text-sm font-black text-white uppercase tracking-widest">Performance Metrics</h3></div>
+                <div className="flex items-center gap-3 w-full sm:w-auto">
+                  <select value={analyticsFilter} onChange={(e) => setAnalyticsFilter(e.target.value)} className="bg-black/50 border border-white/10 rounded-lg px-3 h-10 text-xs font-bold text-white focus:outline-none focus:border-[#00FFFF] w-full sm:w-auto uppercase tracking-wider"><option value="all" className="bg-black">All Time</option><option value="today" className="bg-black">Today</option><option value="yesterday" className="bg-black">Yesterday</option><option value="custom" className="bg-black">Custom Date</option></select>
+                  {analyticsFilter === 'custom' && <Input type="date" value={customDate} onChange={(e) => setCustomDate(e.target.value)} className="bg-black/50 border-white/10 h-10 text-xs w-full sm:w-auto text-white" />}
+                </div>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <Card className="glass-strong border-[#CCFF00]/30 hover:border-[#CCFF00]/50 transition-colors"><CardContent className="p-6"><div className="flex justify-between items-start mb-4"><div className="bg-[#CCFF00]/10 p-3 rounded-lg"><IndianRupee className="w-6 h-6 text-[#CCFF00]" /></div><Badge variant="outline" className="text-[#CCFF00] border-[#CCFF00]/30 font-bold uppercase tracking-widest text-[10px]">Revenue</Badge></div><p className="text-3xl font-black text-white font-mono tracking-tighter">₹{totalRevenue}</p><p className="text-xs text-muted-foreground mt-1 uppercase tracking-widest">From Delivered</p></CardContent></Card>
+                <Card className="glass-strong border-[#00FFFF]/30 hover:border-[#00FFFF]/50 transition-colors"><CardContent className="p-6"><div className="flex justify-between items-start mb-4"><div className="bg-[#00FFFF]/10 p-3 rounded-lg"><PackageIcon className="w-6 h-6 text-[#00FFFF]" /></div><Badge variant="outline" className="text-[#00FFFF] border-[#00FFFF]/30 font-bold uppercase tracking-widest text-[10px]">Orders</Badge></div><p className="text-3xl font-black text-white font-mono tracking-tighter">{totalOrdersCount}</p><p className="text-xs text-muted-foreground mt-1 uppercase tracking-widest">Total Received</p></CardContent></Card>
+                <Card className="glass-strong border-white/10 hover:border-white/30 transition-colors"><CardContent className="p-6"><div className="flex justify-between items-start mb-4"><div className="bg-white/10 p-3 rounded-lg"><TrendingUp className="w-6 h-6 text-white" /></div><Badge variant="outline" className="text-white border-white/30 font-bold uppercase tracking-widest text-[10px]">A.O.V</Badge></div><p className="text-3xl font-black text-white font-mono tracking-tighter">₹{avgOrderValue}</p><p className="text-xs text-muted-foreground mt-1 uppercase tracking-widest">Average Order Value</p></CardContent></Card>
+                <Card className="glass-strong border-white/10 hover:border-white/30 transition-colors"><CardContent className="p-6"><div className="flex justify-between items-start mb-4"><div className="bg-white/10 p-3 rounded-lg"><Users className="w-6 h-6 text-white" /></div><Badge variant="outline" className="text-white border-white/30 font-bold uppercase tracking-widest text-[10px]">Customers</Badge></div><p className="text-3xl font-black text-white font-mono tracking-tighter">{uniqueCustomersInAnalytics}</p><p className="text-xs text-muted-foreground mt-1 uppercase tracking-widest">Unique Buyers</p></CardContent></Card>
+              </div>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <Card className="glass-strong border-white/10"><CardContent className="p-6"><div className="flex items-center gap-2 mb-6 border-b border-white/10 pb-4"><Target className="w-5 h-5 text-[#00FFFF]" /><h3 className="text-lg font-black text-white uppercase tracking-widest">Order Success Rate</h3></div><div className="space-y-4"><div><div className="flex justify-between text-sm mb-1"><span className="font-bold text-[#CCFF00] uppercase tracking-widest flex items-center gap-2"><CheckCircle2 className="w-4 h-4"/> Delivered</span><span className="font-mono text-white">{analyticsDelivered.length}</span></div><div className="w-full bg-white/5 rounded-full h-2"><div className="bg-[#CCFF00] h-2 rounded-full" style={{ width: `${totalOrdersCount > 0 ? (analyticsDelivered.length / totalOrdersCount) * 100 : 0}%` }}></div></div></div><div><div className="flex justify-between text-sm mb-1"><span className="font-bold text-yellow-500 uppercase tracking-widest flex items-center gap-2"><Clock className="w-4 h-4"/> Pending / Transit</span><span className="font-mono text-white">{analyticsPending.length}</span></div><div className="w-full bg-white/5 rounded-full h-2"><div className="bg-yellow-500 h-2 rounded-full" style={{ width: `${totalOrdersCount > 0 ? (analyticsPending.length / totalOrdersCount) * 100 : 0}%` }}></div></div></div><div><div className="flex justify-between text-sm mb-1"><span className="font-bold text-red-500 uppercase tracking-widest flex items-center gap-2"><XCircle className="w-4 h-4"/> Cancelled</span><span className="font-mono text-white">{analyticsCancelled.length}</span></div><div className="w-full bg-white/5 rounded-full h-2"><div className="bg-red-500 h-2 rounded-full" style={{ width: `${totalOrdersCount > 0 ? (analyticsCancelled.length / totalOrdersCount) * 100 : 0}%` }}></div></div></div></div></CardContent></Card>
+                <Card className="glass-strong border-white/10"><CardContent className="p-6"><div className="flex items-center gap-2 mb-6 border-b border-white/10 pb-4"><BarChart className="w-5 h-5 text-[#CCFF00]" /><h3 className="text-lg font-black text-white uppercase tracking-widest">Top Selling Products</h3></div>{topProducts.length === 0 ? (<div className="text-center py-8 opacity-50"><PackageIcon className="w-8 h-8 mx-auto mb-2" /><p className="text-xs uppercase tracking-widest font-bold">No delivered items in period</p></div>) : (<div className="space-y-4">{topProducts.map((product, idx) => (<div key={idx} className="flex items-center justify-between p-3 rounded-lg bg-white/5 border border-white/5"><div className="flex items-center gap-3"><span className="w-6 h-6 rounded flex items-center justify-center bg-white/10 text-xs font-black text-white">{idx + 1}</span><span className="font-bold text-sm text-white">{product.name}</span></div><div className="text-right"><p className="text-xs text-muted-foreground uppercase tracking-widest mb-0.5">Sold: <span className="text-[#00FFFF] font-black font-mono">{product.qty}</span></p><p className="font-mono text-sm font-black text-[#CCFF00]">₹{product.revenue}</p></div></div>))}</div>)}</CardContent></Card>
+              </div>
+            </motion.div>
+          )}
+
           {/* BILLING */}
           {activeTab === 'billing' && (
             <motion.div key="billing" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="space-y-6">
@@ -1132,12 +1143,7 @@ export default function AdminDashboard() {
                             <Button variant="ghost" size="icon" onClick={() => setConvertingCategory(cat)} className="w-8 h-8 text-orange-400 hover:bg-orange-400/20" title="Move to Sub-category">
                                <CornerDownRight className="w-4 h-4" />
                             </Button>
-                            
-                            {/* 🔥 FIXED TOGGLE CATEGORY BUTTON 🔥 */}
-                            <Button variant="ghost" size="icon" onClick={() => handleToggleCategory(cat)} className={`w-8 h-8 ${cat.isActive !== false ? 'text-white hover:text-red-400 hover:bg-red-400/10' : 'text-[#CCFF00] hover:bg-[#CCFF00]/20'}`} title={cat.isActive !== false ? "Turn Off" : "Turn On"}>
-                              <Power className="w-4 h-4" />
-                            </Button>
-                            
+                            <Button variant="ghost" size="icon" onClick={() => updateCategory(cat.id, { isActive: cat.isActive === false ? true : false })} className={`w-8 h-8 ${cat.isActive !== false ? 'text-white hover:text-red-400 hover:bg-red-400/10' : 'text-[#CCFF00] hover:bg-[#CCFF00]/20'}`} title={cat.isActive !== false ? "Turn Off" : "Turn On"}><Power className="w-4 h-4" /></Button>
                             <Button variant="ghost" size="icon" onClick={() => editCategoryUI(cat)} className="w-8 h-8 text-[#CCFF00] hover:bg-[#CCFF00]/20"><Edit className="w-4 h-4" /></Button>
                             <Button variant="ghost" size="icon" onClick={() => reorderCategory(cat.id, 'up')} disabled={idx === 0} className="w-8 h-8 text-[#00FFFF] hover:bg-[#00FFFF]/20"><ArrowUp className="w-4 h-4" /></Button>
                             <Button variant="ghost" size="icon" onClick={() => reorderCategory(cat.id, 'down')} disabled={idx === categories.length - 1} className="w-8 h-8 text-[#00FFFF] hover:bg-[#00FFFF]/20"><ArrowDown className="w-4 h-4" /></Button>
@@ -1377,6 +1383,7 @@ export default function AdminDashboard() {
               </Card>
             </motion.div>
           )}
+
         </AnimatePresence>
       </main>
     </div>
