@@ -8,7 +8,7 @@ import { motion, AnimatePresence } from "framer-motion"
 import { 
   Search, Zap, MoonStar, TicketPercent, Plus, Minus, 
   UserCircle, Phone, Mail, ChefHat, Bike, ClipboardCheck, 
-  ChevronRight, CheckCircle2, Clock 
+  ChevronRight, CheckCircle2, Clock, Lock
 } from "lucide-react"
 
 import { useAppStore } from "@/lib/store"
@@ -21,7 +21,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sh
 import { Header } from "@/components/header"
 import { BottomNav } from "@/components/bottom-nav"
 
-// 🔥 ZOMATO STYLE CUSTOM ANIMATED ICON (STATIC POT, BOUNCING LID, STEAM) 🔥
+// 🔥 ZOMATO STYLE CUSTOM ANIMATED ICON 🔥
 const PreparingIcon = ({ className }: { className?: string }) => (
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
     <motion.path d="M9 5v2" animate={{ opacity: [0, 1, 0], y: [0, -3] }} transition={{ repeat: Infinity, duration: 1.2, delay: 0 }} />
@@ -53,11 +53,23 @@ export default function HomePage() {
   // LIVE TRACKING STATES
   const [activeOrder, setActiveOrder] = React.useState<any>(null)
   const [isTrackingOpen, setIsTrackingOpen] = React.useState(false)
+  
+  // CURRENT TIME FOR CATEGORY CHECK
+  const [currentTimeStr, setCurrentTimeStr] = React.useState("00:00")
 
   React.useEffect(() => {
     setIsMounted(true)
     if (fetchStoreConfig) fetchStoreConfig()
     if (fetchData) fetchData()
+    
+    // Setup interval to keep current time updated for exact category locking
+    const updateTime = () => {
+      const now = new Date()
+      setCurrentTimeStr(`${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`)
+    }
+    updateTime()
+    const timeInterval = setInterval(updateTime, 60000)
+    return () => clearInterval(timeInterval)
   }, [fetchData, fetchStoreConfig])
 
   React.useEffect(() => {
@@ -72,33 +84,23 @@ export default function HomePage() {
     return () => clearInterval(interval);
   }, [storeConfig, checkIfStoreOpen]);
 
-  // FIND ACTIVE ORDER FOR LIVE TRACKING
   React.useEffect(() => {
     if (isMounted && orders && orders.length > 0) {
       let myPhone = user?.phone;
-      
       if (!myPhone) {
         try {
           const localProfile = JSON.parse(localStorage.getItem('webfoo_profile') || '{}');
-          if (localProfile && localProfile.phone) {
-            myPhone = localProfile.phone;
-          }
+          if (localProfile && localProfile.phone) myPhone = localProfile.phone;
         } catch(e) {}
       }
-
       if (myPhone) {
         const myPhoneStr = String(myPhone).trim();
         const userOrders = orders.filter((o: any) => 
           String(o.phone).trim() === myPhoneStr && 
           (o.status === 'Pending' || o.status === 'Preparing' || o.status === 'In Transit')
         );
-        
-        if (userOrders.length > 0) {
-          setActiveOrder(userOrders[userOrders.length - 1])
-        } else {
-          setActiveOrder(null)
-          setIsTrackingOpen(false)
-        }
+        if (userOrders.length > 0) setActiveOrder(userOrders[userOrders.length - 1])
+        else { setActiveOrder(null); setIsTrackingOpen(false); }
       }
     }
   }, [orders, isMounted, user])
@@ -107,9 +109,7 @@ export default function HomePage() {
 
   const getCartItem = (id: string) => cart.find((item: any) => item.id === id)
 
-  const filteredProducts = products.filter((p: any) => {
-    return p.name.toLowerCase().includes(searchQuery.toLowerCase());
-  })
+  const filteredProducts = products.filter((p: any) => p.name.toLowerCase().includes(searchQuery.toLowerCase()))
 
   const rawCategories: string[] = products.map((p: any) => String(p.category || ''));
   const uniqueCategories: string[] = [...new Set(rawCategories)].sort((a: string, b: string) => {
@@ -120,21 +120,45 @@ export default function HomePage() {
     return orderA - orderB;
   });
 
-  const handleAddToCart = (e: React.MouseEvent, product: any) => {
-    e.stopPropagation() 
-    if (!isStoreOpen) {
-      triggerStoreClosedAlert();
-      return;
+  // 🔥 NEW HELPER: CATEGORY TIME CHECKER 🔥
+  const checkCategoryStatus = (categoryName: string) => {
+    const cat = (categories || []).find((c: any) => c.name.toLowerCase() === categoryName.toLowerCase());
+    if (!cat) return { isOpen: true, message: '' };
+    if (cat.isActive === false) return { isOpen: false, message: 'Currently Unavailable' };
+    if (!cat.startTime || !cat.endTime) return { isOpen: true, message: '' };
+
+    let isOpen = false;
+    if (cat.startTime <= cat.endTime) {
+      isOpen = (currentTimeStr >= cat.startTime && currentTimeStr <= cat.endTime);
+    } else {
+      isOpen = (currentTimeStr >= cat.startTime || currentTimeStr <= cat.endTime);
     }
+
+    const formatTime = (time24: string) => {
+      const [h, m] = time24.split(':');
+      const hh = parseInt(h, 10);
+      const ampm = hh >= 12 ? 'PM' : 'AM';
+      const h12 = hh % 12 || 12;
+      return `${h12}:${m} ${ampm}`;
+    };
+
+    return { 
+      isOpen, 
+      message: isOpen ? '' : `Opens at ${formatTime(cat.startTime)}`
+    };
+  }
+
+  const handleAddToCart = (e: React.MouseEvent, product: any, isCatOpen: boolean) => {
+    e.stopPropagation() 
+    if (!isStoreOpen) return triggerStoreClosedAlert();
+    if (!isCatOpen) return alert("This item is currently not available for order.");
     addToCart(product);
   }
 
-  const handlePlusClick = (e: React.MouseEvent, productId: string, currentQuantity: number) => {
+  const handlePlusClick = (e: React.MouseEvent, productId: string, currentQuantity: number, isCatOpen: boolean) => {
     e.stopPropagation() 
-    if (!isStoreOpen) {
-      triggerStoreClosedAlert();
-      return;
-    }
+    if (!isStoreOpen) return triggerStoreClosedAlert();
+    if (!isCatOpen) return;
     updateQuantity(productId, currentQuantity + 1);
   }
 
@@ -143,16 +167,19 @@ export default function HomePage() {
     updateQuantity(productId, currentQuantity - 1);
   }
 
-  const renderProductCard = (product: any, isHorizontalMode: boolean = false) => {
+  // 🔥 UPDATED RENDER CARD: NOW SUPPORTS CATEGORY LOCKING 🔥
+  const renderProductCard = (product: any, isHorizontalMode: boolean = false, isCatOpen: boolean = true) => {
     const cartItem = getCartItem(product.id)
+    const itemLocked = !product.inStock || !isCatOpen
+
     return (
       <motion.div 
         key={product.id} 
         layout 
         initial={{ opacity: 0 }} 
         animate={{ opacity: 1 }} 
-        onClick={() => router.push(`/product/${product.id}`)} 
-        className={`cursor-pointer bg-white/5 p-3 rounded-[1.5rem] border border-white/10 flex flex-col gap-3 relative transition-all duration-300 hover:border-[#00FFFF]/40 hover:bg-white/10 group ${!product.inStock ? 'opacity-60 grayscale' : ''} ${isHorizontalMode ? 'min-w-[160px] max-w-[160px] sm:min-w-[190px] sm:max-w-[190px] snap-start shrink-0' : ''}`}
+        onClick={() => { if(!itemLocked) router.push(`/product/${product.id}`) }} 
+        className={`cursor-pointer bg-white/5 p-3 rounded-[1.5rem] border border-white/10 flex flex-col gap-3 relative transition-all duration-300 hover:border-[#00FFFF]/40 hover:bg-white/10 group ${itemLocked ? 'opacity-60 grayscale cursor-not-allowed' : ''} ${isHorizontalMode ? 'min-w-[160px] max-w-[160px] sm:min-w-[190px] sm:max-w-[190px] snap-start shrink-0' : ''}`}
       >
         <div className="relative h-36 sm:h-44 w-full rounded-xl overflow-hidden flex items-center justify-center p-0 border border-white/5 bg-black/20">
           <Image 
@@ -161,9 +188,14 @@ export default function HomePage() {
             fill 
             className="object-cover group-hover:scale-110 transition-transform duration-500" 
           />
-          {!product.inStock && (
-            <div className="absolute inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-10">
-              <span className="bg-red-500 text-white font-black text-[10px] px-3 py-1.5 uppercase tracking-widest rounded-md shadow-lg">Out of Stock</span>
+          {itemLocked && (
+            <div className="absolute inset-0 bg-black/70 backdrop-blur-sm flex flex-col items-center justify-center z-10 p-2 text-center gap-1">
+              {!isCatOpen ? (
+                <Lock className="w-4 h-4 text-white opacity-80 mb-1" />
+              ) : null}
+              <span className={`text-white font-black text-[10px] px-3 py-1.5 uppercase tracking-widest rounded-md shadow-lg ${!isCatOpen ? 'bg-orange-500' : 'bg-red-500'}`}>
+                {!isCatOpen ? 'Closed' : (product.customStockMessage || 'Out of Stock')}
+              </span>
             </div>
           )}
         </div>
@@ -175,18 +207,12 @@ export default function HomePage() {
           <div className="pt-0.5">
             {product.foodPref === 'veg' && (
               <div className="bg-white p-[2px] rounded-sm shadow-sm w-fit">
-                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 16 16">
-                  <path stroke="#008000" strokeWidth="1.5" fill="none" d="M 0.5,0.5 H 15.5 V 15.5 H 0.5 Z" />
-                  <circle fill="#008000" cx="8" cy="8" r="4.5" />
-                </svg>
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 16 16"><path stroke="#008000" strokeWidth="1.5" fill="none" d="M 0.5,0.5 H 15.5 V 15.5 H 0.5 Z" /><circle fill="#008000" cx="8" cy="8" r="4.5" /></svg>
               </div>
             )}
             {product.foodPref === 'non-veg' && (
               <div className="bg-white p-[2px] rounded-sm shadow-sm w-fit">
-                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 16 16">
-                  <path stroke="#8B4513" strokeWidth="1.5" fill="none" d="M 0.5,0.5 H 15.5 V 15.5 H 0.5 Z" />
-                  <path fill="#8B4513" d="M 8,3 L 13.5,12.5 H 2.5 Z" />
-                </svg>
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 16 16"><path stroke="#8B4513" strokeWidth="1.5" fill="none" d="M 0.5,0.5 H 15.5 V 15.5 H 0.5 Z" /><path fill="#8B4513" d="M 8,3 L 13.5,12.5 H 2.5 Z" /></svg>
               </div>
             )}
           </div>
@@ -195,23 +221,21 @@ export default function HomePage() {
         <div className="flex items-center justify-between mt-1 pt-3 border-t border-white/10" onClick={(e) => e.stopPropagation()}>
           <div className="flex flex-col">
             <span className="font-mono font-black text-[#00FFFF] text-base">₹{product.price}</span>
-            {product.mrp > product.price && (
-              <span className="text-[10px] text-muted-foreground line-through font-mono">₹{product.mrp}</span>
-            )}
+            {product.mrp > product.price && <span className="text-[10px] text-muted-foreground line-through font-mono">₹{product.mrp}</span>}
           </div>
           
           {cartItem ? (
             <div className="flex items-center gap-2 bg-[#00FFFF]/10 border border-[#00FFFF]/30 rounded-lg p-1">
               <button onClick={(e) => handleMinusClick(e, product.id, cartItem.quantity)} className="w-7 h-7 flex items-center justify-center text-[#00FFFF] hover:bg-[#00FFFF]/20 rounded-md transition-colors"><Minus className="w-3 h-3" /></button>
               <span className="text-sm font-black w-4 text-center text-white">{cartItem.quantity}</span>
-              <button onClick={(e) => handlePlusClick(e, product.id, cartItem.quantity)} className="w-7 h-7 flex items-center justify-center text-[#00FFFF] hover:bg-[#00FFFF]/20 rounded-md transition-colors"><Plus className="w-3 h-3" /></button>
+              <button onClick={(e) => handlePlusClick(e, product.id, cartItem.quantity, isCatOpen)} className="w-7 h-7 flex items-center justify-center text-[#00FFFF] hover:bg-[#00FFFF]/20 rounded-md transition-colors"><Plus className="w-3 h-3" /></button>
             </div>
           ) : (
             <Button 
-              disabled={!product.inStock} 
-              onClick={(e) => handleAddToCart(e, product)} 
+              disabled={itemLocked} 
+              onClick={(e) => handleAddToCart(e, product, isCatOpen)} 
               size="sm" 
-              className="h-9 bg-[#CCFF00] text-black font-black text-[11px] uppercase tracking-widest rounded-lg px-4 hover:bg-[#CCFF00]/80 disabled:bg-white/10 disabled:text-white/30 shadow-[0_0_15px_rgba(204,255,0,0.15)] hover:shadow-[0_0_20px_rgba(204,255,0,0.3)]"
+              className="h-9 bg-[#CCFF00] text-black font-black text-[11px] uppercase tracking-widest rounded-lg px-4 hover:bg-[#CCFF00]/80 disabled:bg-white/10 disabled:text-white/30 shadow-[0_0_15px_rgba(204,255,0,0.15)]"
             >
               ADD
             </Button>
@@ -232,17 +256,12 @@ export default function HomePage() {
           ) : isStoreOpen ? (
             <motion.div key="open" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="relative h-40 sm:h-52 w-full overflow-hidden rounded-[1.5rem] bg-[#0A0A0A] border-2 border-[#00FFFF]/40 shadow-[0_0_30px_rgba(0,255,255,0.1)] group flex items-center px-6 sm:px-8">
               {storeConfig.bannerImageUrlOpen ? (
-                <Image src={storeConfig.bannerImageUrlOpen} alt="Store open offer" fill className="object-cover group-hover:scale-105 transition-transform duration-500" priority />
+                <Image src={storeConfig.bannerImageUrlOpen} alt="Store open" fill className="object-cover group-hover:scale-105 transition-transform duration-500" priority />
               ) : (
-                <>
-                  <TicketPercent className="absolute w-40 h-40 text-[#00FFFF]/10 -right-5 -bottom-5 rotate-12" />
-                  <Zap className="absolute w-32 h-32 text-[#CCFF00]/10 -left-5 -top-5 -rotate-12" />
-                </>
+                <><TicketPercent className="absolute w-40 h-40 text-[#00FFFF]/10 -right-5 -bottom-5 rotate-12" /><Zap className="absolute w-32 h-32 text-[#CCFF00]/10 -left-5 -top-5 -rotate-12" /></>
               )}
               <div className="relative z-10 max-w-xl space-y-2">
-                <p className="text-xl sm:text-3xl font-extrabold text-white uppercase tracking-tight leading-tight [text-shadow:0_0_15px_#fff]">
-                  {storeConfig.bannerTextOpen}
-                </p>
+                <p className="text-xl sm:text-3xl font-extrabold text-white uppercase tracking-tight leading-tight [text-shadow:0_0_15px_#fff]">{storeConfig.bannerTextOpen}</p>
               </div>
             </motion.div>
           ) : (
@@ -263,13 +282,7 @@ export default function HomePage() {
         <div className="space-y-4">
           <div className="relative mt-2">
             <Search className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-white/40" />
-            <Input 
-              type="search" 
-              placeholder="Search for snacks, drinks & more..." 
-              value={searchQuery} 
-              onChange={(e) => setSearchQuery(e.target.value)} 
-              className="h-14 pl-14 pr-6 bg-white/5 border-white/10 rounded-full text-sm text-white focus-visible:border-[#00FFFF] shadow-inner w-full" 
-            />
+            <Input type="search" placeholder="Search for snacks, drinks & more..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="h-14 pl-14 pr-6 bg-white/5 border-white/10 rounded-full text-sm text-white focus-visible:border-[#00FFFF] shadow-inner w-full" />
           </div>
         </div>
 
@@ -284,20 +297,32 @@ export default function HomePage() {
         ) : (
           searchQuery.trim() !== "" ? (
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-5">
-              {filteredProducts.map((product: any) => renderProductCard(product, false))}
+              {filteredProducts.map((product: any) => {
+                 const { isOpen } = checkCategoryStatus(product.category);
+                 return renderProductCard(product, false, isOpen);
+              })}
             </div>
           ) : (
             <div className="space-y-8 pt-2">
               {uniqueCategories.map((categoryName: string) => {
                 const categoryProducts = products.filter((p: any) => String(p.category).toLowerCase() === categoryName.toLowerCase());
                 if (categoryProducts.length === 0) return null;
+                
+                // 🔥 CHECK IF CATEGORY IS CURRENTLY ACTIVE BASED ON TIME 🔥
+                const { isOpen, message } = checkCategoryStatus(categoryName);
+
                 return (
-                  <div key={categoryName} className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <h3 className="text-xl font-black uppercase tracking-widest text-white pl-3 border-l-4 border-[#CCFF00] leading-none">{categoryName}</h3>
+                  <div key={categoryName} className={`space-y-4 transition-all duration-500 ${!isOpen ? 'opacity-70' : ''}`}>
+                    <div className="flex items-center gap-3 pl-3 border-l-4 border-[#CCFF00]">
+                      <h3 className="text-xl font-black uppercase tracking-widest text-white leading-none">{categoryName}</h3>
+                      {!isOpen && message && (
+                        <Badge variant="outline" className="bg-orange-500/10 text-orange-400 border-orange-500/30 text-[10px] uppercase font-black tracking-widest px-2 py-0.5">
+                          <Clock className="w-3 h-3 mr-1 inline" /> {message}
+                        </Badge>
+                      )}
                     </div>
                     <div className="flex overflow-x-auto gap-3 sm:gap-4 pb-4 snap-x snap-mandatory [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
-                      {categoryProducts.map((p: any) => renderProductCard(p, true))}
+                      {categoryProducts.map((p: any) => renderProductCard(p, true, isOpen))}
                     </div>
                   </div>
                 )
@@ -346,7 +371,6 @@ export default function HomePage() {
         )}
       </main>
 
-      {/* 🔥 ULTRA-PREMIUM DYNAMIC ISLAND TRACKER (UPDATED LOGIC) 🔥 */}
       <AnimatePresence>
         {activeOrder && (
           <motion.div 
@@ -356,14 +380,8 @@ export default function HomePage() {
             transition={{ type: "spring", stiffness: 300, damping: 25 }}
             className="fixed bottom-[85px] left-0 right-0 z-50 px-4 flex justify-center pointer-events-none"
           >
-            <div 
-              onClick={() => setIsTrackingOpen(true)} 
-              className="pointer-events-auto w-full max-w-[340px] bg-[#0A0A0A]/95 backdrop-blur-2xl rounded-[2rem] p-2 pr-4 flex items-center gap-4 cursor-pointer border border-white/10 shadow-[0_20px_50px_rgba(0,0,0,0.8)] overflow-hidden relative group"
-            >
-              {/* Progress Bar Edge */}
+            <div onClick={() => setIsTrackingOpen(true)} className="pointer-events-auto w-full max-w-[340px] bg-[#0A0A0A]/95 backdrop-blur-2xl rounded-[2rem] p-2 pr-4 flex items-center gap-4 cursor-pointer border border-white/10 shadow-[0_20px_50px_rgba(0,0,0,0.8)] overflow-hidden relative group">
               <div className={`absolute bottom-0 left-0 h-[3px] transition-all duration-1000 ease-in-out ${activeOrder.status === 'Pending' ? 'bg-orange-500 w-[20%]' : activeOrder.status === 'Preparing' ? 'bg-[#00FFFF] w-[50%]' : 'bg-[#CCFF00] w-[85%]'}`}></div>
-
-              {/* Glowing Background */}
               <div className={`absolute inset-0 opacity-20 ${activeOrder.status === 'Pending' ? 'bg-gradient-to-r from-orange-500 to-transparent' : activeOrder.status === 'Preparing' ? 'bg-gradient-to-r from-[#00FFFF] to-transparent' : 'bg-gradient-to-r from-[#CCFF00] to-transparent'}`} />
 
               <div className="flex items-center gap-3 relative z-10 w-full">
@@ -389,17 +407,13 @@ export default function HomePage() {
                     {activeOrder.status === 'Pending' ? 'Please wait...' : activeOrder.status === 'Preparing' ? 'Arriving in 25-30 mins' : 'Arriving in 10-15 mins'}
                   </span>
                 </div>
-
-                <div className="shrink-0 w-8 h-8 rounded-full bg-white/5 flex items-center justify-center group-hover:bg-white/10 transition-colors z-10">
-                  <ChevronRight className="w-4 h-4 text-white/50" />
-                </div>
+                <div className="shrink-0 w-8 h-8 rounded-full bg-white/5 flex items-center justify-center group-hover:bg-white/10 transition-colors z-10"><ChevronRight className="w-4 h-4 text-white/50" /></div>
               </div>
             </div>
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* 🔥 CLEAN & MINIMAL LIVE TRACKING SHEET 🔥 */}
       <Sheet open={isTrackingOpen} onOpenChange={setIsTrackingOpen}>
         <SheetContent side="bottom" className="h-[80vh] sm:max-w-md mx-auto bg-[#050505] border-t border-white/10 rounded-t-[2rem] p-0 overflow-hidden flex flex-col">
           {activeOrder && (
@@ -419,37 +433,19 @@ export default function HomePage() {
               
               <div className="flex-1 overflow-y-auto p-8 relative">
                 <div className="absolute left-[47px] top-10 bottom-20 w-[2px] bg-white/5"></div>
-
                 <div className="space-y-12 relative z-10">
-                  {/* STEP 1: PLACED */}
                   <div className="flex items-start gap-6">
-                    <div className={`w-12 h-12 rounded-full bg-black border-[3px] flex items-center justify-center shrink-0 z-10 shadow-sm transition-all duration-500 ${activeOrder.status === 'Pending' ? 'border-orange-500 text-orange-500 shadow-[0_0_20px_rgba(249,115,22,0.2)] scale-110' : 'border-[#00FFFF]/30 text-[#00FFFF] scale-100'}`}>
-                      <ClipboardCheck className="w-5 h-5" />
-                    </div>
-                    <div className="pt-2">
-                      <h4 className={`font-bold text-lg leading-none ${activeOrder.status === 'Pending' ? 'text-orange-500' : 'text-white'}`}>
-                        Order Placed
-                      </h4>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        {activeOrder.status === 'Pending' ? 'Waiting for restaurant to confirm...' : 'Restaurant accepted your order.'}
-                      </p>
-                    </div>
+                    <div className={`w-12 h-12 rounded-full bg-black border-[3px] flex items-center justify-center shrink-0 z-10 shadow-sm transition-all duration-500 ${activeOrder.status === 'Pending' ? 'border-orange-500 text-orange-500 shadow-[0_0_20px_rgba(249,115,22,0.2)] scale-110' : 'border-[#00FFFF]/30 text-[#00FFFF] scale-100'}`}><ClipboardCheck className="w-5 h-5" /></div>
+                    <div className="pt-2"><h4 className={`font-bold text-lg leading-none ${activeOrder.status === 'Pending' ? 'text-orange-500' : 'text-white'}`}>Order Placed</h4><p className="text-xs text-muted-foreground mt-1">{activeOrder.status === 'Pending' ? 'Waiting for restaurant to confirm...' : 'Restaurant accepted your order.'}</p></div>
                   </div>
 
-                  {/* STEP 2: PREPARING */}
                   <div className="flex items-start gap-6">
                     <div className={`w-12 h-12 rounded-full bg-black border-[3px] flex items-center justify-center shrink-0 z-10 transition-all duration-500 overflow-hidden ${activeOrder.status === 'Preparing' ? 'border-[#00FFFF] text-[#00FFFF] shadow-[0_0_20px_rgba(0,255,255,0.2)] scale-110' : activeOrder.status === 'In Transit' ? 'border-white/20 text-white scale-100' : 'border-white/5 text-white/20'}`}>
                       {activeOrder.status === 'Preparing' ? <PreparingIcon className="w-6 h-6" /> : <ChefHat className="w-5 h-5" />}
                     </div>
-                    <div className="pt-2">
-                      <h4 className={`font-bold text-lg leading-none transition-colors ${activeOrder.status === 'Preparing' ? 'text-[#00FFFF]' : activeOrder.status === 'In Transit' ? 'text-white' : 'text-white/30'}`}>
-                        Food is being prepared
-                      </h4>
-                      <p className="text-xs text-muted-foreground mt-1">Our chef is on it.</p>
-                    </div>
+                    <div className="pt-2"><h4 className={`font-bold text-lg leading-none transition-colors ${activeOrder.status === 'Preparing' ? 'text-[#00FFFF]' : activeOrder.status === 'In Transit' ? 'text-white' : 'text-white/30'}`}>Food is being prepared</h4><p className="text-xs text-muted-foreground mt-1">Our chef is on it.</p></div>
                   </div>
 
-                  {/* STEP 3: ON THE WAY */}
                   <div className="flex items-start gap-6">
                     <div className={`relative w-12 h-12 rounded-full bg-black border-[3px] flex items-center justify-center shrink-0 z-10 transition-all duration-500 overflow-hidden ${activeOrder.status === 'In Transit' ? 'border-[#CCFF00] text-[#CCFF00] shadow-[0_0_20px_rgba(204,255,0,0.2)] scale-110' : 'border-white/5 text-white/20 scale-100'}`}>
                       {activeOrder.status === 'In Transit' ? (
@@ -458,27 +454,14 @@ export default function HomePage() {
                           <motion.div animate={{ x: [15, -20], opacity: [0, 1, 0] }} transition={{ repeat: Infinity, duration: 0.7, delay: 0.2, ease: "linear" }} className="absolute bottom-4 right-0 w-3 h-[1px] bg-[#CCFF00] rounded-full"></motion.div>
                           <motion.div animate={{ y: [0, -2, 0], rotate: [0, -4, 0] }} transition={{ repeat: Infinity, duration: 0.3, ease: "linear" }} className="z-10 bg-black rounded-full"><Bike className="w-5 h-5" /></motion.div>
                         </div>
-                      ) : (
-                        <Bike className="w-5 h-5" />
-                      )}
+                      ) : (<Bike className="w-5 h-5" />)}
                     </div>
-                    <div className="pt-2">
-                      <h4 className={`font-bold text-lg leading-none transition-colors ${activeOrder.status === 'In Transit' ? 'text-[#CCFF00]' : 'text-white/30'}`}>
-                        On the Way
-                      </h4>
-                      <p className="text-xs text-muted-foreground mt-1">Rider is heading to your location.</p>
-                    </div>
+                    <div className="pt-2"><h4 className={`font-bold text-lg leading-none transition-colors ${activeOrder.status === 'In Transit' ? 'text-[#CCFF00]' : 'text-white/30'}`}>On the Way</h4><p className="text-xs text-muted-foreground mt-1">Rider is heading to your location.</p></div>
                   </div>
 
-                  {/* STEP 4: DELIVERED */}
                   <div className="flex items-start gap-6 opacity-30">
-                    <div className="w-12 h-12 rounded-full bg-black border-[3px] border-white/5 text-white/20 flex items-center justify-center shrink-0 z-10">
-                      <CheckCircle2 className="w-5 h-5" />
-                    </div>
-                    <div className="pt-2">
-                      <h4 className="font-bold text-lg leading-none text-white">Delivered</h4>
-                      <p className="text-xs text-muted-foreground mt-1">Enjoy your meal!</p>
-                    </div>
+                    <div className="w-12 h-12 rounded-full bg-black border-[3px] border-white/5 text-white/20 flex items-center justify-center shrink-0 z-10"><CheckCircle2 className="w-5 h-5" /></div>
+                    <div className="pt-2"><h4 className="font-bold text-lg leading-none text-white">Delivered</h4><p className="text-xs text-muted-foreground mt-1">Enjoy your meal!</p></div>
                   </div>
                 </div>
               </div>
