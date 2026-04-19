@@ -62,13 +62,12 @@ export default function HomePage() {
     if (fetchStoreConfig) fetchStoreConfig()
     if (fetchData) fetchData()
     
-    // Setup interval to keep current time updated for exact category locking
     const updateTime = () => {
       const now = new Date()
       setCurrentTimeStr(`${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`)
     }
     updateTime()
-    const timeInterval = setInterval(updateTime, 60000)
+    const timeInterval = setInterval(updateTime, 10000) // Updated every 10 sec for accuracy
     return () => clearInterval(timeInterval)
   }, [fetchData, fetchStoreConfig])
 
@@ -120,18 +119,34 @@ export default function HomePage() {
     return orderA - orderB;
   });
 
-  // 🔥 NEW HELPER: CATEGORY TIME CHECKER 🔥
+  // 🔥 BULLETPROOF CATEGORY TIME CHECKER 🔥
   const checkCategoryStatus = (categoryName: string) => {
-    const cat = (categories || []).find((c: any) => c.name.toLowerCase() === categoryName.toLowerCase());
+    if (!categoryName) return { isOpen: true, message: '' };
+
+    // Exact space-trimmed matching
+    const cat = (categories || []).find((c: any) => 
+      c.name?.trim().toLowerCase() === categoryName.trim().toLowerCase()
+    );
+    
     if (!cat) return { isOpen: true, message: '' };
     if (cat.isActive === false) return { isOpen: false, message: 'Currently Unavailable' };
     if (!cat.startTime || !cat.endTime) return { isOpen: true, message: '' };
 
+    // Convert time to exact minutes for flawless calculation
+    const getMins = (t: string) => {
+      const [h, m] = t.split(':').map(Number);
+      return (h * 60) + (m || 0);
+    };
+
+    const currentMins = getMins(currentTimeStr);
+    const startMins = getMins(cat.startTime);
+    const endMins = getMins(cat.endTime);
+
     let isOpen = false;
-    if (cat.startTime <= cat.endTime) {
-      isOpen = (currentTimeStr >= cat.startTime && currentTimeStr <= cat.endTime);
+    if (startMins <= endMins) {
+      isOpen = (currentMins >= startMins && currentMins <= endMins);
     } else {
-      isOpen = (currentTimeStr >= cat.startTime || currentTimeStr <= cat.endTime);
+      isOpen = (currentMins >= startMins || currentMins <= endMins); // Fix for midnight crossing
     }
 
     const formatTime = (time24: string) => {
@@ -151,7 +166,7 @@ export default function HomePage() {
   const handleAddToCart = (e: React.MouseEvent, product: any, isCatOpen: boolean) => {
     e.stopPropagation() 
     if (!isStoreOpen) return triggerStoreClosedAlert();
-    if (!isCatOpen) return alert("This item is currently not available for order.");
+    if (!isCatOpen) return alert("This item is currently not available for order due to timings.");
     addToCart(product);
   }
 
@@ -167,7 +182,6 @@ export default function HomePage() {
     updateQuantity(productId, currentQuantity - 1);
   }
 
-  // 🔥 UPDATED RENDER CARD: NOW SUPPORTS CATEGORY LOCKING 🔥
   const renderProductCard = (product: any, isHorizontalMode: boolean = false, isCatOpen: boolean = true) => {
     const cartItem = getCartItem(product.id)
     const itemLocked = !product.inStock || !isCatOpen
@@ -179,7 +193,7 @@ export default function HomePage() {
         initial={{ opacity: 0 }} 
         animate={{ opacity: 1 }} 
         onClick={() => { if(!itemLocked) router.push(`/product/${product.id}`) }} 
-        className={`cursor-pointer bg-white/5 p-3 rounded-[1.5rem] border border-white/10 flex flex-col gap-3 relative transition-all duration-300 hover:border-[#00FFFF]/40 hover:bg-white/10 group ${itemLocked ? 'opacity-60 grayscale cursor-not-allowed' : ''} ${isHorizontalMode ? 'min-w-[160px] max-w-[160px] sm:min-w-[190px] sm:max-w-[190px] snap-start shrink-0' : ''}`}
+        className={`cursor-pointer bg-white/5 p-3 rounded-[1.5rem] border border-white/10 flex flex-col gap-3 relative transition-all duration-300 hover:border-[#00FFFF]/40 hover:bg-white/10 group ${itemLocked ? 'opacity-60 grayscale cursor-not-allowed pointer-events-none' : ''} ${isHorizontalMode ? 'min-w-[160px] max-w-[160px] sm:min-w-[190px] sm:max-w-[190px] snap-start shrink-0' : ''}`}
       >
         <div className="relative h-36 sm:h-44 w-full rounded-xl overflow-hidden flex items-center justify-center p-0 border border-white/5 bg-black/20">
           <Image 
@@ -225,7 +239,7 @@ export default function HomePage() {
           </div>
           
           {cartItem ? (
-            <div className="flex items-center gap-2 bg-[#00FFFF]/10 border border-[#00FFFF]/30 rounded-lg p-1">
+            <div className={`flex items-center gap-2 bg-[#00FFFF]/10 border border-[#00FFFF]/30 rounded-lg p-1 ${itemLocked ? 'pointer-events-none opacity-50' : ''}`}>
               <button onClick={(e) => handleMinusClick(e, product.id, cartItem.quantity)} className="w-7 h-7 flex items-center justify-center text-[#00FFFF] hover:bg-[#00FFFF]/20 rounded-md transition-colors"><Minus className="w-3 h-3" /></button>
               <span className="text-sm font-black w-4 text-center text-white">{cartItem.quantity}</span>
               <button onClick={(e) => handlePlusClick(e, product.id, cartItem.quantity, isCatOpen)} className="w-7 h-7 flex items-center justify-center text-[#00FFFF] hover:bg-[#00FFFF]/20 rounded-md transition-colors"><Plus className="w-3 h-3" /></button>
@@ -235,7 +249,7 @@ export default function HomePage() {
               disabled={itemLocked} 
               onClick={(e) => handleAddToCart(e, product, isCatOpen)} 
               size="sm" 
-              className="h-9 bg-[#CCFF00] text-black font-black text-[11px] uppercase tracking-widest rounded-lg px-4 hover:bg-[#CCFF00]/80 disabled:bg-white/10 disabled:text-white/30 shadow-[0_0_15px_rgba(204,255,0,0.15)]"
+              className="h-9 bg-[#CCFF00] text-black font-black text-[11px] uppercase tracking-widest rounded-lg px-4 hover:bg-[#CCFF00]/80 disabled:bg-white/10 disabled:text-white/30 shadow-[0_0_15px_rgba(204,255,0,0.15)] pointer-events-auto"
             >
               ADD
             </Button>
@@ -308,11 +322,11 @@ export default function HomePage() {
                 const categoryProducts = products.filter((p: any) => String(p.category).toLowerCase() === categoryName.toLowerCase());
                 if (categoryProducts.length === 0) return null;
                 
-                // 🔥 CHECK IF CATEGORY IS CURRENTLY ACTIVE BASED ON TIME 🔥
+                // 🔥 CHECK IF CATEGORY IS CURRENTLY ACTIVE BASED ON EXACT MATH TIME 🔥
                 const { isOpen, message } = checkCategoryStatus(categoryName);
 
                 return (
-                  <div key={categoryName} className={`space-y-4 transition-all duration-500 ${!isOpen ? 'opacity-70' : ''}`}>
+                  <div key={categoryName} className={`space-y-4 transition-all duration-500 ${!isOpen ? 'opacity-80' : ''}`}>
                     <div className="flex items-center gap-3 pl-3 border-l-4 border-[#CCFF00]">
                       <h3 className="text-xl font-black uppercase tracking-widest text-white leading-none">{categoryName}</h3>
                       {!isOpen && message && (
