@@ -60,7 +60,7 @@ export default function AdminDashboard() {
     storeConfig, fetchStoreConfig, updateStoreConfig, 
     fetchData,
     categories, addCategory, updateCategory, deleteCategory, reorderCategory,
-    deliveryZones, addDeliveryZone, deleteDeliveryZone, toggleDeliveryZoneStatus
+    deliveryZones, addDeliveryZone, deleteDeliveryZone, toggleDeliveryZoneStatus, updateDeliveryZone
   } = useAppStore() as any
   
   const [activeTab, setActiveTab] = React.useState('live_orders')
@@ -94,8 +94,6 @@ export default function AdminDashboard() {
   const [editingCategoryId, setEditingCategoryId] = React.useState<string | null>(null)
   const [newCategoryName, setNewCategoryName] = React.useState('')
   const [newCategoryImage, setNewCategoryImage] = React.useState('')
-  
-  // 🔥 NEW TIME-BASED STATES 🔥
   const [newCategoryStartTime, setNewCategoryStartTime] = React.useState('')
   const [newCategoryEndTime, setNewCategoryEndTime] = React.useState('')
 
@@ -119,6 +117,9 @@ export default function AdminDashboard() {
 
   const [customerSearchQuery, setCustomerSearchQuery] = React.useState('')
   const [customerSortOption, setCustomerSortOption] = React.useState('spent_desc')
+
+  const [editingZoneId, setEditingZoneId] = React.useState<string | null>(null)
+  const [editingZoneFee, setEditingZoneFee] = React.useState<string>('')
 
   React.useEffect(() => { 
     setIsMounted(true) 
@@ -302,32 +303,49 @@ export default function AdminDashboard() {
     } catch(e) { alert("ERROR"); }
   }
 
-  // 🔥 UPDATED: Includes Time Values 🔥
+  // 🔥 FULL BULLETPROOF DIRECT DB OVERRIDE FOR CATEGORY 🔥
   const handleSaveCategory = async (e: React.FormEvent) => {
-    e.preventDefault()
+    e.preventDefault();
     if (!newCategoryName.trim()) return;
 
-    const payload = {
-      name: newCategoryName.trim(),
-      image: newCategoryImage,
-      startTime: newCategoryStartTime || null,
-      endTime: newCategoryEndTime || null
-    };
+    try {
+      if (editingCategoryId) {
+        // Store call (might drop time)
+        await updateCategory(editingCategoryId, { name: newCategoryName.trim(), image: newCategoryImage });
+        
+        // Force update in Supabase directly
+        await supabase.from('categories').update({
+          startTime: newCategoryStartTime || null,
+          endTime: newCategoryEndTime || null
+        }).eq('id', editingCategoryId);
 
-    if (editingCategoryId) {
-      await updateCategory(editingCategoryId, payload);
-    } else {
-      await addCategory({ ...payload, subcategories: [] });
+      } else {
+        // Force direct insert to Supabase
+        await supabase.from('categories').insert([{
+          name: newCategoryName.trim(),
+          image: newCategoryImage,
+          subcategories: [],
+          isActive: true,
+          startTime: newCategoryStartTime || null,
+          endTime: newCategoryEndTime || null
+        }]);
+      }
+      
+      // Refresh Data completely
+      if (fetchData) await fetchData();
+      
+      setNewCategoryName(''); 
+      setNewCategoryImage(''); 
+      setEditingCategoryId(null);
+      setNewCategoryStartTime('');
+      setNewCategoryEndTime('');
+      alert("✅ Category Time Saved Successfully!");
+    } catch (err) {
+      console.error(err);
+      alert("⚠️ Error saving category time. Check Supabase connection.");
     }
-    
-    setNewCategoryName(''); 
-    setNewCategoryImage(''); 
-    setEditingCategoryId(null);
-    setNewCategoryStartTime('');
-    setNewCategoryEndTime('');
   }
 
-  // 🔥 UPDATED: Includes Time Values 🔥
   const editCategoryUI = (cat: any) => {
     setEditingCategoryId(cat.id); 
     setNewCategoryName(cat.name); 
@@ -337,7 +355,6 @@ export default function AdminDashboard() {
     window.scrollTo({ top: 0, behavior: 'smooth' }); 
   }
 
-  // 🔥 UPDATED: Includes Time Values 🔥
   const resetCategoryForm = () => { 
     setEditingCategoryId(null); 
     setNewCategoryName(''); 
@@ -376,6 +393,17 @@ export default function AdminDashboard() {
     }
   }
 
+  const handleToggleCategory = async (cat: any) => {
+    const newStatus = cat.isActive === false ? true : false;
+    try {
+      await updateCategory(cat.id, { isActive: newStatus });
+      if (fetchData) await fetchData(); 
+    } catch (error) {
+      console.error(error);
+      alert("⚠️ Error updating category status.");
+    }
+  }
+
   const handleConvertCategory = async (oldCat: any) => {
     if (!targetParentCategory) return alert("Please select a target parent category first!");
     if (confirm(`🚨 CAUTION: This will move all products from '${oldCat.name}' into '${targetParentCategory}' and delete the main category '${oldCat.name}'. Continue?`)) {
@@ -396,9 +424,27 @@ export default function AdminDashboard() {
   }
 
   const handleDeleteCustomerWipe = (phone: string) => {
-    if(confirm("🚨 WARNING: This will wipe/hide the customer from your Admin CRM view. \n\nNote: If they forgot their password, this will NOT delete their Supabase Auth account. You must delete Auth from the Supabase Dashboard. \n\nProceed with CRM wipe?")) {
+    if(confirm("🚨 WARNING: This will wipe/hide the customer from your Admin CRM view. \n\nNote: If they forgot their password, this will NOT delete their Auth account. You must delete Auth from the Supabase Dashboard. \n\nProceed with CRM wipe?")) {
       updateCustomerMeta(phone, { isDeleted: true });
       alert("✅ Customer data wiped from panel.");
+    }
+  }
+
+  const handleUpdateZoneFee = async (zone: any) => {
+    if (!editingZoneFee) return;
+    try {
+      if (updateDeliveryZone) {
+        await updateDeliveryZone(zone.id, { fee: Number(editingZoneFee) });
+      } else {
+        await deleteDeliveryZone(zone.id);
+        await addDeliveryZone({ areaName: zone.areaName, fee: Number(editingZoneFee), isActive: zone.isActive });
+      }
+      setEditingZoneId(null);
+      setEditingZoneFee('');
+      alert("✅ Delivery fee updated!");
+      if (fetchData) fetchData();
+    } catch(e) {
+      alert("⚠️ Error updating fee.");
     }
   }
 
@@ -555,13 +601,6 @@ export default function AdminDashboard() {
       description: product.description || '', galleryImages: product.galleryImages || [], foodPref: product.foodPref || 'none'
     }); 
     setIsProductSheetOpen(true) 
-  }
-
-  const resetForm = () => { 
-    setEditingId(null); 
-    setFormPlacement('main');
-    setFormData({ name: '', price: '', mrp: '', cost_price: '', category: (selectedCategoryView || displayCategories[0] || '') as string, subcategory: '', image: '', inStock: true, description: '', galleryImages: [], foodPref: 'none' }); 
-    setNewGalleryUrl(''); 
   }
 
   const addGalleryUrl = () => {
@@ -959,7 +998,7 @@ export default function AdminDashboard() {
              </motion.div>
           )}
 
-          {/* 🔥 TIME BASED CATEGORY CREATION & MANAGEMENT 🔥 */}
+          {/* CATEGORIES */}
           {activeTab === 'categories' && (
              <motion.div key="categories" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="space-y-6">
                 <Card className="glass-strong border-white/10 mb-8">
@@ -976,8 +1015,6 @@ export default function AdminDashboard() {
                           </div>
                         )}
                       </div>
-
-                      {/* 🔥 NEW TIME INPUTS FOR CATEGORY 🔥 */}
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div className="space-y-2">
                           <Label className="text-xs uppercase tracking-widest text-[#00FFFF]">Start Time (Optional)</Label>
@@ -989,7 +1026,6 @@ export default function AdminDashboard() {
                         </div>
                         <p className="col-span-full text-[10px] text-white/50 leading-tight">If left blank, the category will be available 24x7. Set times (e.g., 16:00 to 21:00) to restrict availability.</p>
                       </div>
-
                       <div className="flex flex-col sm:flex-row gap-4 items-end mt-2">
                         <div className="flex-1 w-full space-y-2"><Label className="text-xs uppercase tracking-widest text-[#00FFFF]">{editingCategoryId ? 'Edit Category Name' : 'New Category Name'}</Label><Input required placeholder="e.g. Fast Food" value={newCategoryName} onChange={(e) => setNewCategoryName(e.target.value)} className="bg-black/50 border-white/20 text-white h-12" /></div>
                         <Button type="submit" className="h-12 w-full sm:w-auto bg-[#CCFF00] text-black font-black uppercase tracking-widest px-8 hover:bg-[#CCFF00]/90">{editingCategoryId ? 'UPDATE' : 'ADD CATEGORY'}</Button>
@@ -1014,8 +1050,6 @@ export default function AdminDashboard() {
                               <h4 className="font-black text-white uppercase tracking-wider text-lg">{cat.name}</h4>
                               <div className="flex flex-col items-start gap-1">
                                 <Badge variant={cat.isActive !== false ? "outline" : "secondary"} className={`mt-1 text-[8px] font-black uppercase tracking-widest ${cat.isActive !== false ? 'text-[#CCFF00] border-[#CCFF00]/30' : 'text-muted-foreground border-white/10'}`}>{cat.isActive !== false ? 'ACTIVE' : 'OFF'}</Badge>
-                                
-                                {/* 🔥 SHOW TIMING ON CARD 🔥 */}
                                 {cat.startTime && cat.endTime && (
                                   <Badge variant="outline" className="mt-1 text-[8px] font-black uppercase tracking-widest text-orange-400 border-orange-400/30">
                                     <Clock className="w-3 h-3 mr-1 inline" /> {cat.startTime} - {cat.endTime}
@@ -1029,7 +1063,7 @@ export default function AdminDashboard() {
                             <Button variant="ghost" size="icon" onClick={() => setConvertingCategory(cat)} className="w-8 h-8 text-orange-400 hover:bg-orange-400/20" title="Move to Sub-category">
                                <CornerDownRight className="w-4 h-4" />
                             </Button>
-                            <Button variant="ghost" size="icon" onClick={() => updateCategory(cat.id, { isActive: cat.isActive === false ? true : false })} className={`w-8 h-8 ${cat.isActive !== false ? 'text-white hover:text-red-400 hover:bg-red-400/10' : 'text-[#CCFF00] hover:bg-[#CCFF00]/20'}`} title={cat.isActive !== false ? "Turn Off" : "Turn On"}><Power className="w-4 h-4" /></Button>
+                            <Button variant="ghost" size="icon" onClick={() => handleToggleCategory(cat)} className={`w-8 h-8 ${cat.isActive !== false ? 'text-white hover:text-red-400 hover:bg-red-400/10' : 'text-[#CCFF00] hover:bg-[#CCFF00]/20'}`} title={cat.isActive !== false ? "Turn Off" : "Turn On"}><Power className="w-4 h-4" /></Button>
                             <Button variant="ghost" size="icon" onClick={() => editCategoryUI(cat)} className="w-8 h-8 text-[#CCFF00] hover:bg-[#CCFF00]/20"><Edit className="w-4 h-4" /></Button>
                             <Button variant="ghost" size="icon" onClick={() => reorderCategory(cat.id, 'up')} disabled={idx === 0} className="w-8 h-8 text-[#00FFFF] hover:bg-[#00FFFF]/20"><ArrowUp className="w-4 h-4" /></Button>
                             <Button variant="ghost" size="icon" onClick={() => reorderCategory(cat.id, 'down')} disabled={idx === categories.length - 1} className="w-8 h-8 text-[#00FFFF] hover:bg-[#00FFFF]/20"><ArrowDown className="w-4 h-4" /></Button>
@@ -1202,7 +1236,20 @@ export default function AdminDashboard() {
                           <p className="text-xl font-black text-[#00FFFF] font-mono tracking-widest">{zone.areaName}</p>
                           <Badge variant={zone.isActive ? "outline" : "secondary"} className={`text-[10px] font-black uppercase tracking-widest ${zone.isActive ? 'text-[#CCFF00] border-[#CCFF00]/30' : ''}`}>{zone.isActive ? 'ACTIVE' : 'OFF'}</Badge>
                         </div>
-                        <div className="space-y-1 mb-6"><p className="font-bold text-white text-sm">Delivery Fee: <span className="text-[#CCFF00] font-mono">₹{zone.fee}</span></p></div>
+                        
+                        {editingZoneId === zone.id ? (
+                          <div className="flex items-center gap-2 mb-6">
+                            <Input type="number" value={editingZoneFee} onChange={(e) => setEditingZoneFee(e.target.value)} className="bg-black/50 border-[#00FFFF]/50 w-20 h-8 text-[#00FFFF] font-mono px-2" />
+                            <Button onClick={() => handleUpdateZoneFee(zone)} size="sm" className="h-8 bg-[#00FFFF] text-black font-black px-3 text-[10px]">SAVE</Button>
+                            <Button onClick={() => setEditingZoneId(null)} size="sm" variant="ghost" className="h-8 text-white hover:bg-white/10 px-2"><X className="w-4 h-4" /></Button>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-3 mb-6">
+                            <p className="font-bold text-white text-sm">Delivery Fee: <span className="text-[#CCFF00] font-mono">₹{zone.fee}</span></p>
+                            <button onClick={() => { setEditingZoneId(zone.id); setEditingZoneFee(String(zone.fee)); }} className="text-[#00FFFF] hover:text-white transition-colors" title="Edit Fee"><Edit className="w-4 h-4" /></button>
+                          </div>
+                        )}
+
                         <div className="flex gap-2 pt-4 border-t border-white/10">
                           <Button variant="ghost" className={`flex-1 text-xs font-black border ${zone.isActive ? 'border-white/10 text-white hover:bg-white/10' : 'border-[#CCFF00]/30 text-[#CCFF00] hover:bg-[#CCFF00] hover:text-black'}`} onClick={() => toggleDeliveryZoneStatus(zone.id)}>{zone.isActive ? 'TURN OFF' : 'ACTIVATE'}</Button>
                           <Button variant="ghost" size="icon" className="border border-red-500/30 text-red-500 hover:bg-red-500 hover:text-white" onClick={() => { if(confirm("Delete?")) deleteDeliveryZone(zone.id) }}><Trash2 className="w-4 h-4" /></Button>
