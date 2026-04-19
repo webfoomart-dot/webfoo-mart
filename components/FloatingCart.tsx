@@ -86,7 +86,7 @@ export default function FloatingCart() {
                       Store is Closed
                     </span>
                     <span className="text-red-400/80 font-bold text-[10px] uppercase tracking-widest truncate max-w-[150px] sm:max-w-[200px]">
-                      {storeConfig?.bannerTextClosed || 'Currently Offline'}
+                      {storeConfig?.bannerTextClosed || 'SHOP WILL OPEN AT 4PM EVERYDAY'}
                     </span>
                   </div>
                 </div>
