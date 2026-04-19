@@ -84,7 +84,8 @@ export default function AdminDashboard() {
 
   const [formData, setFormData] = React.useState({
     name: '', price: '', mrp: '', cost_price: '', category: '', subcategory: '', image: '', inStock: true,
-    description: '', galleryImages: [] as string[], foodPref: 'none' as 'veg' | 'non-veg' | 'none'
+    description: '', galleryImages: [] as string[], foodPref: 'none' as 'veg' | 'non-veg' | 'none',
+    customStockMessage: '' // 🔥 FIXED MISSING STATE 🔥
   })
 
   const [newGalleryUrl, setNewGalleryUrl] = React.useState('') 
@@ -303,24 +304,18 @@ export default function AdminDashboard() {
     } catch(e) { alert("ERROR"); }
   }
 
-  // 🔥 FULL BULLETPROOF DIRECT DB OVERRIDE FOR CATEGORY 🔥
   const handleSaveCategory = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newCategoryName.trim()) return;
 
     try {
       if (editingCategoryId) {
-        // Store call (might drop time)
         await updateCategory(editingCategoryId, { name: newCategoryName.trim(), image: newCategoryImage });
-        
-        // Force update in Supabase directly
         await supabase.from('categories').update({
           startTime: newCategoryStartTime || null,
           endTime: newCategoryEndTime || null
         }).eq('id', editingCategoryId);
-
       } else {
-        // Force direct insert to Supabase
         await supabase.from('categories').insert([{
           name: newCategoryName.trim(),
           image: newCategoryImage,
@@ -331,7 +326,6 @@ export default function AdminDashboard() {
         }]);
       }
       
-      // Refresh Data completely
       if (fetchData) await fetchData();
       
       setNewCategoryName(''); 
@@ -339,10 +333,10 @@ export default function AdminDashboard() {
       setEditingCategoryId(null);
       setNewCategoryStartTime('');
       setNewCategoryEndTime('');
-      alert("✅ Category Time Saved Successfully!");
+      alert("✅ Category Saved Successfully!");
     } catch (err) {
       console.error(err);
-      alert("⚠️ Error saving category time. Check Supabase connection.");
+      alert("⚠️ Error saving category. Check Supabase connection.");
     }
   }
 
@@ -424,7 +418,7 @@ export default function AdminDashboard() {
   }
 
   const handleDeleteCustomerWipe = (phone: string) => {
-    if(confirm("🚨 WARNING: This will wipe/hide the customer from your Admin CRM view. \n\nNote: If they forgot their password, this will NOT delete their Auth account. You must delete Auth from the Supabase Dashboard. \n\nProceed with CRM wipe?")) {
+    if(confirm("🚨 WARNING: This will wipe/hide the customer from your Admin CRM view. \n\nNote: If they forgot their password, this will NOT delete their Supabase Auth account. You must delete Auth from the Supabase Dashboard. \n\nProceed with CRM wipe?")) {
       updateCustomerMeta(phone, { isDeleted: true });
       alert("✅ Customer data wiped from panel.");
     }
@@ -580,17 +574,20 @@ export default function AdminDashboard() {
     } else { alert(`⚠️ Bulk requires API.`) }
   }
 
+  // 🔥 RESTORED COMPLETELY & FIXED MISSING customStockMessage 🔥
   const handleSaveProduct = (e: React.FormEvent) => {
     e.preventDefault()
     const productPayload = { 
       name: formData.name, price: Number(formData.price), mrp: Number(formData.mrp), cost_price: Number(formData.cost_price), category: formData.category, 
       subcategory: formPlacement === 'sub' ? formData.subcategory : '', 
       image: formData.image || '/placeholder.jpg', inStock: formData.inStock,
-      description: formData.description, galleryImages: formData.galleryImages, foodPref: formData.foodPref
+      description: formData.description, galleryImages: formData.galleryImages, foodPref: formData.foodPref,
+      customStockMessage: formData.customStockMessage 
     }
     if (editingId) updateProduct(editingId, productPayload)
     else addProduct(productPayload)
-    setIsProductSheetOpen(false); resetForm()
+    setIsProductSheetOpen(false); 
+    resetForm()
   }
 
   const openEdit = (product: any) => { 
@@ -598,9 +595,17 @@ export default function AdminDashboard() {
     setFormPlacement(product.subcategory ? 'sub' : 'main');
     setFormData({ 
       name: product.name, price: product.price.toString(), mrp: product.mrp.toString(), cost_price: product.cost_price?.toString() || '', category: product.category, subcategory: product.subcategory || '', image: product.image, inStock: product.inStock,
-      description: product.description || '', galleryImages: product.galleryImages || [], foodPref: product.foodPref || 'none'
+      description: product.description || '', galleryImages: product.galleryImages || [], foodPref: product.foodPref || 'none',
+      customStockMessage: product.customStockMessage || ''
     }); 
     setIsProductSheetOpen(true) 
+  }
+
+  const resetForm = () => { 
+    setEditingId(null); 
+    setFormPlacement('main');
+    setFormData({ name: '', price: '', mrp: '', cost_price: '', category: (selectedCategoryView || displayCategories[0] || '') as string, subcategory: '', image: '', inStock: true, description: '', galleryImages: [], foodPref: 'none', customStockMessage: '' }); 
+    setNewGalleryUrl(''); 
   }
 
   const addGalleryUrl = () => {
@@ -662,7 +667,7 @@ export default function AdminDashboard() {
       <div className="relative h-40 w-full bg-white/5"><img src={product.image || "/placeholder.jpg"} alt={product.name} className="object-cover w-full h-full" onError={(e) => { e.currentTarget.src = '/placeholder.jpg' }} />
         {product.foodPref === 'veg' && <div className="absolute top-2 left-2 bg-white rounded-sm p-0.5"><div className="w-3 h-3 border-2 border-green-600 flex items-center justify-center"><div className="w-1.5 h-1.5 bg-green-600 rounded-full"></div></div></div>}
         {product.foodPref === 'non-veg' && <div className="absolute top-2 left-2 bg-white rounded-sm p-0.5"><div className="w-3 h-3 border-2 border-red-600 flex items-center justify-center"><div className="w-1.5 h-1.5 bg-red-600 rounded-full"></div></div></div>}
-        {!product.inStock && <div className="absolute inset-0 bg-black/60 flex items-center justify-center z-10"><span className="bg-red-500 text-white font-black text-[10px] px-2 py-1 uppercase rounded">Out of Stock</span></div>}
+        {!product.inStock && <div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center z-10 p-2 text-center gap-1"><span className="bg-red-500 text-white font-black text-[10px] px-2 py-1 uppercase rounded">{product.customStockMessage ? product.customStockMessage : 'Out of Stock'}</span></div>}
         <div className="absolute top-2 right-2 flex gap-2 z-20"><button onClick={(e) => { e.stopPropagation(); openEdit(product) }} className="w-8 h-8 rounded-full bg-black/90 border border-[#00FFFF]/50 flex items-center justify-center text-[#00FFFF] shadow-[0_0_10px_rgba(0,255,255,0.2)] hover:bg-[#00FFFF] hover:text-black transition-all"><Edit className="w-4 h-4" /></button><button onClick={(e) => { e.stopPropagation(); if(confirm("Delete this product?")) deleteProduct(product.id) }} className="w-8 h-8 rounded-full bg-black/90 border border-red-500/50 flex items-center justify-center text-red-500 shadow-[0_0_10px_rgba(255,0,0,0.2)] hover:bg-red-500 hover:text-white transition-all"><Trash2 className="w-4 h-4" /></button></div>
       </div>
       <CardContent className="p-4">
@@ -998,7 +1003,7 @@ export default function AdminDashboard() {
              </motion.div>
           )}
 
-          {/* CATEGORIES */}
+          {/* CATEGORIES WITH TIME BASED SETTINGS */}
           {activeTab === 'categories' && (
              <motion.div key="categories" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="space-y-6">
                 <Card className="glass-strong border-white/10 mb-8">
@@ -1015,6 +1020,8 @@ export default function AdminDashboard() {
                           </div>
                         )}
                       </div>
+
+                      {/* 🔥 TIME INPUTS FOR CATEGORY 🔥 */}
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div className="space-y-2">
                           <Label className="text-xs uppercase tracking-widest text-[#00FFFF]">Start Time (Optional)</Label>
@@ -1026,6 +1033,7 @@ export default function AdminDashboard() {
                         </div>
                         <p className="col-span-full text-[10px] text-white/50 leading-tight">If left blank, the category will be available 24x7. Set times (e.g., 16:00 to 21:00) to restrict availability.</p>
                       </div>
+
                       <div className="flex flex-col sm:flex-row gap-4 items-end mt-2">
                         <div className="flex-1 w-full space-y-2"><Label className="text-xs uppercase tracking-widest text-[#00FFFF]">{editingCategoryId ? 'Edit Category Name' : 'New Category Name'}</Label><Input required placeholder="e.g. Fast Food" value={newCategoryName} onChange={(e) => setNewCategoryName(e.target.value)} className="bg-black/50 border-white/20 text-white h-12" /></div>
                         <Button type="submit" className="h-12 w-full sm:w-auto bg-[#CCFF00] text-black font-black uppercase tracking-widest px-8 hover:bg-[#CCFF00]/90">{editingCategoryId ? 'UPDATE' : 'ADD CATEGORY'}</Button>
@@ -1050,6 +1058,8 @@ export default function AdminDashboard() {
                               <h4 className="font-black text-white uppercase tracking-wider text-lg">{cat.name}</h4>
                               <div className="flex flex-col items-start gap-1">
                                 <Badge variant={cat.isActive !== false ? "outline" : "secondary"} className={`mt-1 text-[8px] font-black uppercase tracking-widest ${cat.isActive !== false ? 'text-[#CCFF00] border-[#CCFF00]/30' : 'text-muted-foreground border-white/10'}`}>{cat.isActive !== false ? 'ACTIVE' : 'OFF'}</Badge>
+                                
+                                {/* 🔥 SHOW TIMING ON CARD 🔥 */}
                                 {cat.startTime && cat.endTime && (
                                   <Badge variant="outline" className="mt-1 text-[8px] font-black uppercase tracking-widest text-orange-400 border-orange-400/30">
                                     <Clock className="w-3 h-3 mr-1 inline" /> {cat.startTime} - {cat.endTime}
