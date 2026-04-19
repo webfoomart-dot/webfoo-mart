@@ -76,8 +76,8 @@ interface AppState {
   register: (phone: string, name: string, password: string) => Promise<{ success: boolean; message: string }>
   logout: () => void
   
-  // 🔥 FIX: Added subcategories and isActive to interface
-  categories: { id: string, name: string, sortOrder?: number, image?: string, subcategories?: string[], isActive?: boolean }[]
+  // 🔥 FIX: Added startTime and endTime here 🔥
+  categories: { id: string, name: string, sortOrder?: number, image?: string, subcategories?: string[], isActive?: boolean, startTime?: string, endTime?: string }[]
   addCategory: (catData: any) => Promise<void>
   updateCategory: (id: string, catData: any) => Promise<void>
   deleteCategory: (id: string) => Promise<void>
@@ -193,7 +193,7 @@ export const useAppStore = create<AppState>()(
           set({ customerMeta: metaMap })
         }
 
-        // 🔥 FIX: Properly fetching subcategories and isActive from Database
+        // 🔥 FIX: Now fetching startTime and endTime 🔥
         const { data: cats } = await supabase.from('webfoo_categories').select('*').order('sort_order', { ascending: true })
         if (cats) set({ categories: cats.map(c => ({ 
           id: c.id, 
@@ -201,7 +201,9 @@ export const useAppStore = create<AppState>()(
           sortOrder: c.sort_order || 0, 
           image: c.image, 
           subcategories: c.subcategories || [], 
-          isActive: c.is_active !== false 
+          isActive: c.is_active !== false,
+          startTime: c.startTime || null,
+          endTime: c.endTime || null
         })) })
 
         const { data: notifs } = await supabase.from('user_notifications').select('*').order('created_at', { ascending: false })
@@ -356,17 +358,17 @@ export const useAppStore = create<AppState>()(
         const sOrder = current.length > 0 ? Math.max(...current.map(c => c.sortOrder || 0)) + 1 : 0;
         
         // Ensure subcategories defaults to empty array on new add
-        set((state) => ({ categories: [...state.categories, { id: tempId, name: catData.name, image: catData.image, sortOrder: sOrder, subcategories: catData.subcategories || [], isActive: true }] }))
+        set((state) => ({ categories: [...state.categories, { id: tempId, name: catData.name, image: catData.image, sortOrder: sOrder, subcategories: catData.subcategories || [], isActive: true, startTime: catData.startTime || null, endTime: catData.endTime || null }] }))
         
         const { data, error } = await supabase.from('webfoo_categories')
-          .insert({ name: catData.name, image: catData.image, sort_order: sOrder, subcategories: catData.subcategories || [] })
+          .insert({ name: catData.name, image: catData.image, sort_order: sOrder, subcategories: catData.subcategories || [], startTime: catData.startTime || null, endTime: catData.endTime || null })
           .select().single()
         
         if (error) { console.error(error); return; }
         if (data) set((state) => ({ categories: state.categories.map(c => c.id === tempId ? { ...c, id: data.id } : c) }))
       },
       
-      // 🔥 FIX: Completely dynamic update function for Categories 🔥
+      // 🔥 FIX: Now sending startTime and endTime to DB 🔥
       updateCategory: async (id, catData) => {
         set((state) => ({ categories: state.categories.map(c => c.id === id ? { ...c, ...catData } : c) }))
         
@@ -375,6 +377,8 @@ export const useAppStore = create<AppState>()(
         if (catData.image !== undefined) updatePayload.image = catData.image
         if (catData.subcategories !== undefined) updatePayload.subcategories = catData.subcategories
         if (catData.isActive !== undefined) updatePayload.is_active = catData.isActive
+        if (catData.startTime !== undefined) updatePayload.startTime = catData.startTime
+        if (catData.endTime !== undefined) updatePayload.endTime = catData.endTime
 
         await supabase.from('webfoo_categories').update(updatePayload).eq('id', id)
       },
