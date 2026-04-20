@@ -29,6 +29,10 @@ export default function CheckoutPage() {
   const [savedAddressState, setSavedAddressState] = React.useState('')
   const [specialNote, setSpecialNote] = React.useState('')
   
+  // 🔥 GUEST CHECKOUT STATES 🔥
+  const [guestName, setGuestName] = React.useState('')
+  const [guestPhone, setGuestPhone] = React.useState('')
+
   // 🔥 DELIVERY ZONE STATE
   const [selectedZoneId, setSelectedZoneId] = React.useState<string>('')
   const [isZoneDropdownOpen, setIsZoneDropdownOpen] = React.useState(false) 
@@ -65,32 +69,34 @@ export default function CheckoutPage() {
 
   React.useEffect(() => {
     setIsMounted(true)
-    if (!user || !user.phone) return;
-
     let foundAddr = ""
-    const myPhoneStr = String(user.phone).trim()
-
-    if (customerMeta && customerMeta[myPhoneStr] && customerMeta[myPhoneStr].address) {
-      foundAddr = customerMeta[myPhoneStr].address
-    }
     
-    if (!foundAddr && orders && Array.isArray(orders)) {
-      const myOrders = orders.filter((o: any) => String(o.phone).trim() === myPhoneStr)
-      if (myOrders.length > 0) {
-        const myLastOrder = myOrders[myOrders.length - 1]
-        if (myLastOrder && myLastOrder.landmark) {
-          foundAddr = myLastOrder.landmark
+    // Sirf tabhi address fetch karenge jab user login ho
+    if (user && user.phone) {
+      const myPhoneStr = String(user.phone).trim()
+
+      if (customerMeta && customerMeta[myPhoneStr] && customerMeta[myPhoneStr].address) {
+        foundAddr = customerMeta[myPhoneStr].address
+      }
+      
+      if (!foundAddr && orders && Array.isArray(orders)) {
+        const myOrders = orders.filter((o: any) => String(o.phone).trim() === myPhoneStr)
+        if (myOrders.length > 0) {
+          const myLastOrder = myOrders[myOrders.length - 1]
+          if (myLastOrder && myLastOrder.landmark) {
+            foundAddr = myLastOrder.landmark
+          }
         }
       }
-    }
 
-    if (!foundAddr) {
-      try {
-        const localProfile = JSON.parse(localStorage.getItem('webfoo_profile') || '{}')
-        if (String(localProfile.phone).trim() === myPhoneStr && localProfile.address) {
-          foundAddr = localProfile.address
-        }
-      } catch (e) {}
+      if (!foundAddr) {
+        try {
+          const localProfile = JSON.parse(localStorage.getItem('webfoo_profile') || '{}')
+          if (String(localProfile.phone).trim() === myPhoneStr && localProfile.address) {
+            foundAddr = localProfile.address
+          }
+        } catch (e) {}
+      }
     }
 
     if (foundAddr && savedAddressState === '') {
@@ -123,13 +129,23 @@ export default function CheckoutPage() {
 
   React.useEffect(() => {
     if (isMounted) {
-      if (!user) router.push('/profile')
-      else if (cart.length === 0 && !isSuccess) router.push('/cart')
+      // 🔥 LOGIN WALA REDIRECT HATA DIYA TAAKI GUEST ALLOW HO SAKE 🔥
+      if (cart.length === 0 && !isSuccess) router.push('/cart')
     }
-  }, [cart, isSuccess, isMounted, router, user])
+  }, [cart, isSuccess, isMounted, router])
 
   const handleConfirmOrder = async (e: React.FormEvent) => {
     e.preventDefault()
+
+    // Determine customer details
+    const finalName = user ? user.name : guestName.trim()
+    const finalPhone = user ? user.phone : guestPhone.trim()
+
+    // Validation for Guest
+    if (!user) {
+      if (!finalName) { alert("Please enter your name!"); return; }
+      if (!finalPhone || finalPhone.length < 10) { alert("Please enter a valid phone number!"); return; }
+    }
 
     if (activeZones.length > 0 && !selectedZoneId) {
       alert("Please select a Delivery Area!")
@@ -156,8 +172,8 @@ export default function CheckoutPage() {
     setPlacedOrderDetails(orderSnapshot)
 
     addOrder({
-      customer: user.name,
-      phone: user.phone,
+      customer: finalName,
+      phone: finalPhone,
       items: cart,
       amount: finalTotal,
       subtotal: totalAmount,
@@ -168,15 +184,16 @@ export default function CheckoutPage() {
       landmark: fullLandmark
     })
 
-    // 🔥 BACKEND ACTION KO CALL KIYA (Code mein Token nahi hai!) 🔥
-    await sendTelegramAlertAction(finalTotal, fullLandmark, user.phone, user.name, cart);
+    // 🔥 BACKEND ACTION KO CALL KIYA GUEST/USER KI DETAILS KE SATH 🔥
+    await sendTelegramAlertAction(finalTotal, fullLandmark, finalPhone, finalName, cart);
 
     cart.forEach((item: any) => removeFromCart(item.id))
     localStorage.removeItem('webfoo_applied_promo')
     setIsSuccess(true)
   }
 
-  if (!isMounted || !user) return null
+  // 🔥 SIRF MOUNT CHECK KIYA HAI (USER BLOCK HATA DIYA TAAKI FORM DIKHE) 🔥
+  if (!isMounted) return null
 
   return (
     <div className="min-h-screen bg-background text-foreground font-sans">
@@ -190,21 +207,54 @@ export default function CheckoutPage() {
               <h1 className="text-3xl font-black uppercase tracking-tighter">Secure <span className="text-[#00FFFF]">Checkout</span></h1>
             </div>
 
-            <div className="flex items-center justify-between p-4 rounded-2xl bg-white/5 border border-white/10 glass-strong">
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-xl bg-[#00FFFF]/10 border border-[#00FFFF]/30 flex items-center justify-center text-[#00FFFF]">
-                  <User className="w-6 h-6" />
+            {/* 🔥 CONDITIONAL USER PROFILE OR GUEST FORM 🔥 */}
+            {user ? (
+              <div className="flex items-center justify-between p-4 rounded-2xl bg-white/5 border border-white/10 glass-strong">
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 rounded-xl bg-[#00FFFF]/10 border border-[#00FFFF]/30 flex items-center justify-center text-[#00FFFF]">
+                    <User className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <p className="text-[10px] text-muted-foreground uppercase font-black tracking-widest">Ordering as</p>
+                    <h3 className="font-bold text-white">{user.name}</h3>
+                  </div>
                 </div>
-                <div>
-                  <p className="text-[10px] text-muted-foreground uppercase font-black tracking-widest">Ordering as</p>
-                  <h3 className="font-bold text-white">{user.name}</h3>
+                <div className="text-right">
+                  <p className="text-[10px] text-muted-foreground uppercase font-black tracking-widest">Phone</p>
+                  <p className="font-mono font-bold text-[#CCFF00]">{user.phone}</p>
                 </div>
               </div>
-              <div className="text-right">
-                <p className="text-[10px] text-muted-foreground uppercase font-black tracking-widest">Phone</p>
-                <p className="font-mono font-bold text-[#CCFF00]">{user.phone}</p>
+            ) : (
+              <div className="p-5 rounded-2xl bg-[#00FFFF]/5 border border-[#00FFFF]/20 glass-strong space-y-4">
+                <div className="flex items-center gap-2 border-b border-[#00FFFF]/20 pb-3">
+                  <User className="w-5 h-5 text-[#00FFFF]" />
+                  <h3 className="font-black text-[#00FFFF] uppercase tracking-widest text-sm">Guest Details</h3>
+                </div>
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label className="text-xs uppercase tracking-widest text-muted-foreground font-black">Full Name</Label>
+                    <Input 
+                      required 
+                      placeholder="e.g. Rahul Kumar" 
+                      value={guestName} 
+                      onChange={e => setGuestName(e.target.value)} 
+                      className="bg-black/50 h-12 border-white/20 focus-visible:border-[#00FFFF] font-bold text-white" 
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-xs uppercase tracking-widest text-muted-foreground font-black">Phone Number</Label>
+                    <Input 
+                      required 
+                      type="tel" 
+                      placeholder="10-digit mobile number" 
+                      value={guestPhone} 
+                      onChange={e => setGuestPhone(e.target.value)} 
+                      className="bg-black/50 h-12 border-white/20 focus-visible:border-[#00FFFF] font-bold font-mono text-[#CCFF00]" 
+                    />
+                  </div>
+                </div>
               </div>
-            </div>
+            )}
 
             <form onSubmit={handleConfirmOrder} className="space-y-6">
               
