@@ -30,9 +30,9 @@ const MENU_ITEMS = [
   { id: 'order_history', label: 'Order History', icon: History }, 
   { id: 'products', label: 'Products', icon: PackageIcon },
   { id: 'customers', label: 'Customers', icon: Users },
-  { id: 'messages', label: 'Messages', icon: MessageSquare },
-  { id: 'offers', label: 'Offers', icon: Tag },
   { id: 'categories', label: 'Categories', icon: LayoutGrid }, 
+  { id: 'offers', label: 'Offers', icon: Tag },
+  { id: 'messages', label: 'Messages', icon: MessageSquare },
   { id: 'settings', label: 'Settings', icon: Settings }, 
 ]
 
@@ -92,6 +92,7 @@ export default function AdminDashboard() {
   const [selectedCustomers, setSelectedCustomers] = React.useState<string[]>([])
   const [messageText, setMessageText] = React.useState('')
 
+  // CATEGORIES STATE
   const [editingCategoryId, setEditingCategoryId] = React.useState<string | null>(null)
   const [newCategoryName, setNewCategoryName] = React.useState('')
   const [newCategoryImage, setNewCategoryImage] = React.useState('')
@@ -1001,7 +1002,7 @@ export default function AdminDashboard() {
              </motion.div>
           )}
 
-          {/* 🔥 RESTORED PRODUCTS TAB 🔥 */}
+          {/* PRODUCTS TAB */}
           {activeTab === 'products' && (
              <motion.div key="products" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="space-y-6">
                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
@@ -1170,6 +1171,125 @@ export default function AdminDashboard() {
                    )}
                  </>
                )}
+             </motion.div>
+          )}
+
+          {/* CATEGORIES WITH TIME BASED SETTINGS */}
+          {activeTab === 'categories' && (
+             <motion.div key="categories" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="space-y-6">
+                <Card className="glass-strong border-white/10 mb-8">
+                  <CardContent className="p-6 sm:p-8 space-y-6">
+                    <div className="flex items-center gap-3 border-b border-white/10 pb-4"><LayoutGrid className="w-6 h-6 text-[#00FFFF]" /><h3 className="text-xl font-black uppercase text-white">Create Main Category</h3></div>
+                    <form onSubmit={handleSaveCategory} className="flex flex-col gap-4">
+                      <div className="space-y-4 bg-[#00FFFF]/5 p-4 rounded-xl border border-[#00FFFF]/20">
+                        <Label className="text-xs font-black uppercase tracking-widest text-[#00FFFF] flex items-center gap-2"><LinkIcon className="w-4 h-4"/> Paste Category Image URL</Label>
+                        <p className="text-[10px] text-white/50">Host image on ImageKit.io and paste direct URL here.</p>
+                        <Input type="url" placeholder="https://ik.imagekit.io/..." value={newCategoryImage} onChange={(e) => setNewCategoryImage(e.target.value)} className="bg-black border-white/20 text-xs focus-visible:border-[#00FFFF] h-12 text-white" />
+                        {newCategoryImage && (
+                          <div className="mt-2 relative w-full sm:w-48 h-24 rounded-lg overflow-hidden border border-[#00FFFF]/20 bg-black/50">
+                            <img src={newCategoryImage} alt="URL Preview" className="w-full h-full object-contain" onError={(e) => { e.currentTarget.src = '' }} />
+                          </div>
+                        )}
+                      </div>
+
+                      {/* 🔥 TIME INPUTS FOR CATEGORY 🔥 */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label className="text-xs uppercase tracking-widest text-[#00FFFF]">Start Time (Optional)</Label>
+                          <Input type="time" value={newCategoryStartTime} onChange={(e) => setNewCategoryStartTime(e.target.value)} className="bg-black/50 border-white/20 text-white h-12" />
+                        </div>
+                        <div className="space-y-2">
+                          <Label className="text-xs uppercase tracking-widest text-[#00FFFF]">End Time (Optional)</Label>
+                          <Input type="time" value={newCategoryEndTime} onChange={(e) => setNewCategoryEndTime(e.target.value)} className="bg-black/50 border-white/20 text-white h-12" />
+                        </div>
+                        <p className="col-span-full text-[10px] text-white/50 leading-tight">If left blank, the category will be available 24x7. Set times (e.g., 16:00 to 21:00) to restrict availability.</p>
+                      </div>
+
+                      <div className="flex flex-col sm:flex-row gap-4 items-end mt-2">
+                        <div className="flex-1 w-full space-y-2"><Label className="text-xs uppercase tracking-widest text-[#00FFFF]">{editingCategoryId ? 'Edit Category Name' : 'New Category Name'}</Label><Input required placeholder="e.g. Fast Food" value={newCategoryName} onChange={(e) => setNewCategoryName(e.target.value)} className="bg-black/50 border-white/20 text-white h-12" /></div>
+                        <Button type="submit" className="h-12 w-full sm:w-auto bg-[#CCFF00] text-black font-black uppercase tracking-widest px-8 hover:bg-[#CCFF00]/90">{editingCategoryId ? 'UPDATE' : 'ADD CATEGORY'}</Button>
+                        {editingCategoryId && <Button type="button" onClick={resetCategoryForm} variant="outline" className="h-12 w-full sm:w-auto border-white/20 text-white hover:bg-white/10">CANCEL</Button>}
+                      </div>
+                    </form>
+                  </CardContent>
+                </Card>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {categories.map((cat: any, idx: number) => {
+                    const subCats = cat.subcategories || [];
+                    const isConverting = convertingCategory?.id === cat.id;
+
+                    return (
+                    <Card key={cat.id} className={`glass-strong border transition-all ${cat.isActive !== false ? 'border-white/10' : 'border-white/5 opacity-60 grayscale'} ${isConverting ? 'ring-2 ring-orange-500/50' : ''}`}>
+                      <CardContent className="p-0">
+                        <div className="p-5 border-b border-white/5 flex justify-between items-start bg-white/5">
+                          <div className="flex items-center gap-4">
+                            {cat.image ? <img src={cat.image} alt={cat.name} className="w-12 h-12 rounded-lg object-cover border border-white/20 bg-black" /> : <div className="w-12 h-12 rounded-lg bg-black flex items-center justify-center border border-white/20"><PackageIcon className="w-6 h-6 text-white/50" /></div>}
+                            <div>
+                              <h4 className="font-black text-white uppercase tracking-wider text-lg">{cat.name}</h4>
+                              <div className="flex flex-col items-start gap-1">
+                                <Badge variant={cat.isActive !== false ? "outline" : "secondary"} className={`mt-1 text-[8px] font-black uppercase tracking-widest ${cat.isActive !== false ? 'text-[#CCFF00] border-[#CCFF00]/30' : 'text-muted-foreground border-white/10'}`}>{cat.isActive !== false ? 'ACTIVE' : 'OFF'}</Badge>
+                                
+                                {/* 🔥 SHOW TIMING ON CARD 🔥 */}
+                                {cat.startTime && cat.endTime && (
+                                  <Badge variant="outline" className="mt-1 text-[8px] font-black uppercase tracking-widest text-orange-400 border-orange-400/30">
+                                    <Clock className="w-3 h-3 mr-1 inline" /> {cat.startTime} - {cat.endTime}
+                                  </Badge>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                          
+                          <div className="flex flex-wrap justify-end gap-1 w-24">
+                            <Button variant="ghost" size="icon" onClick={() => setConvertingCategory(cat)} className="w-8 h-8 text-orange-400 hover:bg-orange-400/20" title="Move to Sub-category">
+                               <CornerDownRight className="w-4 h-4" />
+                            </Button>
+                            <Button variant="ghost" size="icon" onClick={() => handleToggleCategory(cat)} className={`w-8 h-8 ${cat.isActive !== false ? 'text-white hover:text-red-400 hover:bg-red-400/10' : 'text-[#CCFF00] hover:bg-[#CCFF00]/20'}`} title={cat.isActive !== false ? "Turn Off" : "Turn On"}><Power className="w-4 h-4" /></Button>
+                            <Button variant="ghost" size="icon" onClick={() => editCategoryUI(cat)} className="w-8 h-8 text-[#CCFF00] hover:bg-[#CCFF00]/20"><Edit className="w-4 h-4" /></Button>
+                            <Button variant="ghost" size="icon" onClick={() => reorderCategory(cat.id, 'up')} disabled={idx === 0} className="w-8 h-8 text-[#00FFFF] hover:bg-[#00FFFF]/20"><ArrowUp className="w-4 h-4" /></Button>
+                            <Button variant="ghost" size="icon" onClick={() => reorderCategory(cat.id, 'down')} disabled={idx === categories.length - 1} className="w-8 h-8 text-[#00FFFF] hover:bg-[#00FFFF]/20"><ArrowDown className="w-4 h-4" /></Button>
+                            <Button variant="ghost" size="icon" onClick={() => { if(confirm("Delete entire category?")) deleteCategory(cat.id) }} className="w-8 h-8 text-red-500 hover:text-white hover:bg-red-500"><Trash2 className="w-4 h-4" /></Button>
+                          </div>
+                        </div>
+                        
+                        {isConverting && (
+                          <div className="p-4 bg-orange-500/10 border-b border-orange-500/30">
+                            <Label className="text-orange-400 text-[10px] font-black uppercase tracking-widest mb-2 block flex items-center gap-2"><CornerDownRight className="w-3 h-3"/> Move '{cat.name}' into Parent folder:</Label>
+                            <div className="flex gap-2">
+                              <select value={targetParentCategory} onChange={e => setTargetParentCategory(e.target.value)} className="flex-1 bg-black border border-orange-500/30 text-white text-xs h-10 rounded-lg px-3 focus:outline-none focus:border-orange-500">
+                                <option value="">Select Parent Category...</option>
+                                {categories.filter((c: any) => c.id !== cat.id).map((c: any) => <option key={c.id} value={c.name}>{c.name}</option>)}
+                              </select>
+                              <Button onClick={() => handleConvertCategory(cat)} className="h-10 bg-orange-500 hover:bg-orange-600 text-white text-xs font-black px-4 uppercase tracking-widest">Merge</Button>
+                              <Button onClick={() => {setConvertingCategory(null); setTargetParentCategory('');}} variant="ghost" className="h-10 text-muted-foreground hover:text-white"><X className="w-4 h-4"/></Button>
+                            </div>
+                            <p className="text-[9px] text-orange-400/70 mt-3 uppercase tracking-widest leading-tight">⚠️ All products inside '{cat.name}' will be automatically moved to the new parent. This category block will be deleted.</p>
+                          </div>
+                        )}
+
+                        <div className="p-5 bg-black/30">
+                          <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-3 flex items-center gap-2"><LayoutGrid className="w-3 h-3"/> Sub-Categories</p>
+                          {subCats.length > 0 ? (
+                            <div className="flex flex-wrap gap-2 mb-4">
+                              {subCats.map((sub: string, i: number) => (
+                                <Badge key={i} variant="outline" className="bg-[#00FFFF]/5 border-[#00FFFF]/30 text-white pl-3 pr-1 py-1 flex items-center gap-2">
+                                  {sub} <button onClick={() => handleRemoveSubcat(cat.id, subCats, sub)} className="text-[#00FFFF] hover:text-red-500 hover:bg-red-500/20 rounded-full p-0.5"><X className="w-3 h-3"/></button>
+                                </Badge>
+                              ))}
+                            </div>
+                          ) : (
+                            <p className="text-xs text-white/30 italic mb-4">No sub-categories added.</p>
+                          )}
+                          
+                          <div className="flex gap-2">
+                            <Input placeholder="Add new sub-category..." value={subCatInputs[cat.id] || ''} onChange={(e) => setSubCatInputs({...subCatInputs, [cat.id]: e.target.value})} className="bg-black/50 border-white/10 text-xs h-9 focus-visible:border-[#00FFFF] text-white" />
+                            <Button onClick={() => handleAddSubcat(cat.id, subCats)} className="h-9 bg-[#00FFFF] text-black font-black hover:bg-[#00FFFF]/80 px-4 text-xs"><PlusCircle className="w-4 h-4 mr-1"/> ADD</Button>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )})}
+                </div>
              </motion.div>
           )}
 
