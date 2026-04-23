@@ -85,7 +85,7 @@ export default function AdminDashboard() {
   const [formData, setFormData] = React.useState({
     name: '', price: '', mrp: '', cost_price: '', category: '', subcategory: '', image: '', inStock: true,
     description: '', galleryImages: [] as string[], foodPref: 'none' as 'veg' | 'non-veg' | 'none',
-    customStockMessage: '' // 🔥 FIXED MISSING STATE 🔥
+    customStockMessage: ''
   })
 
   const [newGalleryUrl, setNewGalleryUrl] = React.useState('') 
@@ -311,12 +311,12 @@ export default function AdminDashboard() {
     try {
       if (editingCategoryId) {
         await updateCategory(editingCategoryId, { name: newCategoryName.trim(), image: newCategoryImage });
-        await supabase.from('categories').update({
+        await supabase.from('webfoo_categories').update({
           startTime: newCategoryStartTime || null,
           endTime: newCategoryEndTime || null
         }).eq('id', editingCategoryId);
       } else {
-        await supabase.from('categories').insert([{
+        await supabase.from('webfoo_categories').insert([{
           name: newCategoryName.trim(),
           image: newCategoryImage,
           subcategories: [],
@@ -336,7 +336,7 @@ export default function AdminDashboard() {
       alert("✅ Category Saved Successfully!");
     } catch (err) {
       console.error(err);
-      alert("⚠️ Error saving category. Check Supabase connection.");
+      alert("⚠️ Error saving category.");
     }
   }
 
@@ -370,7 +370,7 @@ export default function AdminDashboard() {
       alert("✅ Sub-category sent to Database. Please refresh the page manually to verify.");
     } catch (error) {
       console.error(error);
-      alert("⚠️ Error saving to Database. Check your Supabase DB format.");
+      alert("⚠️ Error saving to Database.");
     }
   }
 
@@ -418,7 +418,7 @@ export default function AdminDashboard() {
   }
 
   const handleDeleteCustomerWipe = (phone: string) => {
-    if(confirm("🚨 WARNING: This will wipe/hide the customer from your Admin CRM view. \n\nNote: If they forgot their password, this will NOT delete their Supabase Auth account. You must delete Auth from the Supabase Dashboard. \n\nProceed with CRM wipe?")) {
+    if(confirm("🚨 WARNING: This will wipe/hide the customer from your Admin CRM view. \n\nNote: If they forgot their password, this will NOT delete their Auth account. You must delete Auth from the Supabase Dashboard. \n\nProceed with CRM wipe?")) {
       updateCustomerMeta(phone, { isDeleted: true });
       alert("✅ Customer data wiped from panel.");
     }
@@ -574,7 +574,6 @@ export default function AdminDashboard() {
     } else { alert(`⚠️ Bulk requires API.`) }
   }
 
-  // 🔥 RESTORED COMPLETELY & FIXED MISSING customStockMessage 🔥
   const handleSaveProduct = (e: React.FormEvent) => {
     e.preventDefault()
     const productPayload = { 
@@ -586,8 +585,7 @@ export default function AdminDashboard() {
     }
     if (editingId) updateProduct(editingId, productPayload)
     else addProduct(productPayload)
-    setIsProductSheetOpen(false); 
-    resetForm()
+    setIsProductSheetOpen(false); resetForm()
   }
 
   const openEdit = (product: any) => { 
@@ -1003,122 +1001,175 @@ export default function AdminDashboard() {
              </motion.div>
           )}
 
-          {/* CATEGORIES WITH TIME BASED SETTINGS */}
-          {activeTab === 'categories' && (
-             <motion.div key="categories" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="space-y-6">
-                <Card className="glass-strong border-white/10 mb-8">
-                  <CardContent className="p-6 sm:p-8 space-y-6">
-                    <div className="flex items-center gap-3 border-b border-white/10 pb-4"><LayoutGrid className="w-6 h-6 text-[#00FFFF]" /><h3 className="text-xl font-black uppercase text-white">Create Main Category</h3></div>
-                    <form onSubmit={handleSaveCategory} className="flex flex-col gap-4">
-                      <div className="space-y-4 bg-[#00FFFF]/5 p-4 rounded-xl border border-[#00FFFF]/20">
-                        <Label className="text-xs font-black uppercase tracking-widest text-[#00FFFF] flex items-center gap-2"><LinkIcon className="w-4 h-4"/> Paste Category Image URL</Label>
-                        <p className="text-[10px] text-white/50">Host image on ImageKit.io and paste direct URL here.</p>
-                        <Input type="url" placeholder="https://ik.imagekit.io/..." value={newCategoryImage} onChange={(e) => setNewCategoryImage(e.target.value)} className="bg-black border-white/20 text-xs focus-visible:border-[#00FFFF] h-12 text-white" />
-                        {newCategoryImage && (
-                          <div className="mt-2 relative w-full sm:w-48 h-24 rounded-lg overflow-hidden border border-[#00FFFF]/20 bg-black/50">
-                            <img src={newCategoryImage} alt="URL Preview" className="w-full h-full object-contain" onError={(e) => { e.currentTarget.src = '' }} />
-                          </div>
-                        )}
+          {/* 🔥 RESTORED PRODUCTS TAB 🔥 */}
+          {activeTab === 'products' && (
+             <motion.div key="products" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="space-y-6">
+               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                 {selectedCategoryView ? (
+                   <div className="flex items-center gap-2">
+                     {selectedSubcategoryFilter ? (
+                       <Button variant="ghost" onClick={() => setSelectedSubcategoryFilter(null)} className="text-[#00FFFF] hover:bg-[#00FFFF]/10 px-0 hover:text-white transition-all"><ArrowLeft className="w-5 h-5 mr-2" /> <span className="font-black uppercase tracking-widest text-lg">{selectedCategoryView} <span className="text-muted-foreground mx-2">/</span> <span className="text-[#CCFF00]">{selectedSubcategoryFilter}</span></span></Button>
+                     ) : (
+                       <Button variant="ghost" onClick={() => { setSelectedCategoryView(null); setSelectedSubcategoryFilter(null); setProductMasterView('categories'); }} className="text-[#00FFFF] hover:bg-[#00FFFF]/10 px-0 hover:text-white transition-all"><ArrowLeft className="w-5 h-5 mr-2" /> <span className="font-black uppercase tracking-widest text-lg">{selectedCategoryView}</span></Button>
+                     )}
+                   </div>
+                 ) : (
+                   <div className="bg-black/50 p-1 rounded-lg border border-white/10 flex gap-1">
+                      <Button onClick={() => setProductMasterView('categories')} variant={productMasterView === 'categories' ? 'default' : 'ghost'} className={productMasterView === 'categories' ? 'bg-[#00FFFF] text-black font-black uppercase tracking-widest text-xs h-10' : 'text-white/50 hover:text-white hover:bg-white/10 font-bold uppercase tracking-widest text-xs h-10'}><Folder className="w-4 h-4 mr-2" /> Categories</Button>
+                      <Button onClick={() => setProductMasterView('all')} variant={productMasterView === 'all' ? 'default' : 'ghost'} className={productMasterView === 'all' ? 'bg-[#00FFFF] text-black font-black uppercase tracking-widest text-xs h-10' : 'text-white/50 hover:text-white hover:bg-white/10 font-bold uppercase tracking-widest text-xs h-10'}><LayoutGrid className="w-4 h-4 mr-2" /> All Items</Button>
+                   </div>
+                 )}
+
+                 <div className="flex items-center gap-2">
+                   <Sheet open={isProductSheetOpen} onOpenChange={(open) => { setIsProductSheetOpen(open); if(!open) resetForm(); if(open && selectedCategoryView) { setFormPlacement(selectedSubcategoryFilter ? 'sub' : 'main'); setFormData(prev => ({...prev, category: selectedCategoryView as string, subcategory: selectedSubcategoryFilter || ''})); }}}>
+                     <SheetTrigger asChild><Button onClick={resetForm} className="bg-[#CCFF00] text-black font-black hover:bg-[#CCFF00]/90 shadow-[0_0_15px_rgba(204,255,0,0.3)] h-12 rounded-xl px-6"><Plus className="w-5 h-5 mr-2" /> ADD PRODUCT</Button></SheetTrigger>
+                     <SheetContent className="bg-black/95 backdrop-blur-2xl border-l border-[#00FFFF]/30 sm:max-w-xl w-full overflow-y-auto">
+                       <SheetHeader className="text-left mb-6 mt-6"><SheetTitle className="text-3xl font-black italic uppercase text-[#00FFFF]">{editingId ? 'Edit Product' : 'New Product'}</SheetTitle></SheetHeader>
+                       <form onSubmit={handleSaveProduct} className="flex flex-col gap-6 pb-20">
+                         <div className="space-y-4 bg-[#00FFFF]/5 p-5 rounded-xl border border-[#00FFFF]/20">
+                           <Label className="text-xs font-black uppercase tracking-widest text-[#00FFFF] flex items-center gap-2"><LinkIcon className="w-4 h-4"/> Main Product Image URL</Label>
+                           <p className="text-[10px] text-white/50 leading-tight">Paste ImageKit URL here. NO DIRECT UPLOADS.</p>
+                           <Input required type="url" placeholder="https://ik.imagekit.io/..." value={formData.image} onChange={(e) => setFormData({...formData, image: e.target.value})} className="bg-black border-white/20 text-sm focus-visible:border-[#00FFFF] h-12 text-white" />
+                           {formData.image && (
+                             <div className="mt-2 relative w-full h-32 rounded-lg overflow-hidden border border-white/10 bg-black/50">
+                               <img src={formData.image} alt="Preview" className="w-full h-full object-contain" onError={(e) => { e.currentTarget.src = '/placeholder.jpg' }} />
+                             </div>
+                           )}
+                         </div>
+
+                         <div className="space-y-4 bg-[#CCFF00]/5 p-5 rounded-xl border border-[#CCFF00]/20">
+                           <Label className="text-xs font-black uppercase tracking-widest text-[#CCFF00] flex items-center gap-2"><LinkIcon className="w-4 h-4"/> Extra Gallery Image URLs</Label>
+                           <div className="flex gap-2"><Input type="url" placeholder="Paste extra ImageKit URL..." value={newGalleryUrl} onChange={(e) => setNewGalleryUrl(e.target.value)} className="bg-black border-white/20 text-xs focus-visible:border-[#CCFF00] h-10 flex-1 text-white" /><Button type="button" onClick={addGalleryUrl} className="h-10 bg-[#CCFF00] text-black font-black hover:bg-[#CCFF00]/80 px-4">ADD</Button></div>
+                           {formData.galleryImages.length > 0 && (<div className="flex gap-3 overflow-x-auto pt-2 pb-2 scrollbar-hide">{formData.galleryImages.map((img, i) => (<div key={i} className="relative w-20 h-20 shrink-0 rounded-lg overflow-hidden border border-white/20"><img src={img} alt={`Gallery ${i}`} className="w-full h-full object-cover" /><button type="button" onClick={() => removeGalleryImage(i)} className="absolute top-1 right-1 bg-red-500 rounded-full p-1 text-white hover:scale-110"><XCircle className="w-3 h-3" /></button></div>))}</div>)}
+                         </div>
+
+                         <div className="space-y-4">
+                           <div className="space-y-2"><Label>Product Name</Label><Input required value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className="bg-white/5 border-white/10" /></div>
+                           <div className="space-y-2"><Label>Description / Specifications</Label><textarea value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} placeholder="Write details here..." className="w-full bg-white/5 border border-white/10 focus-visible:border-[#00FFFF] rounded-xl p-3 min-h-[100px] text-sm text-white resize-y" /></div>
+                           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                             <div className="space-y-2"><Label className="text-[#00FFFF]">Cost (₹)</Label><Input required type="number" value={formData.cost_price} onChange={e => setFormData({...formData, cost_price: e.target.value})} className="bg-white/5 border-[#00FFFF]/50 text-[#00FFFF] font-bold" /></div>
+                             <div className="space-y-2"><Label>Sell Price (₹)</Label><Input required type="number" value={formData.price} onChange={e => setFormData({...formData, price: e.target.value})} className="bg-white/5 border-white/10" /></div>
+                             <div className="space-y-2"><Label>MRP (₹)</Label><Input required type="number" value={formData.mrp} onChange={e => setFormData({...formData, mrp: e.target.value})} className="bg-white/5 border-white/10" /></div>
+                           </div>
+                           
+                           <div className="p-4 bg-white/5 rounded-xl border border-white/10 space-y-4 mt-2">
+                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                               <div className="space-y-2">
+                                 <Label className="text-[#00FFFF]">Main Category</Label>
+                                 <select required value={formData.category} onChange={e => { setFormData({...formData, category: e.target.value, subcategory: ''}); setFormPlacement('main'); }} className="w-full h-12 bg-black/50 border border-white/20 rounded-md px-3 text-sm text-white focus:outline-none focus:border-[#00FFFF]">
+                                   {displayCategories.map((catName: any, idx: number) => (<option key={idx} value={catName} className="bg-black text-white">{catName}</option>))}
+                                 </select>
+                               </div>
+                               <div className="space-y-2">
+                                  <Label>Food Type</Label>
+                                  <select required value={formData.foodPref} onChange={e => setFormData({...formData, foodPref: e.target.value as any})} className="w-full h-12 bg-black/50 border border-white/20 rounded-md px-3 text-sm text-white focus:outline-none focus:border-[#00FFFF]">
+                                    <option value="none" className="bg-black text-white">None (Gadgets)</option><option value="veg" className="bg-black text-green-400">Vegetarian 🟢</option><option value="non-veg" className="bg-black text-red-400">Non-Veg 🔴</option>
+                                  </select>
+                               </div>
+                             </div>
+
+                             <div className="space-y-2 pt-2 border-t border-white/10 mt-2">
+                               <Label className="text-muted-foreground uppercase text-[10px] font-black tracking-widest">Where to place this item?</Label>
+                               <div className="flex gap-2">
+                                 <Button type="button" onClick={() => { setFormPlacement('main'); setFormData({...formData, subcategory: ''}); }} variant={formPlacement === 'main' ? 'default' : 'outline'} className={`flex-1 text-xs font-bold uppercase tracking-widest ${formPlacement === 'main' ? 'bg-[#00FFFF] text-black' : 'border-white/20 text-white/50 hover:text-white'}`}>Direct in Main Category</Button>
+                                 <Button type="button" onClick={() => setFormPlacement('sub')} disabled={activeSubcategories.length === 0} variant={formPlacement === 'sub' ? 'default' : 'outline'} className={`flex-1 text-xs font-bold uppercase tracking-widest ${formPlacement === 'sub' ? 'bg-[#CCFF00] text-black' : 'border-white/20 text-white/50 hover:text-white disabled:opacity-30'}`}>Inside Sub-Category</Button>
+                               </div>
+                             </div>
+
+                             {formPlacement === 'sub' && (
+                               <div className="space-y-2 animate-in fade-in slide-in-from-top-2">
+                                 <Label className="text-[#CCFF00]">Choose Sub-Category</Label>
+                                 <select required value={formData.subcategory} onChange={e => setFormData({...formData, subcategory: e.target.value})} className="w-full h-12 bg-black/50 border border-[#CCFF00]/50 rounded-md px-3 text-sm text-white focus:outline-none focus:border-[#CCFF00]">
+                                    <option value="" className="bg-black text-muted-foreground">Select Sub...</option>
+                                    {activeSubcategories.map((subName: string, idx: number) => (<option key={idx} value={subName} className="bg-black text-white">{subName}</option>))}
+                                 </select>
+                               </div>
+                             )}
+                             
+                             <div className="space-y-2 pt-2 border-t border-white/10 mt-2">
+                                <Label className="text-[#FF0055]">Custom Out of Stock Message (Optional)</Label>
+                                <Input value={formData.customStockMessage || ''} onChange={e => setFormData({...formData, customStockMessage: e.target.value})} placeholder="e.g. Available at 4 PM" className="bg-black/50 border-white/20 focus-visible:border-[#FF0055]" />
+                             </div>
+                           </div>
+                         </div>
+                         <Button type="submit" className="w-full h-14 bg-[#00FFFF] text-black font-black hover:bg-[#00FFFF]/80 mt-4">{editingId ? 'UPDATE PRODUCT' : 'SAVE TO INVENTORY'}</Button>
+                       </form>
+                     </SheetContent>
+                   </Sheet>
+                 </div>
+               </div>
+               
+               {productMasterView === 'all' && !selectedCategoryView ? (
+                 <div className="mt-6">
+                    {products.length === 0 ? (
+                      <Empty className="glass-strong border-white/10 py-20 mt-6 max-w-md mx-auto"><EmptyContent><PackageIcon className="w-12 h-12 text-muted-foreground mb-4 opacity-50" /><EmptyTitle className="text-xl uppercase tracking-tighter">Inventory is Empty</EmptyTitle></EmptyContent></Empty>
+                    ) : (
+                      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+                        {products.map((product: any) => renderProductCard(product))}
                       </div>
-
-                      {/* 🔥 TIME INPUTS FOR CATEGORY 🔥 */}
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                          <Label className="text-xs uppercase tracking-widest text-[#00FFFF]">Start Time (Optional)</Label>
-                          <Input type="time" value={newCategoryStartTime} onChange={(e) => setNewCategoryStartTime(e.target.value)} className="bg-black/50 border-white/20 text-white h-12" />
-                        </div>
-                        <div className="space-y-2">
-                          <Label className="text-xs uppercase tracking-widest text-[#00FFFF]">End Time (Optional)</Label>
-                          <Input type="time" value={newCategoryEndTime} onChange={(e) => setNewCategoryEndTime(e.target.value)} className="bg-black/50 border-white/20 text-white h-12" />
-                        </div>
-                        <p className="col-span-full text-[10px] text-white/50 leading-tight">If left blank, the category will be available 24x7. Set times (e.g., 16:00 to 21:00) to restrict availability.</p>
-                      </div>
-
-                      <div className="flex flex-col sm:flex-row gap-4 items-end mt-2">
-                        <div className="flex-1 w-full space-y-2"><Label className="text-xs uppercase tracking-widest text-[#00FFFF]">{editingCategoryId ? 'Edit Category Name' : 'New Category Name'}</Label><Input required placeholder="e.g. Fast Food" value={newCategoryName} onChange={(e) => setNewCategoryName(e.target.value)} className="bg-black/50 border-white/20 text-white h-12" /></div>
-                        <Button type="submit" className="h-12 w-full sm:w-auto bg-[#CCFF00] text-black font-black uppercase tracking-widest px-8 hover:bg-[#CCFF00]/90">{editingCategoryId ? 'UPDATE' : 'ADD CATEGORY'}</Button>
-                        {editingCategoryId && <Button type="button" onClick={resetCategoryForm} variant="outline" className="h-12 w-full sm:w-auto border-white/20 text-white hover:bg-white/10">CANCEL</Button>}
-                      </div>
-                    </form>
-                  </CardContent>
-                </Card>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {categories.map((cat: any, idx: number) => {
-                    const subCats = cat.subcategories || [];
-                    const isConverting = convertingCategory?.id === cat.id;
-
-                    return (
-                    <Card key={cat.id} className={`glass-strong border transition-all ${cat.isActive !== false ? 'border-white/10' : 'border-white/5 opacity-60 grayscale'} ${isConverting ? 'ring-2 ring-orange-500/50' : ''}`}>
-                      <CardContent className="p-0">
-                        <div className="p-5 border-b border-white/5 flex justify-between items-start bg-white/5">
-                          <div className="flex items-center gap-4">
-                            {cat.image ? <img src={cat.image} alt={cat.name} className="w-12 h-12 rounded-lg object-cover border border-white/20 bg-black" /> : <div className="w-12 h-12 rounded-lg bg-black flex items-center justify-center border border-white/20"><PackageIcon className="w-6 h-6 text-white/50" /></div>}
-                            <div>
-                              <h4 className="font-black text-white uppercase tracking-wider text-lg">{cat.name}</h4>
-                              <div className="flex flex-col items-start gap-1">
-                                <Badge variant={cat.isActive !== false ? "outline" : "secondary"} className={`mt-1 text-[8px] font-black uppercase tracking-widest ${cat.isActive !== false ? 'text-[#CCFF00] border-[#CCFF00]/30' : 'text-muted-foreground border-white/10'}`}>{cat.isActive !== false ? 'ACTIVE' : 'OFF'}</Badge>
-                                
-                                {/* 🔥 SHOW TIMING ON CARD 🔥 */}
-                                {cat.startTime && cat.endTime && (
-                                  <Badge variant="outline" className="mt-1 text-[8px] font-black uppercase tracking-widest text-orange-400 border-orange-400/30">
-                                    <Clock className="w-3 h-3 mr-1 inline" /> {cat.startTime} - {cat.endTime}
-                                  </Badge>
-                                )}
-                              </div>
+                    )}
+                 </div>
+               ) : (
+                 <>
+                   {!selectedCategoryView ? (
+                     <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 mt-6">
+                       {displayCategories.map((catName: any, idx: number) => {
+                         const itemCount = products.filter((p:any) => p.category === catName).length;
+                         return (
+                           <Card key={idx} onClick={() => { setSelectedCategoryView(catName); setSelectedSubcategoryFilter(null); }} className="glass-strong border-white/10 hover:border-[#00FFFF]/50 transition-all cursor-pointer group">
+                             <CardContent className="p-6 flex flex-col items-center justify-center text-center h-32 relative overflow-hidden"><PackageIcon className="w-8 h-8 text-[#00FFFF] mb-3 group-hover:scale-110 transition-transform" /><h3 className="font-black text-white text-sm uppercase tracking-widest z-10">{catName}</h3><Badge variant="outline" className="mt-2 text-[10px] text-muted-foreground border-white/20 z-10 bg-black/50">{itemCount} Items</Badge></CardContent>
+                           </Card>
+                         )
+                       })}
+                     </div>
+                   ) : (
+                     <div className="mt-6">
+                       {viewSubcategories.length > 0 && !selectedSubcategoryFilter && (
+                         <div className="flex justify-between items-center mb-6">
+                            <h4 className="text-xs font-black text-muted-foreground uppercase tracking-widest">Sub-Categories</h4>
+                            <div className="flex items-center gap-1 bg-white/5 p-1 rounded-lg border border-white/10">
+                               <button onClick={() => setSubcatViewMode('folders')} className={`px-3 py-1.5 text-[10px] font-bold rounded-md uppercase tracking-widest transition-all ${subcatViewMode === 'folders' ? 'bg-[#00FFFF] text-black shadow-[0_0_10px_rgba(0,255,255,0.2)]' : 'text-white/50 hover:text-white'}`}><Folder className="w-3 h-3 inline mr-1"/> Folders</button>
+                               <button onClick={() => setSubcatViewMode('tabs')} className={`px-3 py-1.5 text-[10px] font-bold rounded-md uppercase tracking-widest transition-all ${subcatViewMode === 'tabs' ? 'bg-[#00FFFF] text-black shadow-[0_0_10px_rgba(0,255,255,0.2)]' : 'text-white/50 hover:text-white'}`}><LayoutGrid className="w-3 h-3 inline mr-1"/> Direct Items</button>
                             </div>
-                          </div>
-                          
-                          <div className="flex flex-wrap justify-end gap-1 w-24">
-                            <Button variant="ghost" size="icon" onClick={() => setConvertingCategory(cat)} className="w-8 h-8 text-orange-400 hover:bg-orange-400/20" title="Move to Sub-category">
-                               <CornerDownRight className="w-4 h-4" />
-                            </Button>
-                            <Button variant="ghost" size="icon" onClick={() => handleToggleCategory(cat)} className={`w-8 h-8 ${cat.isActive !== false ? 'text-white hover:text-red-400 hover:bg-red-400/10' : 'text-[#CCFF00] hover:bg-[#CCFF00]/20'}`} title={cat.isActive !== false ? "Turn Off" : "Turn On"}><Power className="w-4 h-4" /></Button>
-                            <Button variant="ghost" size="icon" onClick={() => editCategoryUI(cat)} className="w-8 h-8 text-[#CCFF00] hover:bg-[#CCFF00]/20"><Edit className="w-4 h-4" /></Button>
-                            <Button variant="ghost" size="icon" onClick={() => reorderCategory(cat.id, 'up')} disabled={idx === 0} className="w-8 h-8 text-[#00FFFF] hover:bg-[#00FFFF]/20"><ArrowUp className="w-4 h-4" /></Button>
-                            <Button variant="ghost" size="icon" onClick={() => reorderCategory(cat.id, 'down')} disabled={idx === categories.length - 1} className="w-8 h-8 text-[#00FFFF] hover:bg-[#00FFFF]/20"><ArrowDown className="w-4 h-4" /></Button>
-                            <Button variant="ghost" size="icon" onClick={() => { if(confirm("Delete entire category?")) deleteCategory(cat.id) }} className="w-8 h-8 text-red-500 hover:text-white hover:bg-red-500"><Trash2 className="w-4 h-4" /></Button>
-                          </div>
-                        </div>
-                        
-                        {isConverting && (
-                          <div className="p-4 bg-orange-500/10 border-b border-orange-500/30">
-                            <Label className="text-orange-400 text-[10px] font-black uppercase tracking-widest mb-2 block flex items-center gap-2"><CornerDownRight className="w-3 h-3"/> Move '{cat.name}' into Parent folder:</Label>
-                            <div className="flex gap-2">
-                              <select value={targetParentCategory} onChange={e => setTargetParentCategory(e.target.value)} className="flex-1 bg-black border border-orange-500/30 text-white text-xs h-10 rounded-lg px-3 focus:outline-none focus:border-orange-500">
-                                <option value="">Select Parent Category...</option>
-                                {categories.filter((c: any) => c.id !== cat.id).map((c: any) => <option key={c.id} value={c.name}>{c.name}</option>)}
-                              </select>
-                              <Button onClick={() => handleConvertCategory(cat)} className="h-10 bg-orange-500 hover:bg-orange-600 text-white text-xs font-black px-4 uppercase tracking-widest">Merge</Button>
-                              <Button onClick={() => {setConvertingCategory(null); setTargetParentCategory('');}} variant="ghost" className="h-10 text-muted-foreground hover:text-white"><X className="w-4 h-4"/></Button>
-                            </div>
-                            <p className="text-[9px] text-orange-400/70 mt-3 uppercase tracking-widest leading-tight">⚠️ All products inside '{cat.name}' will be automatically moved to the new parent. This category block will be deleted.</p>
-                          </div>
-                        )}
+                         </div>
+                       )}
 
-                        <div className="p-5 bg-black/30">
-                          <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-3 flex items-center gap-2"><LayoutGrid className="w-3 h-3"/> Sub-Categories</p>
-                          {subCats.length > 0 ? (
-                            <div className="flex flex-wrap gap-2 mb-4">
-                              {subCats.map((sub: string, i: number) => (
-                                <Badge key={i} variant="outline" className="bg-[#00FFFF]/5 border-[#00FFFF]/30 text-white pl-3 pr-1 py-1 flex items-center gap-2">
-                                  {sub} <button onClick={() => handleRemoveSubcat(cat.id, subCats, sub)} className="text-[#00FFFF] hover:text-red-500 hover:bg-red-500/20 rounded-full p-0.5"><X className="w-3 h-3"/></button>
-                                </Badge>
-                              ))}
-                            </div>
-                          ) : (
-                            <p className="text-xs text-white/30 italic mb-4">No sub-categories added.</p>
-                          )}
-                          
-                          <div className="flex gap-2">
-                            <Input placeholder="Add new sub-category..." value={subCatInputs[cat.id] || ''} onChange={(e) => setSubCatInputs({...subCatInputs, [cat.id]: e.target.value})} className="bg-black/50 border-white/10 text-xs h-9 focus-visible:border-[#00FFFF] text-white" />
-                            <Button onClick={() => handleAddSubcat(cat.id, subCats)} className="h-9 bg-[#00FFFF] text-black font-black hover:bg-[#00FFFF]/80 px-4 text-xs"><PlusCircle className="w-4 h-4 mr-1"/> ADD</Button>
+                       {subcatViewMode === 'folders' && !selectedSubcategoryFilter && viewSubcategories.length > 0 && (
+                          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 mb-8">
+                            {viewSubcategories.map((sub: string, idx: number) => {
+                               const count = products.filter((p:any) => p.category === selectedCategoryView && p.subcategory === sub).length;
+                               return (
+                                  <Card key={idx} onClick={() => setSelectedSubcategoryFilter(sub)} className="glass-strong border-white/10 hover:border-[#CCFF00]/50 transition-all cursor-pointer group">
+                                    <CardContent className="p-6 flex flex-col items-center justify-center text-center h-32 relative overflow-hidden">
+                                      <Folder className="w-8 h-8 text-[#CCFF00] mb-3 group-hover:scale-110 transition-transform" />
+                                      <h3 className="font-black text-white text-sm uppercase tracking-widest z-10">{sub}</h3>
+                                      <Badge variant="outline" className="mt-2 text-[10px] text-[#CCFF00] border-[#CCFF00]/30 z-10 bg-black/50">{count} Items</Badge>
+                                    </CardContent>
+                                  </Card>
+                               )
+                            })}
                           </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  )})}
-                </div>
+                       )}
+
+                       {(subcatViewMode === 'tabs' || selectedSubcategoryFilter) && viewSubcategories.length > 0 && (
+                          <div className="flex gap-3 overflow-x-auto pb-4 mb-4 border-b border-white/10 scrollbar-hide">
+                            {subcatViewMode === 'tabs' && (
+                              <Button onClick={() => setSelectedSubcategoryFilter(null)} variant={!selectedSubcategoryFilter ? 'default' : 'outline'} className={!selectedSubcategoryFilter ? 'bg-[#00FFFF] text-black font-black uppercase tracking-widest text-xs h-9' : 'border-white/20 text-white hover:bg-white/10 font-bold uppercase tracking-widest text-xs h-9'}>Show All</Button>
+                            )}
+                            {viewSubcategories.map((sub: string, idx: number) => (
+                               <Button key={idx} onClick={() => setSelectedSubcategoryFilter(sub)} variant={selectedSubcategoryFilter === sub ? 'default' : 'outline'} className={selectedSubcategoryFilter === sub ? 'bg-[#CCFF00] text-black font-black uppercase tracking-widest text-xs h-9' : 'border-white/20 text-white hover:bg-white/10 font-bold uppercase tracking-widest text-xs h-9'}>{sub}</Button>
+                            ))}
+                          </div>
+                       )}
+
+                       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+                         {displayedProducts.map((product: any) => renderProductCard(product))}
+                         {displayedProducts.length === 0 && <div className="col-span-full py-10 text-center opacity-50"><p className="text-xs uppercase tracking-widest font-bold">No items found for this filter.</p></div>}
+                       </div>
+                     </div>
+                   )}
+                 </>
+               )}
              </motion.div>
           )}
 
