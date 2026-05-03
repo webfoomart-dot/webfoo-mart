@@ -198,3 +198,13 @@
 .animate-float {
   animation: float 3s ease-in-out infinite;
 }
+
+@layer utilities {
+  .text-theme-price { color: var(--theme-price); }
+  .text-theme-title { color: var(--theme-title); }
+  .text-theme-accent { color: var(--theme-accent); }
+  .bg-theme-accent { background-color: var(--theme-accent); }
+  .border-theme-accent { border-color: var(--theme-accent); }
+  .text-theme-discount { color: var(--theme-discount); }
+  .bg-theme-discount { background-color: var(--theme-discount); }
+}
