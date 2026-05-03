@@ -38,14 +38,14 @@ export function CategoryScroller() {
           onClick={() => setSelectedCategory(null)}
           className={`flex-shrink-0 px-6 py-3 rounded-2xl transition-all ${
             selectedCategory === null
-              ? 'bg-[#00FFFF] text-black neon-glow'
-              : 'glass text-white hover:bg-white/10'
+              ? 'bg-primary text-primary-foreground dark:text-black shadow-[0_0_15px_rgba(0,139,139,0.3)] dark:shadow-[0_0_15px_rgba(0,255,255,0.3)]'
+              : 'glass text-foreground hover:bg-black/10 dark:hover:bg-white/10'
           }`}
         >
           <span className="font-semibold text-sm whitespace-nowrap">All</span>
         </motion.button>
         
-        {(categories || []).map((category, index) => {
+        {(categories || []).map((category: any, index: number) => {
           const Icon = iconMap[category.icon] || ShoppingBasket;
           const isSelected = selectedCategory === category.name;
           
@@ -60,8 +60,8 @@ export function CategoryScroller() {
               onClick={() => setSelectedCategory(category.name)}
               className={`flex-shrink-0 flex items-center gap-2 px-5 py-3 rounded-2xl transition-all ${
                 isSelected
-                  ? 'bg-[#00FFFF] text-black neon-glow'
-                  : 'glass text-white hover:bg-white/10'
+                  ? 'bg-primary text-primary-foreground dark:text-black shadow-[0_0_15px_rgba(0,139,139,0.3)] dark:shadow-[0_0_15px_rgba(0,255,255,0.3)]'
+                  : 'glass text-foreground hover:bg-black/10 dark:hover:bg-white/10'
               }`}
             >
               <Icon className="w-4 h-4" />
