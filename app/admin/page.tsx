@@ -113,10 +113,14 @@ export default function AdminDashboard() {
   const [isSettingsSaving, setIsSettingsSaving] = React.useState(false)
   const [globalMinOrder, setGlobalMinOrder] = React.useState(0)
 
-  // 🔥 NAYE COLORS ADDED HERE 🔥
+  // 🔥 NAYE COLORS ADDED HERE W/ TAB STATE 🔥
+  const [activeThemeTab, setActiveThemeTab] = React.useState('dark_mode')
   const [themeColorData, setThemeColorData] = React.useState({
     primary_color: '#00FFFF', background_color: '#050505', text_color: '#ffffff', button_color: '#CCFF00',
-    price_color: '#00FFFF', title_color: '#ffffff', accent_color: '#CCFF00', discount_color: '#FF0055'
+    price_color: '#00FFFF', title_color: '#ffffff', accent_color: '#CCFF00', discount_color: '#FF0055',
+    light_primary_color: '#008b8b', light_background_color: '#ffffff', light_text_color: '#000000', light_button_color: '#99cc00',
+    light_price_color: '#008b8b', light_title_color: '#111111', light_accent_color: '#99cc00', light_discount_color: '#e11d48',
+    admin_bg_color: '#050505', admin_text_color: '#ffffff', admin_primary_color: '#00FFFF', admin_button_color: '#CCFF00'
   })
   const [isThemeSaving, setIsThemeSaving] = React.useState(false)
 
@@ -152,7 +156,19 @@ export default function AdminDashboard() {
           price_color: data.price_color || '#00FFFF',
           title_color: data.title_color || '#ffffff',
           accent_color: data.accent_color || '#CCFF00',
-          discount_color: data.discount_color || '#FF0055'
+          discount_color: data.discount_color || '#FF0055',
+          light_primary_color: data.light_primary_color || '#008b8b',
+          light_background_color: data.light_background_color || '#ffffff',
+          light_text_color: data.light_text_color || '#000000',
+          light_button_color: data.light_button_color || '#99cc00',
+          light_price_color: data.light_price_color || '#008b8b',
+          light_title_color: data.light_title_color || '#111111',
+          light_accent_color: data.light_accent_color || '#99cc00',
+          light_discount_color: data.light_discount_color || '#e11d48',
+          admin_bg_color: data.admin_bg_color || '#050505',
+          admin_text_color: data.admin_text_color || '#ffffff',
+          admin_primary_color: data.admin_primary_color || '#00FFFF',
+          admin_button_color: data.admin_button_color || '#CCFF00'
         })
       }
     }
@@ -283,14 +299,7 @@ export default function AdminDashboard() {
   const handleSaveTheme = async () => {
     setIsThemeSaving(true)
     const { error } = await supabase.from('theme_settings').update({
-      primary_color: themeColorData.primary_color,
-      background_color: themeColorData.background_color,
-      text_color: themeColorData.text_color,
-      button_color: themeColorData.button_color,
-      price_color: themeColorData.price_color,
-      title_color: themeColorData.title_color,
-      accent_color: themeColorData.accent_color,
-      discount_color: themeColorData.discount_color
+      ...themeColorData
     }).eq('id', 1)
     setIsThemeSaving(false)
     if (error) alert("⚠️ Error: " + error.message)
@@ -1247,9 +1256,67 @@ export default function AdminDashboard() {
              </motion.div>
           )}
 
-          {/* SETTINGS */}
+          {/* SETTINGS (🔥 WITH 3 TABS FOR THEMES 🔥) */}
           {activeTab === 'settings' && (
              <motion.div key="settings" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="space-y-6 max-w-3xl">
+                
+                {/* 🔥 THEME COLOR PICKER GOD MODE 🔥 */}
+                <Card className="glass-strong mb-8 border-[#00FFFF]/30">
+                  <CardContent className="p-6 sm:p-8 space-y-6">
+                    <div className="flex items-center gap-3 border-b border-[#00FFFF]/30 pb-4"><Palette className="w-6 h-6 text-[#00FFFF]" /><h3 className="text-xl font-black uppercase">Website & Admin Themes</h3></div>
+                    
+                    <div className="flex gap-2 bg-black/30 p-1 rounded-xl overflow-x-auto scrollbar-hide border border-white/10">
+                      <Button type="button" onClick={() => setActiveThemeTab('light_mode')} variant={activeThemeTab === 'light_mode' ? 'default' : 'ghost'} className={`flex-1 text-xs font-black uppercase tracking-widest h-10 ${activeThemeTab === 'light_mode' ? 'bg-white text-black' : 'text-white/50 hover:text-white'}`}><Sun className="w-4 h-4 mr-2"/> Web Light Mode</Button>
+                      <Button type="button" onClick={() => setActiveThemeTab('dark_mode')} variant={activeThemeTab === 'dark_mode' ? 'default' : 'ghost'} className={`flex-1 text-xs font-black uppercase tracking-widest h-10 ${activeThemeTab === 'dark_mode' ? 'bg-slate-800 text-white shadow-xl' : 'text-white/50 hover:text-white'}`}><Moon className="w-4 h-4 mr-2"/> Web Dark Mode</Button>
+                      <Button type="button" onClick={() => setActiveThemeTab('admin')} variant={activeThemeTab === 'admin' ? 'default' : 'ghost'} className={`flex-1 text-xs font-black uppercase tracking-widest h-10 ${activeThemeTab === 'admin' ? 'bg-[#FF0055] text-white shadow-xl' : 'text-white/50 hover:text-white'}`}><ShieldAlert className="w-4 h-4 mr-2"/> Admin UI</Button>
+                    </div>
+
+                    <div className="pt-4 animate-in fade-in">
+                      {activeThemeTab === 'light_mode' && (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-white p-6 rounded-xl text-black border border-slate-200">
+                          <div className="col-span-full border-b border-black/10 pb-2 mb-2"><h4 className="font-black uppercase tracking-widest text-sm text-slate-800">Light Mode Variables</h4></div>
+                          <div className="space-y-2"><Label className="text-[10px] uppercase font-bold text-slate-500">Background Color</Label><div className="flex gap-3 items-center"><input type="color" value={themeColorData.light_background_color} onChange={(e) => setThemeColorData({...themeColorData, light_background_color: e.target.value})} className="w-10 h-10 rounded cursor-pointer border-0 bg-transparent" /><Input value={themeColorData.light_background_color} onChange={(e) => setThemeColorData({...themeColorData, light_background_color: e.target.value})} className="font-mono uppercase bg-slate-100 border-none text-black h-10" /></div></div>
+                          <div className="space-y-2"><Label className="text-[10px] uppercase font-bold text-slate-500">Main Text Color</Label><div className="flex gap-3 items-center"><input type="color" value={themeColorData.light_text_color} onChange={(e) => setThemeColorData({...themeColorData, light_text_color: e.target.value})} className="w-10 h-10 rounded cursor-pointer border-0 bg-transparent" /><Input value={themeColorData.light_text_color} onChange={(e) => setThemeColorData({...themeColorData, light_text_color: e.target.value})} className="font-mono uppercase bg-slate-100 border-none text-black h-10" /></div></div>
+                          <div className="space-y-2"><Label className="text-[10px] uppercase font-bold text-slate-500">Icons / Outlines (Primary)</Label><div className="flex gap-3 items-center"><input type="color" value={themeColorData.light_primary_color} onChange={(e) => setThemeColorData({...themeColorData, light_primary_color: e.target.value})} className="w-10 h-10 rounded cursor-pointer border-0 bg-transparent" /><Input value={themeColorData.light_primary_color} onChange={(e) => setThemeColorData({...themeColorData, light_primary_color: e.target.value})} className="font-mono uppercase bg-slate-100 border-none text-black h-10" /></div></div>
+                          <div className="space-y-2"><Label className="text-[10px] uppercase font-bold text-slate-500">Button Background (Accent)</Label><div className="flex gap-3 items-center"><input type="color" value={themeColorData.light_button_color} onChange={(e) => setThemeColorData({...themeColorData, light_button_color: e.target.value})} className="w-10 h-10 rounded cursor-pointer border-0 bg-transparent" /><Input value={themeColorData.light_button_color} onChange={(e) => setThemeColorData({...themeColorData, light_button_color: e.target.value})} className="font-mono uppercase bg-slate-100 border-none text-black h-10" /></div></div>
+                          <div className="space-y-2"><Label className="text-[10px] uppercase font-bold text-slate-500">Price (₹)</Label><div className="flex gap-3 items-center"><input type="color" value={themeColorData.light_price_color} onChange={(e) => setThemeColorData({...themeColorData, light_price_color: e.target.value})} className="w-10 h-10 rounded cursor-pointer border-0 bg-transparent" /><Input value={themeColorData.light_price_color} onChange={(e) => setThemeColorData({...themeColorData, light_price_color: e.target.value})} className="font-mono uppercase bg-slate-100 border-none text-black h-10" /></div></div>
+                          <div className="space-y-2"><Label className="text-[10px] uppercase font-bold text-slate-500">Product Titles</Label><div className="flex gap-3 items-center"><input type="color" value={themeColorData.light_title_color} onChange={(e) => setThemeColorData({...themeColorData, light_title_color: e.target.value})} className="w-10 h-10 rounded cursor-pointer border-0 bg-transparent" /><Input value={themeColorData.light_title_color} onChange={(e) => setThemeColorData({...themeColorData, light_title_color: e.target.value})} className="font-mono uppercase bg-slate-100 border-none text-black h-10" /></div></div>
+                          <div className="space-y-2"><Label className="text-[10px] uppercase font-bold text-slate-500">Badges Color</Label><div className="flex gap-3 items-center"><input type="color" value={themeColorData.light_accent_color} onChange={(e) => setThemeColorData({...themeColorData, light_accent_color: e.target.value})} className="w-10 h-10 rounded cursor-pointer border-0 bg-transparent" /><Input value={themeColorData.light_accent_color} onChange={(e) => setThemeColorData({...themeColorData, light_accent_color: e.target.value})} className="font-mono uppercase bg-slate-100 border-none text-black h-10" /></div></div>
+                          <div className="space-y-2"><Label className="text-[10px] uppercase font-bold text-slate-500">Discount / Closed Text</Label><div className="flex gap-3 items-center"><input type="color" value={themeColorData.light_discount_color} onChange={(e) => setThemeColorData({...themeColorData, light_discount_color: e.target.value})} className="w-10 h-10 rounded cursor-pointer border-0 bg-transparent" /><Input value={themeColorData.light_discount_color} onChange={(e) => setThemeColorData({...themeColorData, light_discount_color: e.target.value})} className="font-mono uppercase bg-slate-100 border-none text-black h-10" /></div></div>
+                        </div>
+                      )}
+
+                      {activeThemeTab === 'dark_mode' && (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-[#050505] p-6 rounded-xl border border-white/10 text-white">
+                          <div className="col-span-full border-b border-white/10 pb-2 mb-2"><h4 className="font-black uppercase tracking-widest text-sm text-white/50">Dark Mode Variables</h4></div>
+                          <div className="space-y-2"><Label className="text-[10px] uppercase font-bold text-white/50">Background Color</Label><div className="flex gap-3 items-center"><input type="color" value={themeColorData.background_color} onChange={(e) => setThemeColorData({...themeColorData, background_color: e.target.value})} className="w-10 h-10 rounded cursor-pointer border-0 bg-transparent" /><Input value={themeColorData.background_color} onChange={(e) => setThemeColorData({...themeColorData, background_color: e.target.value})} className="font-mono uppercase bg-white/5 border-none text-white h-10" /></div></div>
+                          <div className="space-y-2"><Label className="text-[10px] uppercase font-bold text-white/50">Main Text Color</Label><div className="flex gap-3 items-center"><input type="color" value={themeColorData.text_color} onChange={(e) => setThemeColorData({...themeColorData, text_color: e.target.value})} className="w-10 h-10 rounded cursor-pointer border-0 bg-transparent" /><Input value={themeColorData.text_color} onChange={(e) => setThemeColorData({...themeColorData, text_color: e.target.value})} className="font-mono uppercase bg-white/5 border-none text-white h-10" /></div></div>
+                          <div className="space-y-2"><Label className="text-[10px] uppercase font-bold text-white/50">Icons / Outlines (Primary)</Label><div className="flex gap-3 items-center"><input type="color" value={themeColorData.primary_color} onChange={(e) => setThemeColorData({...themeColorData, primary_color: e.target.value})} className="w-10 h-10 rounded cursor-pointer border-0 bg-transparent" /><Input value={themeColorData.primary_color} onChange={(e) => setThemeColorData({...themeColorData, primary_color: e.target.value})} className="font-mono uppercase bg-white/5 border-none text-white h-10" /></div></div>
+                          <div className="space-y-2"><Label className="text-[10px] uppercase font-bold text-white/50">Button Background (Accent)</Label><div className="flex gap-3 items-center"><input type="color" value={themeColorData.button_color} onChange={(e) => setThemeColorData({...themeColorData, button_color: e.target.value})} className="w-10 h-10 rounded cursor-pointer border-0 bg-transparent" /><Input value={themeColorData.button_color} onChange={(e) => setThemeColorData({...themeColorData, button_color: e.target.value})} className="font-mono uppercase bg-white/5 border-none text-white h-10" /></div></div>
+                          <div className="space-y-2"><Label className="text-[10px] uppercase font-bold text-white/50">Price (₹)</Label><div className="flex gap-3 items-center"><input type="color" value={themeColorData.price_color} onChange={(e) => setThemeColorData({...themeColorData, price_color: e.target.value})} className="w-10 h-10 rounded cursor-pointer border-0 bg-transparent" /><Input value={themeColorData.price_color} onChange={(e) => setThemeColorData({...themeColorData, price_color: e.target.value})} className="font-mono uppercase bg-white/5 border-none text-white h-10" /></div></div>
+                          <div className="space-y-2"><Label className="text-[10px] uppercase font-bold text-white/50">Product Titles</Label><div className="flex gap-3 items-center"><input type="color" value={themeColorData.title_color} onChange={(e) => setThemeColorData({...themeColorData, title_color: e.target.value})} className="w-10 h-10 rounded cursor-pointer border-0 bg-transparent" /><Input value={themeColorData.title_color} onChange={(e) => setThemeColorData({...themeColorData, title_color: e.target.value})} className="font-mono uppercase bg-white/5 border-none text-white h-10" /></div></div>
+                          <div className="space-y-2"><Label className="text-[10px] uppercase font-bold text-white/50">Badges Color</Label><div className="flex gap-3 items-center"><input type="color" value={themeColorData.accent_color} onChange={(e) => setThemeColorData({...themeColorData, accent_color: e.target.value})} className="w-10 h-10 rounded cursor-pointer border-0 bg-transparent" /><Input value={themeColorData.accent_color} onChange={(e) => setThemeColorData({...themeColorData, accent_color: e.target.value})} className="font-mono uppercase bg-white/5 border-none text-white h-10" /></div></div>
+                          <div className="space-y-2"><Label className="text-[10px] uppercase font-bold text-white/50">Discount / Closed Text</Label><div className="flex gap-3 items-center"><input type="color" value={themeColorData.discount_color} onChange={(e) => setThemeColorData({...themeColorData, discount_color: e.target.value})} className="w-10 h-10 rounded cursor-pointer border-0 bg-transparent" /><Input value={themeColorData.discount_color} onChange={(e) => setThemeColorData({...themeColorData, discount_color: e.target.value})} className="font-mono uppercase bg-white/5 border-none text-white h-10" /></div></div>
+                        </div>
+                      )}
+
+                      {activeThemeTab === 'admin' && (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-slate-900 p-6 rounded-xl border border-slate-700 text-white">
+                          <div className="col-span-full border-b border-slate-700 pb-2 mb-2"><h4 className="font-black uppercase tracking-widest text-sm text-[#FF0055]">Admin Panel Variables</h4><p className="text-[10px] text-slate-400 mt-1">Changes here only affect this admin screen, not the public website.</p></div>
+                          <div className="space-y-2"><Label className="text-[10px] uppercase font-bold text-slate-400">Admin Background</Label><div className="flex gap-3 items-center"><input type="color" value={themeColorData.admin_bg_color} onChange={(e) => setThemeColorData({...themeColorData, admin_bg_color: e.target.value})} className="w-10 h-10 rounded cursor-pointer border-0 bg-transparent" /><Input value={themeColorData.admin_bg_color} onChange={(e) => setThemeColorData({...themeColorData, admin_bg_color: e.target.value})} className="font-mono uppercase bg-slate-800 border-none text-white h-10" /></div></div>
+                          <div className="space-y-2"><Label className="text-[10px] uppercase font-bold text-slate-400">Admin Text</Label><div className="flex gap-3 items-center"><input type="color" value={themeColorData.admin_text_color} onChange={(e) => setThemeColorData({...themeColorData, admin_text_color: e.target.value})} className="w-10 h-10 rounded cursor-pointer border-0 bg-transparent" /><Input value={themeColorData.admin_text_color} onChange={(e) => setThemeColorData({...themeColorData, admin_text_color: e.target.value})} className="font-mono uppercase bg-slate-800 border-none text-white h-10" /></div></div>
+                          <div className="space-y-2"><Label className="text-[10px] uppercase font-bold text-slate-400">Admin Primary (Outlines/Icons)</Label><div className="flex gap-3 items-center"><input type="color" value={themeColorData.admin_primary_color} onChange={(e) => setThemeColorData({...themeColorData, admin_primary_color: e.target.value})} className="w-10 h-10 rounded cursor-pointer border-0 bg-transparent" /><Input value={themeColorData.admin_primary_color} onChange={(e) => setThemeColorData({...themeColorData, admin_primary_color: e.target.value})} className="font-mono uppercase bg-slate-800 border-none text-white h-10" /></div></div>
+                          <div className="space-y-2"><Label className="text-[10px] uppercase font-bold text-slate-400">Admin Buttons (Highlights)</Label><div className="flex gap-3 items-center"><input type="color" value={themeColorData.admin_button_color} onChange={(e) => setThemeColorData({...themeColorData, admin_button_color: e.target.value})} className="w-10 h-10 rounded cursor-pointer border-0 bg-transparent" /><Input value={themeColorData.admin_button_color} onChange={(e) => setThemeColorData({...themeColorData, admin_button_color: e.target.value})} className="font-mono uppercase bg-slate-800 border-none text-white h-10" /></div></div>
+                        </div>
+                      )}
+                    </div>
+                    
+                    <div className="flex justify-end pt-4 border-t border-[#00FFFF]/20">
+                      <Button onClick={handleSaveTheme} disabled={isThemeSaving} className="h-12 bg-[#00FFFF] text-black hover:bg-[#00FFFF]/80 font-black uppercase tracking-widest px-8 rounded-full disabled:opacity-50">{isThemeSaving ? 'Saving...' : 'Update Colors'}</Button>
+                    </div>
+                  </CardContent>
+                </Card>
+
                 <Card className="glass-strong mb-8 border-[#CCFF00]/30 shadow-[0_0_20px_rgba(204,255,0,0.05)]">
                   <CardContent className="p-6 sm:p-8 space-y-6">
                     <div className="flex items-center gap-3 border-b border-[#CCFF00]/30 pb-4"><UserCircle className="w-6 h-6 text-[#CCFF00]" /><h3 className="text-xl font-black uppercase">Footer Profile (About)</h3></div>
@@ -1272,26 +1339,6 @@ export default function AdminDashboard() {
                         </div>
                       </div>
                     </div>
-                  </CardContent>
-                </Card>
-
-                {/* THEME (🔥🔥 NAYE COLORS YAHAN HAI 🔥🔥) */}
-                <Card className="glass-strong mb-8 border-[#00FFFF]/30">
-                  <CardContent className="p-6 sm:p-8 space-y-6">
-                    <div className="flex items-center gap-3 border-b border-[#00FFFF]/30 pb-4"><Palette className="w-6 h-6 text-[#00FFFF]" /><h3 className="text-xl font-black uppercase">Website Theme Colors</h3></div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div className="space-y-2"><Label className="text-xs uppercase font-bold text-muted-foreground">Background Color</Label><div className="flex gap-3 items-center"><input type="color" value={themeColorData.background_color} onChange={(e) => setThemeColorData({...themeColorData, background_color: e.target.value})} className="w-12 h-12 rounded cursor-pointer border-0 bg-transparent" /><Input value={themeColorData.background_color} onChange={(e) => setThemeColorData({...themeColorData, background_color: e.target.value})} className="font-mono uppercase bg-transparent border-slate-500/30" /></div></div>
-                      <div className="space-y-2"><Label className="text-xs uppercase font-bold text-muted-foreground">Main Text Color</Label><div className="flex gap-3 items-center"><input type="color" value={themeColorData.text_color} onChange={(e) => setThemeColorData({...themeColorData, text_color: e.target.value})} className="w-12 h-12 rounded cursor-pointer border-0 bg-transparent" /><Input value={themeColorData.text_color} onChange={(e) => setThemeColorData({...themeColorData, text_color: e.target.value})} className="font-mono uppercase bg-transparent border-slate-500/30" /></div></div>
-                      <div className="space-y-2"><Label className="text-xs uppercase font-bold text-muted-foreground">Primary Accent (Icons/Lines)</Label><div className="flex gap-3 items-center"><input type="color" value={themeColorData.primary_color} onChange={(e) => setThemeColorData({...themeColorData, primary_color: e.target.value})} className="w-12 h-12 rounded cursor-pointer border-0 bg-transparent" /><Input value={themeColorData.primary_color} onChange={(e) => setThemeColorData({...themeColorData, primary_color: e.target.value})} className="font-mono uppercase bg-transparent border-slate-500/30" /></div></div>
-                      <div className="space-y-2"><Label className="text-xs uppercase font-bold text-muted-foreground">Button Color</Label><div className="flex gap-3 items-center"><input type="color" value={themeColorData.button_color} onChange={(e) => setThemeColorData({...themeColorData, button_color: e.target.value})} className="w-12 h-12 rounded cursor-pointer border-0 bg-transparent" /><Input value={themeColorData.button_color} onChange={(e) => setThemeColorData({...themeColorData, button_color: e.target.value})} className="font-mono uppercase bg-transparent border-slate-500/30" /></div></div>
-                      
-                      {/* NEW COLORS ADDED */}
-                      <div className="space-y-2"><Label className="text-xs uppercase font-bold text-muted-foreground">Price Color (e.g. ₹150)</Label><div className="flex gap-3 items-center"><input type="color" value={themeColorData.price_color} onChange={(e) => setThemeColorData({...themeColorData, price_color: e.target.value})} className="w-12 h-12 rounded cursor-pointer border-0 bg-transparent" /><Input value={themeColorData.price_color} onChange={(e) => setThemeColorData({...themeColorData, price_color: e.target.value})} className="font-mono uppercase bg-transparent border-slate-500/30" /></div></div>
-                      <div className="space-y-2"><Label className="text-xs uppercase font-bold text-muted-foreground">Product/Category Title Color</Label><div className="flex gap-3 items-center"><input type="color" value={themeColorData.title_color} onChange={(e) => setThemeColorData({...themeColorData, title_color: e.target.value})} className="w-12 h-12 rounded cursor-pointer border-0 bg-transparent" /><Input value={themeColorData.title_color} onChange={(e) => setThemeColorData({...themeColorData, title_color: e.target.value})} className="font-mono uppercase bg-transparent border-slate-500/30" /></div></div>
-                      <div className="space-y-2"><Label className="text-xs uppercase font-bold text-muted-foreground">Accent Color (Badges/Icons)</Label><div className="flex gap-3 items-center"><input type="color" value={themeColorData.accent_color} onChange={(e) => setThemeColorData({...themeColorData, accent_color: e.target.value})} className="w-12 h-12 rounded cursor-pointer border-0 bg-transparent" /><Input value={themeColorData.accent_color} onChange={(e) => setThemeColorData({...themeColorData, accent_color: e.target.value})} className="font-mono uppercase bg-transparent border-slate-500/30" /></div></div>
-                      <div className="space-y-2"><Label className="text-xs uppercase font-bold text-muted-foreground">Discount Color (MRP/Cancelled)</Label><div className="flex gap-3 items-center"><input type="color" value={themeColorData.discount_color} onChange={(e) => setThemeColorData({...themeColorData, discount_color: e.target.value})} className="w-12 h-12 rounded cursor-pointer border-0 bg-transparent" /><Input value={themeColorData.discount_color} onChange={(e) => setThemeColorData({...themeColorData, discount_color: e.target.value})} className="font-mono uppercase bg-transparent border-slate-500/30" /></div></div>
-                    </div>
-                    <div className="flex justify-end pt-4 border-t border-[#00FFFF]/20"><Button onClick={handleSaveTheme} disabled={isThemeSaving} className="h-12 bg-[#00FFFF] text-black hover:bg-[#00FFFF]/80 font-black uppercase tracking-widest px-8 rounded-full disabled:opacity-50">{isThemeSaving ? 'Saving...' : 'Update Colors'}</Button></div>
                   </CardContent>
                 </Card>
 
@@ -1339,123 +1386,6 @@ export default function AdminDashboard() {
                   </div>
                 </form>
              </motion.div>
-          )}
-
-          {/* OFFERS */}
-          {activeTab === 'offers' && (
-            <motion.div key="offers" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="space-y-6">
-              <Card className="glass-strong border-[#CCFF00]/30 hover:border-[#CCFF00]/50 transition-all mb-6">
-                <CardContent className="p-6 flex flex-col sm:flex-row items-center gap-4 justify-between">
-                  <div><h3 className="text-lg font-black text-[#CCFF00] uppercase flex items-center gap-2"><LockKeyhole className="w-5 h-5"/> Global Minimum Order</h3><p className="text-xs text-muted-foreground mt-1">Set the strict minimum cart value required to checkout.</p></div>
-                  <div className="flex gap-2 w-full sm:w-auto"><Input type="number" value={globalMinOrder} onChange={e => setGlobalMinOrder(Number(e.target.value))} className="w-full sm:w-32 text-center text-[#CCFF00] font-mono font-black text-lg bg-transparent border-slate-500/30" /><Button onClick={handleSaveGlobalMinOrder} className="bg-[#CCFF00] text-black font-black hover:bg-[#CCFF00]/80 px-6 uppercase">Save</Button></div>
-                </CardContent>
-              </Card>
-
-              <div className="flex justify-between items-center gap-4 pt-4 border-t">
-                <div><h3 className="text-lg font-black text-[#00FFFF] uppercase flex items-center gap-2"><Truck className="w-5 h-5"/> Delivery Areas & Fees</h3></div>
-                <Sheet>
-                  <SheetTrigger asChild><Button className="bg-[#00FFFF] text-black font-black hover:bg-[#00FFFF]/90 shadow-[0_0_15px_rgba(0,255,255,0.3)] h-12 rounded-xl px-6"><Plus className="w-5 h-5 mr-2" /> NEW AREA</Button></SheetTrigger>
-                  <SheetContent className={`backdrop-blur-2xl border-l border-[#00FFFF]/30 sm:max-w-md w-full overflow-y-auto ${isAdminDark ? 'bg-black/95' : 'bg-white/95'}`}>
-                    <SheetHeader className="text-left mb-8 mt-6"><SheetTitle className="text-3xl font-black italic uppercase text-[#00FFFF]">Add Delivery Area</SheetTitle></SheetHeader>
-                    <form onSubmit={(e: any) => { e.preventDefault(); const data = new FormData(e.target); addDeliveryZone({ areaName: data.get('areaName')?.toString().toUpperCase() || '', fee: Number(data.get('fee')), isActive: true }); e.target.reset(); }} className="flex flex-col gap-6">
-                      <div className="space-y-2"><Label>Area Name</Label><Input name="areaName" required className="uppercase font-mono text-[#00FFFF] bg-transparent border-slate-500/30" /></div>
-                      <div className="space-y-2"><Label>Delivery Fee (₹)</Label><Input name="fee" type="number" required min="0" className="bg-transparent border-slate-500/30" /></div>
-                      <Button type="submit" className="w-full h-14 bg-[#00FFFF] text-black font-black hover:bg-[#00FFFF]/80">SAVE AREA</Button>
-                    </form>
-                  </SheetContent>
-                </Sheet>
-              </div>
-              
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-6">
-                {(!deliveryZones || deliveryZones.length === 0) ? (
-                  <div className="col-span-full py-10 text-center opacity-30"><Truck className="w-12 h-12 mx-auto mb-4" /><p className="font-black uppercase tracking-widest text-xl">No Delivery Zones</p></div>
-                ) : (
-                  deliveryZones.map((zone: any) => (
-                    <Card key={zone.id} className={`glass-strong transition-all ${!zone.isActive ? 'opacity-50 grayscale' : 'hover:border-[#00FFFF]/30'}`}>
-                      <CardContent className="p-5">
-                        <div className="flex justify-between items-start mb-4">
-                          <p className="text-xl font-black text-[#00FFFF] font-mono tracking-widest">{zone.areaName}</p>
-                          <Badge variant={zone.isActive ? "outline" : "secondary"} className={`text-[10px] font-black uppercase tracking-widest ${zone.isActive ? 'text-[#CCFF00] border-[#CCFF00]/30' : ''}`}>{zone.isActive ? 'ACTIVE' : 'OFF'}</Badge>
-                        </div>
-                        
-                        {editingZoneId === zone.id ? (
-                          <div className="flex items-center gap-2 mb-6">
-                            <Input type="number" value={editingZoneFee} onChange={(e) => setEditingZoneFee(e.target.value)} className="border-[#00FFFF]/50 w-20 h-8 text-[#00FFFF] font-mono px-2 bg-transparent" />
-                            <Button onClick={() => handleUpdateZoneFee(zone)} size="sm" className="h-8 bg-[#00FFFF] text-black font-black px-3 text-[10px]">SAVE</Button>
-                            <Button onClick={() => setEditingZoneId(null)} size="sm" variant="ghost" className="h-8 hover:bg-slate-500/10 px-2"><X className="w-4 h-4" /></Button>
-                          </div>
-                        ) : (
-                          <div className="flex items-center gap-3 mb-6">
-                            <p className="font-bold text-sm">Delivery Fee: <span className="text-[#CCFF00] font-mono">₹{zone.fee}</span></p>
-                            <button onClick={() => { setEditingZoneId(zone.id); setEditingZoneFee(String(zone.fee)); }} className="text-[#00FFFF] hover:text-[#008b8b] transition-colors" title="Edit Fee"><Edit className="w-4 h-4" /></button>
-                          </div>
-                        )}
-
-                        <div className="flex gap-2 pt-4 border-t">
-                          <Button variant="ghost" className={`flex-1 text-xs font-black border ${zone.isActive ? 'hover:bg-slate-500/10' : 'border-[#CCFF00]/30 text-[#CCFF00] hover:bg-[#CCFF00] hover:text-black'}`} onClick={() => toggleDeliveryZoneStatus(zone.id)}>{zone.isActive ? 'TURN OFF' : 'ACTIVATE'}</Button>
-                          <Button variant="ghost" size="icon" className="border border-red-500/30 text-red-500 hover:bg-red-500 hover:text-white" onClick={() => { if(confirm("Delete?")) deleteDeliveryZone(zone.id) }}><Trash2 className="w-4 h-4" /></Button>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))
-                )}
-              </div>
-
-              <div className="flex justify-between items-center gap-4 pt-8 border-t">
-                <div><p className="text-muted-foreground font-mono">Manage discount coupons.</p></div>
-                <Sheet>
-                  <SheetTrigger asChild><Button className="bg-[#00FFFF] text-black font-black hover:bg-[#00FFFF]/90 shadow-[0_0_15px_rgba(0,255,255,0.3)] h-12 rounded-xl px-6"><Plus className="w-5 h-5 mr-2" /> NEW OFFER</Button></SheetTrigger>
-                  <SheetContent className={`backdrop-blur-2xl border-l border-[#00FFFF]/30 sm:max-w-md w-full overflow-y-auto ${isAdminDark ? 'bg-black/95' : 'bg-white/95'}`}>
-                    <SheetHeader className="text-left mb-8 mt-6"><SheetTitle className="text-3xl font-black italic uppercase text-[#00FFFF]">Create Coupon</SheetTitle></SheetHeader>
-                    <form onSubmit={(e: any) => { e.preventDefault(); const data = new FormData(e.target); addPromoCode({ code: data.get('code')?.toString().toUpperCase() || '', type: data.get('type') as any, value: Number(data.get('value')), minOrder: Number(data.get('minOrder')), isActive: true }); e.target.reset(); }} className="flex flex-col gap-6">
-                      <div className="space-y-2"><Label>Coupon Code</Label><Input name="code" required className="uppercase font-mono text-[#00FFFF] bg-transparent border-slate-500/30" /></div>
-                      <div className="grid grid-cols-2 gap-4"><div className="space-y-2"><Label>Discount Type</Label><select name="type" className="w-full h-10 border rounded-md px-3 text-sm focus:outline-none focus:border-[#00FFFF] bg-transparent border-slate-500/30"><option value="flat">Flat Amount (₹)</option><option value="percent">Percentage (%)</option></select></div><div className="space-y-2"><Label>Value</Label><Input name="value" type="number" required min="1" className="bg-transparent border-slate-500/30" /></div></div>
-                      <div className="space-y-2"><Label>Min Order (₹)</Label><Input name="minOrder" type="number" required min="0" className="bg-transparent border-slate-500/30" /></div>
-                      <Button type="submit" className="w-full h-14 bg-[#00FFFF] text-black font-black hover:bg-[#00FFFF]/80">SAVE OFFER</Button>
-                    </form>
-                  </SheetContent>
-                </Sheet>
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-6">
-                {(!promoCodes || promoCodes.length === 0) ? (
-                  <div className="col-span-full py-20 text-center opacity-30"><Tag className="w-12 h-12 mx-auto mb-4" /><p className="font-black uppercase tracking-widest text-xl">No Active Offers</p></div>
-                ) : (
-                  promoCodes.map((promo: any) => (
-                    <Card key={promo.id} className={`glass-strong transition-all ${!promo.isActive ? 'opacity-50 grayscale' : 'hover:border-[#00FFFF]/30'}`}>
-                      <CardContent className="p-5">
-                        <div className="flex justify-between items-start mb-4"><div className="flex items-center gap-2"><p className="text-xl font-black text-[#00FFFF] font-mono tracking-widest">{promo.code}</p></div><Badge variant={promo.isActive ? "outline" : "secondary"} className={`text-[10px] font-black uppercase tracking-widest ${promo.isActive ? 'text-[#CCFF00] border-[#CCFF00]/30' : ''}`}>{promo.isActive ? 'ACTIVE' : 'OFF'}</Badge></div>
-                        <div className="space-y-1 mb-6"><p className="font-bold text-sm">{promo.type === 'flat' ? `₹${promo.value} Flat Off` : `${promo.value}% Instant Discount`}</p><p className="text-[10px] text-muted-foreground uppercase tracking-widest">Valid on orders above ₹{promo.minOrder}</p></div>
-                        <div className="flex gap-2 pt-4 border-t"><Button variant="ghost" className={`flex-1 text-xs font-black border ${promo.isActive ? 'hover:bg-slate-500/10' : 'border-[#CCFF00]/30 text-[#CCFF00] hover:bg-[#CCFF00] hover:text-black'}`} onClick={() => togglePromoStatus(promo.id)}>{promo.isActive ? 'TURN OFF' : 'ACTIVATE'}</Button><Button variant="ghost" size="icon" className="border border-red-500/30 text-red-500 hover:bg-red-500 hover:text-white" onClick={() => { if(confirm("Delete?")) deletePromo(promo.id) }}><Trash2 className="w-4 h-4" /></Button></div>
-                      </CardContent>
-                    </Card>
-                  ))
-                )}
-              </div>
-            </motion.div>
-          )}
-
-          {/* MESSAGES */}
-          {activeTab === 'messages' && (
-            <motion.div key="messages" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              <Card className="glass-strong border-[#00FFFF]/20 lg:col-span-1 h-fit"><CardContent className="p-6 space-y-6"><div><h3 className="text-xl font-black uppercase tracking-tight mb-2 flex items-center gap-2"><MessageSquare className="w-5 h-5 text-[#00FFFF]"/> Broadcast Center</h3></div><div className="space-y-3"><Label className="text-xs uppercase tracking-widest text-[#00FFFF]">Message Content</Label><textarea value={messageText} onChange={(e) => setMessageText(e.target.value)} className="w-full border focus-visible:border-[#00FFFF] rounded-xl p-4 min-h-[200px] text-sm resize-none bg-transparent border-slate-500/30" /><div className="flex justify-between text-[10px] text-muted-foreground uppercase tracking-widest"><span>{messageText.length} chars</span><span>{selectedCustomers.length} selected</span></div></div><div className="flex flex-col gap-3"><Button onClick={handleSendToApp} disabled={selectedCustomers.length === 0 || !messageText.trim()} className="w-full h-12 bg-[#CCFF00] text-black font-black hover:bg-[#CCFF00]/80 disabled:opacity-50"><Smartphone className="w-4 h-4 mr-2" /> PUSH TO APP</Button><Button onClick={handleSendToWhatsApp} disabled={selectedCustomers.length === 0 || !messageText.trim()} className="w-full h-12 bg-[#25D366] text-white font-black hover:bg-[#25D366]/80 disabled:opacity-50"><MessageCircle className="w-4 h-4 mr-2" /> PUSH TO WHATSAPP</Button></div></CardContent></Card>
-              <Card className="glass-strong lg:col-span-2">
-                <CardContent className="p-6 space-y-4">
-                  <div className="flex justify-between items-center border-b pb-4"><h3 className="text-sm font-black uppercase tracking-widest">Select Recipients</h3><button onClick={handleSelectAll} className="flex items-center gap-2 text-xs font-bold text-[#00FFFF] hover:text-[#008b8b] uppercase tracking-widest">{selectedCustomers.length === customersList.length && customersList.length > 0 ? <CheckSquare className="w-4 h-4" /> : <Square className="w-4 h-4" />} {selectedCustomers.length === customersList.length && customersList.length > 0 ? 'Deselect All' : 'Select All'}</button></div>
-                  {customersList.length === 0 ? (
-                    <Empty className="py-12 border-none"><EmptyContent><Users className="w-12 h-12 text-muted-foreground mb-4 opacity-50" /><EmptyTitle className="text-lg uppercase">No customers</EmptyTitle></EmptyContent></Empty>
-                  ) : (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-[500px] overflow-y-auto pr-2 scrollbar-hide">
-                      {customersList.map((cust: any) => {
-                        const isSelected = selectedCustomers.includes(cust.phone); const isVip = customerMeta[cust.phone]?.isVip;
-                        return (
-                          <div key={cust.phone} onClick={() => handleSelectCustomer(cust.phone)} className={`p-3 rounded-xl border cursor-pointer flex items-center gap-4 transition-all ${isSelected ? 'bg-primary/10 border-primary/50 shadow-[0_0_15px_rgba(0,139,139,0.1)] dark:shadow-[0_0_15px_rgba(0,255,255,0.1)]' : 'bg-slate-500/5 hover:border-slate-500/30'}`}><div className={`shrink-0 transition-colors ${isSelected ? 'text-primary' : 'text-muted-foreground'}`}>{isSelected ? <CheckSquare className="w-5 h-5" /> : <Square className="w-5 h-5" />}</div><div className="flex-1 overflow-hidden"><div className="flex items-center gap-2"><p className={`font-bold uppercase truncate ${isSelected ? 'text-foreground' : 'text-muted-foreground'}`}>{cust.name}</p>{isVip && <Star className="w-3 h-3 text-[#CCFF00] shrink-0" />}</div><p className="text-xs font-mono text-muted-foreground mt-0.5">{cust.phone}</p></div></div>
-                        )
-                      })}
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            </motion.div>
           )}
 
         </AnimatePresence>
