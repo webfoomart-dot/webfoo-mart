@@ -190,7 +190,7 @@ export default function HomePage() {
         initial={{ opacity: 0 }} 
         animate={{ opacity: 1 }} 
         onClick={() => { if(!itemLocked) router.push(`/product/${product.id}`) }} 
-        className={`cursor-pointer bg-card/50 dark:bg-white/5 p-3 rounded-[1.5rem] border border-border flex flex-col gap-3 relative transition-all duration-300 hover:border-primary/40 hover:bg-black/5 dark:hover:bg-white/10 group ${itemLocked ? 'opacity-60 grayscale cursor-not-allowed pointer-events-none' : ''} ${isHorizontalMode ? 'min-w-[160px] max-w-[160px] sm:min-w-[190px] sm:max-w-[190px] snap-start shrink-0' : ''}`}
+        className={`cursor-pointer bg-card/50 dark:bg-white/5 p-3 rounded-[1.5rem] border border-border flex flex-col gap-3 relative transition-all duration-300 hover:border-theme-accent/40 hover:bg-black/5 dark:hover:bg-white/10 group ${itemLocked ? 'opacity-60 grayscale cursor-not-allowed pointer-events-none' : ''} ${isHorizontalMode ? 'min-w-[160px] max-w-[160px] sm:min-w-[190px] sm:max-w-[190px] snap-start shrink-0' : ''}`}
       >
         <div className="relative h-36 sm:h-44 w-full rounded-xl overflow-hidden flex items-center justify-center p-0 border border-border bg-black/5 dark:bg-black/20">
           <Image 
@@ -204,7 +204,8 @@ export default function HomePage() {
               {!isCatOpen ? (
                 <Lock className="w-4 h-4 text-white opacity-80 mb-1" />
               ) : null}
-              <span className={`text-white font-black text-[10px] px-3 py-1.5 uppercase tracking-widest rounded-md shadow-lg ${!isCatOpen ? 'bg-orange-500' : 'bg-red-500'}`}>
+              {/* 🔥 CUSTOM DISCOUNT/OUT OF STOCK COLOR 🔥 */}
+              <span className={`text-white font-black text-[10px] px-3 py-1.5 uppercase tracking-widest rounded-md shadow-lg ${!isCatOpen ? 'bg-orange-500' : 'bg-theme-discount'}`}>
                 {!isCatOpen ? 'Closed' : (product.customStockMessage || 'Out of Stock')}
               </span>
             </div>
@@ -212,8 +213,10 @@ export default function HomePage() {
         </div>
         
         <div className="mt-1 flex-1 flex flex-col justify-start space-y-1">
-          <p className="text-primary font-bold text-[9px] uppercase tracking-widest opacity-80">{product.category}</p>
-          <p className="font-bold text-foreground text-xs leading-tight line-clamp-2">{product.name}</p>
+          {/* 🔥 CUSTOM ACCENT COLOR 🔥 */}
+          <p className="text-theme-accent font-bold text-[9px] uppercase tracking-widest opacity-80">{product.category}</p>
+          {/* 🔥 CUSTOM TITLE COLOR 🔥 */}
+          <p className="font-bold text-theme-title text-xs leading-tight line-clamp-2">{product.name}</p>
           
           <div className="pt-0.5">
             {product.foodPref === 'veg' && (
@@ -231,22 +234,25 @@ export default function HomePage() {
 
         <div className="flex items-center justify-between mt-1 pt-3 border-t border-border" onClick={(e) => e.stopPropagation()}>
           <div className="flex flex-col">
-            <span className="font-mono font-black text-primary text-base">₹{product.price}</span>
-            {product.mrp > product.price && <span className="text-[10px] text-muted-foreground line-through font-mono">₹{product.mrp}</span>}
+            {/* 🔥 CUSTOM PRICE COLOR 🔥 */}
+            <span className="font-mono font-black text-theme-price text-base">₹{product.price}</span>
+            {/* 🔥 CUSTOM DISCOUNT COLOR (MRP) 🔥 */}
+            {product.mrp > product.price && <span className="text-[10px] text-theme-discount opacity-80 line-through font-mono">₹{product.mrp}</span>}
           </div>
           
           {cartItem ? (
-            <div className={`flex items-center gap-2 bg-primary/10 border border-primary/30 rounded-lg p-1 ${itemLocked ? 'pointer-events-none opacity-50' : ''}`}>
-              <button onClick={(e) => handleMinusClick(e, product.id, cartItem.quantity)} className="w-7 h-7 flex items-center justify-center text-primary hover:bg-primary/20 rounded-md transition-colors"><Minus className="w-3 h-3" /></button>
+            <div className={`flex items-center gap-2 bg-theme-accent/10 border border-theme-accent/30 rounded-lg p-1 ${itemLocked ? 'pointer-events-none opacity-50' : ''}`}>
+              <button onClick={(e) => handleMinusClick(e, product.id, cartItem.quantity)} className="w-7 h-7 flex items-center justify-center text-theme-accent hover:bg-theme-accent/20 rounded-md transition-colors"><Minus className="w-3 h-3" /></button>
               <span className="text-sm font-black w-4 text-center text-foreground">{cartItem.quantity}</span>
-              <button onClick={(e) => handlePlusClick(e, product.id, cartItem.quantity, isCatOpen)} className="w-7 h-7 flex items-center justify-center text-primary hover:bg-primary/20 rounded-md transition-colors"><Plus className="w-3 h-3" /></button>
+              <button onClick={(e) => handlePlusClick(e, product.id, cartItem.quantity, isCatOpen)} className="w-7 h-7 flex items-center justify-center text-theme-accent hover:bg-theme-accent/20 rounded-md transition-colors"><Plus className="w-3 h-3" /></button>
             </div>
           ) : (
             <Button 
               disabled={itemLocked} 
               onClick={(e) => handleAddToCart(e, product, isCatOpen)} 
               size="sm" 
-              className="h-9 bg-secondary text-secondary-foreground dark:text-black font-black text-[11px] uppercase tracking-widest rounded-lg px-4 hover:bg-secondary/80 disabled:bg-muted disabled:text-muted-foreground shadow-[0_0_15px_rgba(153,204,0,0.15)] dark:shadow-[0_0_15px_rgba(204,255,0,0.15)] pointer-events-auto"
+              // 🔥 CUSTOM BUTTON/ACCENT COLOR 🔥
+              className="h-9 bg-theme-accent text-black font-black text-[11px] uppercase tracking-widest rounded-lg px-4 hover:opacity-80 disabled:bg-muted disabled:text-muted-foreground shadow-sm pointer-events-auto"
             >
               ADD
             </Button>
@@ -257,7 +263,7 @@ export default function HomePage() {
   }
 
   return (
-    <div className="min-h-screen bg-background text-foreground font-sans selection:bg-primary/30 pb-32 pt-24 relative transition-colors duration-300">
+    <div className="min-h-screen bg-background text-foreground font-sans selection:bg-theme-accent/30 pb-32 pt-24 relative transition-colors duration-300">
       <Header />
 
       <main className="p-4 sm:p-6 space-y-6 max-w-7xl mx-auto">
@@ -269,22 +275,22 @@ export default function HomePage() {
               {storeConfig.bannerImageUrlOpen ? (
                 <Image src={storeConfig.bannerImageUrlOpen} alt="Store open" fill className="object-cover group-hover:scale-105 transition-transform duration-500" priority />
               ) : (
-                <><TicketPercent className="absolute w-40 h-40 text-primary/10 -right-5 -bottom-5 rotate-12" /><Zap className="absolute w-32 h-32 text-secondary/10 -left-5 -top-5 -rotate-12" /></>
+                <><TicketPercent className="absolute w-40 h-40 text-primary/10 -right-5 -bottom-5 rotate-12" /><Zap className="absolute w-32 h-32 text-theme-accent/10 -left-5 -top-5 -rotate-12" /></>
               )}
               <div className="relative z-10 max-w-xl space-y-2">
                 <p className="text-xl sm:text-3xl font-extrabold text-white uppercase tracking-tight leading-tight [text-shadow:0_0_15px_#000] dark:[text-shadow:0_0_15px_#fff]">{storeConfig.bannerTextOpen}</p>
               </div>
             </motion.div>
           ) : (
-            <motion.div key="closed" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="relative h-40 sm:h-52 w-full overflow-hidden rounded-[1.5rem] bg-black/5 dark:bg-[#100000] border-2 border-[#FF0055]/50 shadow-[0_0_30px_rgba(255,0,85,0.1)] group flex items-center px-6 sm:px-8">
+            <motion.div key="closed" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="relative h-40 sm:h-52 w-full overflow-hidden rounded-[1.5rem] bg-black/5 dark:bg-[#100000] border-2 border-theme-discount/50 shadow-sm group flex items-center px-6 sm:px-8">
               {storeConfig.bannerImageUrlClosed ? (
                 <Image src={storeConfig.bannerImageUrlClosed} alt="Store closed" fill className="object-cover opacity-80 group-hover:scale-105 transition-transform duration-500" priority />
               ) : (
-                <MoonStar className="absolute w-40 h-40 text-[#FF0055]/10 -right-5 -bottom-5 rotate-12" />
+                <MoonStar className="absolute w-40 h-40 text-theme-discount/10 -right-5 -bottom-5 rotate-12" />
               )}
               <div className="relative z-10 max-w-xl space-y-2">
-                <Badge className="bg-red-500/20 text-red-500 font-black text-[10px] uppercase tracking-widest px-3 py-0.5 border border-red-500/30">STATUS</Badge>
-                <p className="text-lg sm:text-2xl font-bold text-red-500 dark:text-red-300 uppercase tracking-tight leading-tight">{storeConfig.bannerTextClosed}</p>
+                <Badge className="bg-theme-discount/20 text-theme-discount font-black text-[10px] uppercase tracking-widest px-3 py-0.5 border border-theme-discount/30">STATUS</Badge>
+                <p className="text-lg sm:text-2xl font-bold text-theme-discount uppercase tracking-tight leading-tight">{storeConfig.bannerTextClosed}</p>
               </div>
             </motion.div>
           )}
@@ -293,7 +299,7 @@ export default function HomePage() {
         <div className="space-y-4">
           <div className="relative mt-2">
             <Search className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-            <Input type="search" placeholder="Search for snacks, drinks & more..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="h-14 pl-14 pr-6 bg-card border-border rounded-full text-sm text-foreground focus-visible:border-primary shadow-inner w-full" />
+            <Input type="search" placeholder="Search for snacks, drinks & more..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="h-14 pl-14 pr-6 bg-card border-border rounded-full text-sm text-foreground focus-visible:border-theme-accent shadow-inner w-full" />
           </div>
         </div>
 
@@ -319,13 +325,13 @@ export default function HomePage() {
                 const categoryProducts = products.filter((p: any) => String(p.category).toLowerCase() === categoryName.toLowerCase());
                 if (categoryProducts.length === 0) return null;
                 
-                // 🔥 CHECK IF CATEGORY IS CURRENTLY ACTIVE BASED ON EXACT MATH TIME 🔥
                 const { isOpen, message } = checkCategoryStatus(categoryName);
 
                 return (
                   <div key={categoryName} className={`space-y-4 transition-all duration-500 ${!isOpen ? 'opacity-80' : ''}`}>
-                    <div className="flex items-center gap-3 pl-3 border-l-4 border-secondary">
-                      <h3 className="text-xl font-black uppercase tracking-widest text-foreground leading-none">{categoryName}</h3>
+                    {/* 🔥 CUSTOM CATEGORY TITLE & BORDER 🔥 */}
+                    <div className="flex items-center gap-3 pl-3 border-l-4 border-theme-accent">
+                      <h3 className="text-xl font-black uppercase tracking-widest text-theme-title leading-none">{categoryName}</h3>
                       {!isOpen && message && (
                         <Badge variant="outline" className="bg-orange-500/10 text-orange-500 border-orange-500/30 text-[10px] uppercase font-black tracking-widest px-2 py-0.5">
                           <Clock className="w-3 h-3 mr-1 inline" /> {message}
@@ -345,32 +351,32 @@ export default function HomePage() {
         {storeConfig && storeConfig.ownerName && (
           <div className="mt-16 pt-8 border-t border-border">
             <div className="max-w-md mx-auto bg-card/50 p-6 rounded-[2rem] border border-border text-center flex flex-col items-center gap-4 relative overflow-hidden group">
-              <div className="absolute inset-0 bg-gradient-to-t from-secondary/5 to-transparent pointer-events-none"></div>
+              <div className="absolute inset-0 bg-gradient-to-t from-theme-accent/5 to-transparent pointer-events-none"></div>
               {storeConfig.ownerPhoto ? (
-                <div className="relative w-20 h-20 rounded-full border-2 border-secondary/30 p-1 bg-background overflow-hidden z-10 group-hover:scale-105 transition-transform duration-300">
+                <div className="relative w-20 h-20 rounded-full border-2 border-theme-accent/30 p-1 bg-background overflow-hidden z-10 group-hover:scale-105 transition-transform duration-300">
                   <Image src={storeConfig.ownerPhoto} alt={storeConfig.ownerName} fill className="object-cover rounded-full" />
                 </div>
               ) : (
-                <div className="w-16 h-16 rounded-full border-2 border-secondary/30 bg-secondary/10 flex items-center justify-center z-10">
-                  <UserCircle className="w-8 h-8 text-secondary" />
+                <div className="w-16 h-16 rounded-full border-2 border-theme-accent/30 bg-theme-accent/10 flex items-center justify-center z-10">
+                  <UserCircle className="w-8 h-8 text-theme-accent" />
                 </div>
               )}
               <div className="space-y-1 z-10">
-                <Badge variant="outline" className="text-primary border-primary/30 bg-primary/10 mb-2 uppercase tracking-widest text-[9px] font-black">Founder & Owner</Badge>
-                <h3 className="text-xl font-black text-foreground uppercase tracking-tight">{storeConfig.ownerName}</h3>
+                <Badge variant="outline" className="text-theme-accent border-theme-accent/30 bg-theme-accent/10 mb-2 uppercase tracking-widest text-[9px] font-black">Founder & Owner</Badge>
+                <h3 className="text-xl font-black text-theme-title uppercase tracking-tight">{storeConfig.ownerName}</h3>
                 <p className="text-xs text-muted-foreground uppercase tracking-widest font-bold">Behind WebFoo</p>
               </div>
               <div className="flex gap-4 w-full mt-2 z-10">
                 {storeConfig.ownerPhone && (
                   <a href={`tel:${storeConfig.ownerPhone}`} className="flex-1">
-                    <Button variant="outline" className="w-full h-10 border-border hover:border-secondary/50 hover:bg-secondary/10 hover:text-secondary text-muted-foreground transition-all">
+                    <Button variant="outline" className="w-full h-10 border-border hover:border-theme-accent/50 hover:bg-theme-accent/10 hover:text-theme-accent text-muted-foreground transition-all">
                       <Phone className="w-4 h-4 mr-2" /> Call
                     </Button>
                   </a>
                 )}
                 {storeConfig.ownerEmail && (
                   <a href={`mailto:${storeConfig.ownerEmail}`} className="flex-1">
-                    <Button variant="outline" className="w-full h-10 border-border hover:border-primary/50 hover:bg-primary/10 hover:text-primary text-muted-foreground transition-all">
+                    <Button variant="outline" className="w-full h-10 border-border hover:border-theme-accent/50 hover:bg-theme-accent/10 hover:text-theme-accent text-muted-foreground transition-all">
                       <Mail className="w-4 h-4 mr-2" /> Mail
                     </Button>
                   </a>
@@ -391,30 +397,30 @@ export default function HomePage() {
             transition={{ type: "spring", stiffness: 300, damping: 25 }}
             className="fixed bottom-[85px] left-0 right-0 z-50 px-4 flex justify-center pointer-events-none"
           >
-            <div onClick={() => setIsTrackingOpen(true)} className="pointer-events-auto w-full max-w-[340px] bg-background/95 backdrop-blur-2xl rounded-[2rem] p-2 pr-4 flex items-center gap-4 cursor-pointer border border-border shadow-[0_20px_50px_rgba(0,0,0,0.2)] dark:shadow-[0_20px_50px_rgba(0,0,0,0.8)] overflow-hidden relative group">
-              <div className={`absolute bottom-0 left-0 h-[3px] transition-all duration-1000 ease-in-out ${activeOrder.status === 'Pending' ? 'bg-orange-500 w-[20%]' : activeOrder.status === 'Preparing' ? 'bg-primary w-[50%]' : 'bg-secondary w-[85%]'}`}></div>
-              <div className={`absolute inset-0 opacity-20 ${activeOrder.status === 'Pending' ? 'bg-gradient-to-r from-orange-500 to-transparent' : activeOrder.status === 'Preparing' ? 'bg-gradient-to-r from-[#008b8b] dark:from-[#00FFFF] to-transparent' : 'bg-gradient-to-r from-[#99cc00] dark:from-[#CCFF00] to-transparent'}`} />
+            <div onClick={() => setIsTrackingOpen(true)} className="pointer-events-auto w-full max-w-[340px] bg-background/95 backdrop-blur-2xl rounded-[2rem] p-2 pr-4 flex items-center gap-4 cursor-pointer border border-border shadow-xl overflow-hidden relative group">
+              <div className={`absolute bottom-0 left-0 h-[3px] transition-all duration-1000 ease-in-out ${activeOrder.status === 'Pending' ? 'bg-orange-500 w-[20%]' : activeOrder.status === 'Preparing' ? 'bg-theme-price w-[50%]' : 'bg-theme-accent w-[85%]'}`}></div>
+              <div className={`absolute inset-0 opacity-20 ${activeOrder.status === 'Pending' ? 'bg-gradient-to-r from-orange-500 to-transparent' : activeOrder.status === 'Preparing' ? 'bg-gradient-to-r from-theme-price to-transparent' : 'bg-gradient-to-r from-theme-accent to-transparent'}`} />
 
               <div className="flex items-center gap-3 relative z-10 w-full">
-                <div className={`w-12 h-12 shrink-0 rounded-[1.2rem] flex items-center justify-center bg-card border relative overflow-hidden ${activeOrder.status === 'Pending' ? 'border-orange-500/50 text-orange-500 shadow-[0_0_10px_rgba(249,115,22,0.3)]' : activeOrder.status === 'Preparing' ? 'border-primary/50 text-primary shadow-[0_0_10px_rgba(0,139,139,0.3)] dark:shadow-[0_0_10px_rgba(0,255,255,0.3)]' : 'border-secondary/50 text-secondary shadow-[0_0_10px_rgba(153,204,0,0.3)] dark:shadow-[0_0_10px_rgba(204,255,0,0.3)]'}`}>
+                <div className={`w-12 h-12 shrink-0 rounded-[1.2rem] flex items-center justify-center bg-card border relative overflow-hidden ${activeOrder.status === 'Pending' ? 'border-orange-500/50 text-orange-500' : activeOrder.status === 'Preparing' ? 'border-theme-price/50 text-theme-price' : 'border-theme-accent/50 text-theme-accent'}`}>
                   {activeOrder.status === 'Pending' ? (
                     <Clock className="w-6 h-6 animate-pulse" />
                   ) : activeOrder.status === 'Preparing' ? (
                     <PreparingIcon className="w-6 h-6" />
                   ) : (
                     <div className="relative w-full h-full flex items-center justify-center">
-                      <motion.div animate={{ x: [15, -20], opacity: [0, 1, 0] }} transition={{ repeat: Infinity, duration: 0.5, ease: "linear" }} className="absolute top-3 right-0 w-3 h-[1px] bg-secondary rounded-full"></motion.div>
-                      <motion.div animate={{ x: [15, -20], opacity: [0, 1, 0] }} transition={{ repeat: Infinity, duration: 0.7, delay: 0.2, ease: "linear" }} className="absolute bottom-3 right-0 w-4 h-[1px] bg-secondary rounded-full"></motion.div>
+                      <motion.div animate={{ x: [15, -20], opacity: [0, 1, 0] }} transition={{ repeat: Infinity, duration: 0.5, ease: "linear" }} className="absolute top-3 right-0 w-3 h-[1px] bg-theme-accent rounded-full"></motion.div>
+                      <motion.div animate={{ x: [15, -20], opacity: [0, 1, 0] }} transition={{ repeat: Infinity, duration: 0.7, delay: 0.2, ease: "linear" }} className="absolute bottom-3 right-0 w-4 h-[1px] bg-theme-accent rounded-full"></motion.div>
                       <motion.div animate={{ y: [0, -2, 0], rotate: [0, -4, 0] }} transition={{ repeat: Infinity, duration: 0.3, ease: "linear" }} className="z-10 bg-card rounded-full"><Bike className="w-5 h-5" /></motion.div>
                     </div>
                   )}
                 </div>
                 
                 <div className="flex flex-col justify-center flex-1">
-                  <span className="font-black text-foreground text-sm tracking-tight leading-none mb-1">
+                  <span className="font-black text-theme-title text-sm tracking-tight leading-none mb-1">
                     {activeOrder.status === 'Pending' ? 'Waiting for Acceptance' : activeOrder.status === 'Preparing' ? 'Preparing Order' : 'On the Way'}
                   </span>
-                  <span className={`text-[10px] font-bold uppercase tracking-widest ${activeOrder.status === 'Pending' ? 'text-orange-500/70' : activeOrder.status === 'Preparing' ? 'text-primary/70' : 'text-secondary/70'}`}>
+                  <span className={`text-[10px] font-bold uppercase tracking-widest ${activeOrder.status === 'Pending' ? 'text-orange-500/70' : activeOrder.status === 'Preparing' ? 'text-theme-price/70' : 'text-theme-accent/70'}`}>
                     {activeOrder.status === 'Pending' ? 'Please wait...' : activeOrder.status === 'Preparing' ? 'Arriving in 25-30 mins' : 'Arriving in 10-15 mins'}
                   </span>
                 </div>
@@ -432,11 +438,11 @@ export default function HomePage() {
               <SheetHeader className="p-6 border-b border-border bg-card/50 shrink-0">
                 <div className="text-left flex flex-col gap-3">
                   <div className="flex items-center gap-2">
-                    <Badge variant="outline" className={`bg-transparent border-border ${activeOrder.status === 'Pending' ? 'text-orange-500' : activeOrder.status === 'Preparing' ? 'text-primary' : 'text-secondary'} text-[9px] uppercase tracking-widest font-black px-2 py-0.5`}>
+                    <Badge variant="outline" className={`bg-transparent border-border ${activeOrder.status === 'Pending' ? 'text-orange-500' : activeOrder.status === 'Preparing' ? 'text-theme-price' : 'text-theme-accent'} text-[9px] uppercase tracking-widest font-black px-2 py-0.5`}>
                       Live Status
                     </Badge>
                   </div>
-                  <span className="text-xl font-black text-foreground leading-tight line-clamp-2">
+                  <span className="text-xl font-black text-theme-title leading-tight line-clamp-2">
                     {activeOrder?.items?.map((item: any) => `${item.quantity}x ${item.name}`).join(' • ')}
                   </span>
                 </div>
@@ -446,33 +452,33 @@ export default function HomePage() {
                 <div className="absolute left-[47px] top-10 bottom-20 w-[2px] bg-border"></div>
                 <div className="space-y-12 relative z-10">
                   <div className="flex items-start gap-6">
-                    <div className={`w-12 h-12 rounded-full bg-card border-[3px] flex items-center justify-center shrink-0 z-10 shadow-sm transition-all duration-500 ${activeOrder.status === 'Pending' ? 'border-orange-500 text-orange-500 shadow-[0_0_20px_rgba(249,115,22,0.2)] scale-110' : 'border-primary/30 text-primary scale-100'}`}><ClipboardCheck className="w-5 h-5" /></div>
-                    <div className="pt-2"><h4 className={`font-bold text-lg leading-none ${activeOrder.status === 'Pending' ? 'text-orange-500' : 'text-foreground'}`}>Order Placed</h4><p className="text-xs text-muted-foreground mt-1">{activeOrder.status === 'Pending' ? 'Waiting for restaurant to confirm...' : 'Restaurant accepted your order.'}</p></div>
+                    <div className={`w-12 h-12 rounded-full bg-card border-[3px] flex items-center justify-center shrink-0 z-10 shadow-sm transition-all duration-500 ${activeOrder.status === 'Pending' ? 'border-orange-500 text-orange-500 scale-110' : 'border-theme-price/30 text-theme-price scale-100'}`}><ClipboardCheck className="w-5 h-5" /></div>
+                    <div className="pt-2"><h4 className={`font-bold text-lg leading-none ${activeOrder.status === 'Pending' ? 'text-orange-500' : 'text-theme-title'}`}>Order Placed</h4><p className="text-xs text-muted-foreground mt-1">{activeOrder.status === 'Pending' ? 'Waiting for restaurant to confirm...' : 'Restaurant accepted your order.'}</p></div>
                   </div>
 
                   <div className="flex items-start gap-6">
-                    <div className={`w-12 h-12 rounded-full bg-card border-[3px] flex items-center justify-center shrink-0 z-10 transition-all duration-500 overflow-hidden ${activeOrder.status === 'Preparing' ? 'border-primary text-primary shadow-[0_0_20px_rgba(0,139,139,0.2)] dark:shadow-[0_0_20px_rgba(0,255,255,0.2)] scale-110' : activeOrder.status === 'In Transit' ? 'border-foreground/20 text-foreground scale-100' : 'border-border text-muted-foreground/30'}`}>
+                    <div className={`w-12 h-12 rounded-full bg-card border-[3px] flex items-center justify-center shrink-0 z-10 transition-all duration-500 overflow-hidden ${activeOrder.status === 'Preparing' ? 'border-theme-price text-theme-price scale-110' : activeOrder.status === 'In Transit' ? 'border-foreground/20 text-foreground scale-100' : 'border-border text-muted-foreground/30'}`}>
                       {activeOrder.status === 'Preparing' ? <PreparingIcon className="w-6 h-6" /> : <ChefHat className="w-5 h-5" />}
                     </div>
-                    <div className="pt-2"><h4 className={`font-bold text-lg leading-none transition-colors ${activeOrder.status === 'Preparing' ? 'text-primary' : activeOrder.status === 'In Transit' ? 'text-foreground' : 'text-muted-foreground/30'}`}>Food is being prepared</h4><p className="text-xs text-muted-foreground mt-1">Our chef is on it.</p></div>
+                    <div className="pt-2"><h4 className={`font-bold text-lg leading-none transition-colors ${activeOrder.status === 'Preparing' ? 'text-theme-price' : activeOrder.status === 'In Transit' ? 'text-theme-title' : 'text-muted-foreground/30'}`}>Food is being prepared</h4><p className="text-xs text-muted-foreground mt-1">Our chef is on it.</p></div>
                   </div>
 
                   <div className="flex items-start gap-6">
-                    <div className={`relative w-12 h-12 rounded-full bg-card border-[3px] flex items-center justify-center shrink-0 z-10 transition-all duration-500 overflow-hidden ${activeOrder.status === 'In Transit' ? 'border-secondary text-secondary shadow-[0_0_20px_rgba(153,204,0,0.2)] dark:shadow-[0_0_20px_rgba(204,255,0,0.2)] scale-110' : 'border-border text-muted-foreground/30 scale-100'}`}>
+                    <div className={`relative w-12 h-12 rounded-full bg-card border-[3px] flex items-center justify-center shrink-0 z-10 transition-all duration-500 overflow-hidden ${activeOrder.status === 'In Transit' ? 'border-theme-accent text-theme-accent scale-110' : 'border-border text-muted-foreground/30 scale-100'}`}>
                       {activeOrder.status === 'In Transit' ? (
                         <div className="relative w-full h-full flex items-center justify-center">
-                          <motion.div animate={{ x: [15, -20], opacity: [0, 1, 0] }} transition={{ repeat: Infinity, duration: 0.5, ease: "linear" }} className="absolute top-4 right-0 w-2 h-[1px] bg-secondary rounded-full"></motion.div>
-                          <motion.div animate={{ x: [15, -20], opacity: [0, 1, 0] }} transition={{ repeat: Infinity, duration: 0.7, delay: 0.2, ease: "linear" }} className="absolute bottom-4 right-0 w-3 h-[1px] bg-secondary rounded-full"></motion.div>
+                          <motion.div animate={{ x: [15, -20], opacity: [0, 1, 0] }} transition={{ repeat: Infinity, duration: 0.5, ease: "linear" }} className="absolute top-4 right-0 w-2 h-[1px] bg-theme-accent rounded-full"></motion.div>
+                          <motion.div animate={{ x: [15, -20], opacity: [0, 1, 0] }} transition={{ repeat: Infinity, duration: 0.7, delay: 0.2, ease: "linear" }} className="absolute bottom-4 right-0 w-3 h-[1px] bg-theme-accent rounded-full"></motion.div>
                           <motion.div animate={{ y: [0, -2, 0], rotate: [0, -4, 0] }} transition={{ repeat: Infinity, duration: 0.3, ease: "linear" }} className="z-10 bg-card rounded-full"><Bike className="w-5 h-5" /></motion.div>
                         </div>
                       ) : (<Bike className="w-5 h-5" />)}
                     </div>
-                    <div className="pt-2"><h4 className={`font-bold text-lg leading-none transition-colors ${activeOrder.status === 'In Transit' ? 'text-secondary' : 'text-muted-foreground/30'}`}>On the Way</h4><p className="text-xs text-muted-foreground mt-1">Rider is heading to your location.</p></div>
+                    <div className="pt-2"><h4 className={`font-bold text-lg leading-none transition-colors ${activeOrder.status === 'In Transit' ? 'text-theme-accent' : 'text-muted-foreground/30'}`}>On the Way</h4><p className="text-xs text-muted-foreground mt-1">Rider is heading to your location.</p></div>
                   </div>
 
                   <div className="flex items-start gap-6 opacity-30">
                     <div className="w-12 h-12 rounded-full bg-card border-[3px] border-border text-muted-foreground/50 flex items-center justify-center shrink-0 z-10"><CheckCircle2 className="w-5 h-5" /></div>
-                    <div className="pt-2"><h4 className="font-bold text-lg leading-none text-foreground">Delivered</h4><p className="text-xs text-muted-foreground mt-1">Enjoy your meal!</p></div>
+                    <div className="pt-2"><h4 className="font-bold text-lg leading-none text-theme-title">Delivered</h4><p className="text-xs text-muted-foreground mt-1">Enjoy your meal!</p></div>
                   </div>
                 </div>
               </div>
