@@ -3,6 +3,7 @@
 
 import * as React from "react"
 import Link from "next/link"
+import Image from "next/image"
 import { motion, AnimatePresence } from "framer-motion"
 import { 
   Menu, LayoutDashboard, Zap, History, Tag, Package as PackageIcon, 
@@ -11,7 +12,7 @@ import {
   Star, Ban, MessageCircle, FileText, Send, CheckSquare, Square, Smartphone,
   TrendingUp, Target, BarChart, ShieldAlert, LockKeyhole, Calendar, Settings, AlertTriangle, MoonStar, LayoutGrid,
   ArrowUp, ArrowDown, Palette, Volume2, Wallet, UserCircle, Link as LinkIcon, Search, PlusCircle, X, CornerDownRight, Folder,
-  ChefHat, Bike, AlertCircle, Sun, Moon // 🔥 Naye icons import kiye theme toggle ke liye 🔥
+  ChefHat, Bike, AlertCircle, Sun, Moon
 } from "lucide-react"
 import { createClient } from '@supabase/supabase-js' 
 
@@ -49,7 +50,6 @@ export default function AdminDashboard() {
   const [passcode, setPasscode] = React.useState('')
   const [authError, setAuthError] = React.useState('')
 
-  // 🔥 ADMIN THEME STATE 🔥
   const [isAdminDark, setIsAdminDark] = React.useState(true)
 
   const alertAudioRef = React.useRef<HTMLAudioElement>(null)
@@ -77,7 +77,6 @@ export default function AdminDashboard() {
   const [historyFilter, setHistoryFilter] = React.useState('all')
   const [historyCustomDate, setHistoryCustomDate] = React.useState('')
 
-  // PRODUCTS STATE
   const [isProductSheetOpen, setIsProductSheetOpen] = React.useState(false)
   const [editingId, setEditingId] = React.useState<string | null>(null)
   const [selectedCategoryView, setSelectedCategoryView] = React.useState<string | null>(null)
@@ -96,7 +95,6 @@ export default function AdminDashboard() {
   const [selectedCustomers, setSelectedCustomers] = React.useState<string[]>([])
   const [messageText, setMessageText] = React.useState('')
 
-  // CATEGORIES STATE
   const [editingCategoryId, setEditingCategoryId] = React.useState<string | null>(null)
   const [newCategoryName, setNewCategoryName] = React.useState('')
   const [newCategoryImage, setNewCategoryImage] = React.useState('')
@@ -104,7 +102,6 @@ export default function AdminDashboard() {
   const [newCategoryEndTime, setNewCategoryEndTime] = React.useState('')
 
   const [subCatInputs, setSubCatInputs] = React.useState<Record<string, string>>({})
-  
   const [convertingCategory, setConvertingCategory] = React.useState<any>(null)
   const [targetParentCategory, setTargetParentCategory] = React.useState<string>('')
 
@@ -116,8 +113,10 @@ export default function AdminDashboard() {
   const [isSettingsSaving, setIsSettingsSaving] = React.useState(false)
   const [globalMinOrder, setGlobalMinOrder] = React.useState(0)
 
+  // 🔥 NAYE COLORS ADDED HERE 🔥
   const [themeColorData, setThemeColorData] = React.useState({
-    primary_color: '#00FFFF', background_color: '#050505', text_color: '#ffffff', button_color: '#CCFF00'
+    primary_color: '#00FFFF', background_color: '#050505', text_color: '#ffffff', button_color: '#CCFF00',
+    price_color: '#00FFFF', title_color: '#ffffff', accent_color: '#CCFF00', discount_color: '#FF0055'
   })
   const [isThemeSaving, setIsThemeSaving] = React.useState(false)
 
@@ -137,7 +136,6 @@ export default function AdminDashboard() {
       setIsAuthorized(true)
     }
 
-    // 🔥 ADMIN THEME LOAD KAR RAHE HAIN 🔥
     const savedAdminTheme = localStorage.getItem('webfoo_admin_theme')
     if (savedAdminTheme === 'light') {
       setIsAdminDark(false)
@@ -145,12 +143,22 @@ export default function AdminDashboard() {
 
     async function loadTheme() {
       const { data } = await supabase.from('theme_settings').select('*').eq('id', 1).single()
-      if (data) setThemeColorData(data)
+      if (data) {
+        setThemeColorData({
+          primary_color: data.primary_color || '#00FFFF',
+          background_color: data.background_color || '#050505',
+          text_color: data.text_color || '#ffffff',
+          button_color: data.button_color || '#CCFF00',
+          price_color: data.price_color || '#00FFFF',
+          title_color: data.title_color || '#ffffff',
+          accent_color: data.accent_color || '#CCFF00',
+          discount_color: data.discount_color || '#FF0055'
+        })
+      }
     }
     loadTheme()
   }, [fetchData, fetchStoreConfig])
 
-  // 🔥 TOGGLE ADMIN THEME 🔥
   const toggleAdminTheme = () => {
     const newTheme = !isAdminDark;
     setIsAdminDark(newTheme);
@@ -160,18 +168,10 @@ export default function AdminDashboard() {
   React.useEffect(() => {
     if (storeConfig) {
       setSettingsFormData({
-        storeMode: storeConfig.storeMode || 'manual',
-        openTime: storeConfig.openTime || '08:00',
-        closeTime: storeConfig.closeTime || '22:00',
-        isStoreOpen: storeConfig.isStoreOpen ?? true,
-        bannerTextOpen: storeConfig.bannerTextOpen || '',
-        bannerImageUrlOpen: storeConfig.bannerImageUrlOpen || '',
-        bannerTextClosed: storeConfig.bannerTextClosed || '',
-        bannerImageUrlClosed: storeConfig.bannerImageUrlClosed || '',
-        ownerName: storeConfig.ownerName || '',
-        ownerPhone: storeConfig.ownerPhone || '',
-        ownerEmail: storeConfig.ownerEmail || '',
-        ownerPhoto: storeConfig.ownerPhoto || ''
+        storeMode: storeConfig.storeMode || 'manual', openTime: storeConfig.openTime || '08:00', closeTime: storeConfig.closeTime || '22:00',
+        isStoreOpen: storeConfig.isStoreOpen ?? true, bannerTextOpen: storeConfig.bannerTextOpen || '', bannerImageUrlOpen: storeConfig.bannerImageUrlOpen || '',
+        bannerTextClosed: storeConfig.bannerTextClosed || '', bannerImageUrlClosed: storeConfig.bannerImageUrlClosed || '',
+        ownerName: storeConfig.ownerName || '', ownerPhone: storeConfig.ownerPhone || '', ownerEmail: storeConfig.ownerEmail || '', ownerPhoto: storeConfig.ownerPhoto || ''
       })
       setGlobalMinOrder(storeConfig.minOrderAmount || 0) 
     }
@@ -191,16 +191,11 @@ export default function AdminDashboard() {
       const offset = d.getTimezoneOffset() * 60000;
       return new Date(d.getTime() - offset).toISOString().split('T')[0];
     }
-    const today = new Date();
-    const todayStr = getLocalYYYYMMDD(today);
-    const yesterday = new Date(today);
-    yesterday.setDate(yesterday.getDate() - 1);
-    const yesterdayStr = getLocalYYYYMMDD(yesterday);
+    const today = new Date(); const todayStr = getLocalYYYYMMDD(today);
+    const yesterday = new Date(today); yesterday.setDate(yesterday.getDate() - 1); const yesterdayStr = getLocalYYYYMMDD(yesterday);
     return orders.filter((o: any) => {
       let orderDateStr = o.date;
-      if (!orderDateStr && o.id && !isNaN(Number(o.id))) {
-        orderDateStr = getLocalYYYYMMDD(new Date(Number(o.id)));
-      }
+      if (!orderDateStr && o.id && !isNaN(Number(o.id))) orderDateStr = getLocalYYYYMMDD(new Date(Number(o.id)));
       if (analyticsFilter === 'today') return orderDateStr === todayStr;
       if (analyticsFilter === 'yesterday') return orderDateStr === yesterdayStr;
       if (analyticsFilter === 'custom') return orderDateStr === customDate;
@@ -215,16 +210,11 @@ export default function AdminDashboard() {
       const offset = d.getTimezoneOffset() * 60000;
       return new Date(d.getTime() - offset).toISOString().split('T')[0];
     }
-    const today = new Date();
-    const todayStr = getLocalYYYYMMDD(today);
-    const yesterday = new Date(today);
-    yesterday.setDate(yesterday.getDate() - 1);
-    const yesterdayStr = getLocalYYYYMMDD(yesterday);
+    const today = new Date(); const todayStr = getLocalYYYYMMDD(today);
+    const yesterday = new Date(today); yesterday.setDate(yesterday.getDate() - 1); const yesterdayStr = getLocalYYYYMMDD(yesterday);
     return deliveredOnly.filter((o: any) => {
       let orderDateStr = o.date;
-      if (!orderDateStr && o.id && !isNaN(Number(o.id))) {
-        orderDateStr = getLocalYYYYMMDD(new Date(Number(o.id)));
-      }
+      if (!orderDateStr && o.id && !isNaN(Number(o.id))) orderDateStr = getLocalYYYYMMDD(new Date(Number(o.id)));
       if (billingFilter === 'today') return orderDateStr === todayStr;
       if (billingFilter === 'yesterday') return orderDateStr === yesterdayStr;
       if (billingFilter === 'custom') return orderDateStr === billingCustomDate;
@@ -255,9 +245,7 @@ export default function AdminDashboard() {
     if (isMounted && isAuthorized) {
       const liveOrds = orders.filter((o: any) => o.status === 'Pending' || o.status === 'Preparing' || o.status === 'In Transit');
       if (liveOrds.length > prevOrderCountRef.current && prevOrderCountRef.current !== 0) {
-        if (alertAudioRef.current) {
-          alertAudioRef.current.play().catch(e => console.error("Sound blocked by browser:", e))
-        }
+        if (alertAudioRef.current) alertAudioRef.current.play().catch(e => console.error("Sound blocked by browser:", e))
       }
       prevOrderCountRef.current = liveOrds.length
     }
@@ -281,18 +269,10 @@ export default function AdminDashboard() {
     setIsSettingsSaving(true);
     try {
       await updateStoreConfig({
-        storeMode: settingsFormData.storeMode as 'auto' | 'manual',
-        openTime: settingsFormData.openTime,
-        closeTime: settingsFormData.closeTime,
-        isStoreOpen: settingsFormData.isStoreOpen,
-        bannerTextOpen: settingsFormData.bannerTextOpen,
-        bannerImageUrlOpen: settingsFormData.bannerImageUrlOpen || null,
-        bannerTextClosed: settingsFormData.bannerTextClosed,
-        bannerImageUrlClosed: settingsFormData.bannerImageUrlClosed || null,
-        ownerName: settingsFormData.ownerName,
-        ownerPhone: settingsFormData.ownerPhone,
-        ownerEmail: settingsFormData.ownerEmail,
-        ownerPhoto: settingsFormData.ownerPhoto,
+        storeMode: settingsFormData.storeMode as 'auto' | 'manual', openTime: settingsFormData.openTime, closeTime: settingsFormData.closeTime,
+        isStoreOpen: settingsFormData.isStoreOpen, bannerTextOpen: settingsFormData.bannerTextOpen, bannerImageUrlOpen: settingsFormData.bannerImageUrlOpen || null,
+        bannerTextClosed: settingsFormData.bannerTextClosed, bannerImageUrlClosed: settingsFormData.bannerImageUrlClosed || null,
+        ownerName: settingsFormData.ownerName, ownerPhone: settingsFormData.ownerPhone, ownerEmail: settingsFormData.ownerEmail, ownerPhoto: settingsFormData.ownerPhoto,
       });
       alert("✅ Settings saved!");
       if (fetchStoreConfig) fetchStoreConfig();
@@ -306,7 +286,11 @@ export default function AdminDashboard() {
       primary_color: themeColorData.primary_color,
       background_color: themeColorData.background_color,
       text_color: themeColorData.text_color,
-      button_color: themeColorData.button_color
+      button_color: themeColorData.button_color,
+      price_color: themeColorData.price_color,
+      title_color: themeColorData.title_color,
+      accent_color: themeColorData.accent_color,
+      discount_color: themeColorData.discount_color
     }).eq('id', 1)
     setIsThemeSaving(false)
     if (error) alert("⚠️ Error: " + error.message)
@@ -329,67 +313,35 @@ export default function AdminDashboard() {
     try {
       if (editingCategoryId) {
         await updateCategory(editingCategoryId, { name: newCategoryName.trim(), image: newCategoryImage });
-        await supabase.from('webfoo_categories').update({
-          startTime: newCategoryStartTime || null,
-          endTime: newCategoryEndTime || null
-        }).eq('id', editingCategoryId);
+        await supabase.from('webfoo_categories').update({ startTime: newCategoryStartTime || null, endTime: newCategoryEndTime || null }).eq('id', editingCategoryId);
       } else {
-        await supabase.from('webfoo_categories').insert([{
-          name: newCategoryName.trim(),
-          image: newCategoryImage,
-          subcategories: [],
-          isActive: true,
-          startTime: newCategoryStartTime || null,
-          endTime: newCategoryEndTime || null
-        }]);
+        await supabase.from('webfoo_categories').insert([{ name: newCategoryName.trim(), image: newCategoryImage, subcategories: [], isActive: true, startTime: newCategoryStartTime || null, endTime: newCategoryEndTime || null }]);
       }
-      
       if (fetchData) await fetchData();
-      
-      setNewCategoryName(''); 
-      setNewCategoryImage(''); 
-      setEditingCategoryId(null);
-      setNewCategoryStartTime('');
-      setNewCategoryEndTime('');
+      setNewCategoryName(''); setNewCategoryImage(''); setEditingCategoryId(null); setNewCategoryStartTime(''); setNewCategoryEndTime('');
       alert("✅ Category Saved Successfully!");
-    } catch (err) {
-      console.error(err);
-      alert("⚠️ Error saving category.");
-    }
+    } catch (err) { alert("⚠️ Error saving category."); }
   }
 
   const editCategoryUI = (cat: any) => {
-    setEditingCategoryId(cat.id); 
-    setNewCategoryName(cat.name); 
-    setNewCategoryImage(cat.image || '');
-    setNewCategoryStartTime(cat.startTime || '');
-    setNewCategoryEndTime(cat.endTime || '');
+    setEditingCategoryId(cat.id); setNewCategoryName(cat.name); setNewCategoryImage(cat.image || ''); setNewCategoryStartTime(cat.startTime || ''); setNewCategoryEndTime(cat.endTime || '');
     window.scrollTo({ top: 0, behavior: 'smooth' }); 
   }
 
   const resetCategoryForm = () => { 
-    setEditingCategoryId(null); 
-    setNewCategoryName(''); 
-    setNewCategoryImage(''); 
-    setNewCategoryStartTime('');
-    setNewCategoryEndTime('');
+    setEditingCategoryId(null); setNewCategoryName(''); setNewCategoryImage(''); setNewCategoryStartTime(''); setNewCategoryEndTime('');
   }
 
   const handleAddSubcat = async (catId: string, currentSubs: string[]) => {
     const newSub = subCatInputs[catId];
     if (!newSub || !newSub.trim()) return;
-    
     const updatedSubs = [...(currentSubs || []), newSub.trim()];
     const uniqueSubs = Array.from(new Set(updatedSubs));
-    
     try {
       await updateCategory(catId, { subcategories: uniqueSubs });
       setSubCatInputs({...subCatInputs, [catId]: ''});
       alert("✅ Sub-category sent to Database. Please refresh the page manually to verify.");
-    } catch (error) {
-      console.error(error);
-      alert("⚠️ Error saving to Database.");
-    }
+    } catch (error) { alert("⚠️ Error saving to Database."); }
   }
 
   const handleRemoveSubcat = async (catId: string, currentSubs: string[], subToRemove: string) => {
@@ -398,22 +350,13 @@ export default function AdminDashboard() {
       try {
         await updateCategory(catId, { subcategories: updatedSubs });
         alert("✅ Removed from Database. Please refresh the page manually to verify.");
-      } catch (error) {
-        console.error(error);
-        alert("⚠️ Error removing from Database.");
-      }
+      } catch (error) { alert("⚠️ Error removing from Database."); }
     }
   }
 
   const handleToggleCategory = async (cat: any) => {
     const newStatus = cat.isActive === false ? true : false;
-    try {
-      await updateCategory(cat.id, { isActive: newStatus });
-      if (fetchData) await fetchData(); 
-    } catch (error) {
-      console.error(error);
-      alert("⚠️ Error updating category status.");
-    }
+    try { await updateCategory(cat.id, { isActive: newStatus }); if (fetchData) await fetchData(); } catch (error) { alert("⚠️ Error updating category status."); }
   }
 
   const handleConvertCategory = async (oldCat: any) => {
@@ -436,7 +379,7 @@ export default function AdminDashboard() {
   }
 
   const handleDeleteCustomerWipe = (phone: string) => {
-    if(confirm("🚨 WARNING: This will wipe/hide the customer from your Admin CRM view. \n\nNote: If they forgot their password, this will NOT delete their Auth account. You must delete Auth from the Supabase Dashboard. \n\nProceed with CRM wipe?")) {
+    if(confirm("🚨 WARNING: This will wipe/hide the customer from your Admin CRM view. \n\nProceed with CRM wipe?")) {
       updateCustomerMeta(phone, { isDeleted: true });
       alert("✅ Customer data wiped from panel.");
     }
@@ -445,19 +388,10 @@ export default function AdminDashboard() {
   const handleUpdateZoneFee = async (zone: any) => {
     if (!editingZoneFee) return;
     try {
-      if (updateDeliveryZone) {
-        await updateDeliveryZone(zone.id, { fee: Number(editingZoneFee) });
-      } else {
-        await deleteDeliveryZone(zone.id);
-        await addDeliveryZone({ areaName: zone.areaName, fee: Number(editingZoneFee), isActive: zone.isActive });
-      }
-      setEditingZoneId(null);
-      setEditingZoneFee('');
-      alert("✅ Delivery fee updated!");
-      if (fetchData) fetchData();
-    } catch(e) {
-      alert("⚠️ Error updating fee.");
-    }
+      if (updateDeliveryZone) await updateDeliveryZone(zone.id, { fee: Number(editingZoneFee) });
+      else { await deleteDeliveryZone(zone.id); await addDeliveryZone({ areaName: zone.areaName, fee: Number(editingZoneFee), isActive: zone.isActive }); }
+      setEditingZoneId(null); setEditingZoneFee(''); alert("✅ Delivery fee updated!"); if (fetchData) fetchData();
+    } catch(e) { alert("⚠️ Error updating fee."); }
   }
 
   const liveOrders = orders.filter((o: any) => o.status === 'Pending' || o.status === 'Preparing' || o.status === 'In Transit').reverse()
@@ -470,12 +404,8 @@ export default function AdminDashboard() {
   })
   orders.forEach((order: any, index: number) => {
     if (customerMeta[order.phone]?.isDeleted) return; 
-    if (!customersMap.has(order.phone)) {
-      customersMap.set(order.phone, { name: order.customer, phone: order.phone, address: order.landmark, totalOrders: 0, totalSpent: 0, ordersList: [], firstSeen: index })
-    } else {
-      if (order.landmark) customersMap.get(order.phone).address = order.landmark
-      if (index < customersMap.get(order.phone).firstSeen) customersMap.get(order.phone).firstSeen = index
-    }
+    if (!customersMap.has(order.phone)) customersMap.set(order.phone, { name: order.customer, phone: order.phone, address: order.landmark, totalOrders: 0, totalSpent: 0, ordersList: [], firstSeen: index })
+    else { if (order.landmark) customersMap.get(order.phone).address = order.landmark; if (index < customersMap.get(order.phone).firstSeen) customersMap.get(order.phone).firstSeen = index }
     const cust = customersMap.get(order.phone)
     cust.totalOrders += 1
     if (order.status === 'Delivered') cust.totalSpent += order.amount
@@ -483,28 +413,21 @@ export default function AdminDashboard() {
   })
 
   let customersList = Array.from(customersMap.values())
-  
   if (customerSearchQuery.trim() !== '') {
     const query = customerSearchQuery.toLowerCase()
     customersList = customersList.filter(c => c.name.toLowerCase().includes(query) || c.phone.includes(query))
   }
 
   customersList.sort((a, b) => {
-    if (customerSortOption === 'spent_desc') {
-      if (b.totalSpent !== a.totalSpent) return b.totalSpent - a.totalSpent
-      return b.totalOrders - a.totalOrders
-    } else if (customerSortOption === 'spent_asc') {
-      if (a.totalSpent !== b.totalSpent) return a.totalSpent - b.totalSpent
-      return a.totalOrders - b.totalOrders
-    } else if (customerSortOption === 'new_to_old') { return b.firstSeen - a.firstSeen } 
+    if (customerSortOption === 'spent_desc') { if (b.totalSpent !== a.totalSpent) return b.totalSpent - a.totalSpent; return b.totalOrders - a.totalOrders }
+    else if (customerSortOption === 'spent_asc') { if (a.totalSpent !== b.totalSpent) return a.totalSpent - b.totalSpent; return a.totalOrders - b.totalOrders }
+    else if (customerSortOption === 'new_to_old') { return b.firstSeen - a.firstSeen } 
     else if (customerSortOption === 'old_to_new') { return a.firstSeen - b.firstSeen }
     return 0
   })
 
   if (!isMounted) return null
 
-  // 🔥 CUSTOM ADMIN THEME WRAPPER 🔥
-  // Ye `div` decide karega ki admin panel black rahega ya white
   const adminThemeClass = isAdminDark 
     ? "bg-[#050505] text-white border-white/10 [&_.glass-strong]:bg-black/50 [&_input]:bg-white/5 [&_input]:text-white [&_input]:border-white/10 [&_textarea]:bg-white/5 [&_textarea]:text-white [&_textarea]:border-white/10 [&_select]:bg-black [&_select]:text-white [&_select]:border-white/10" 
     : "bg-[#f4f4f5] text-slate-900 border-slate-200 [&_.glass-strong]:bg-white [&_.glass-strong]:shadow-sm [&_.glass-strong]:border-slate-200 [&_input]:bg-white [&_input]:text-slate-900 [&_input]:border-slate-200 [&_textarea]:bg-white [&_textarea]:text-slate-900 [&_textarea]:border-slate-200 [&_select]:bg-white [&_select]:text-slate-900 [&_select]:border-slate-200";
@@ -728,7 +651,6 @@ export default function AdminDashboard() {
             {activeTab === 'live_orders' && liveOrders.length > 0 && <span className="w-3 h-3 rounded-full bg-[#FF0055] animate-pulse ml-2" />}
           </h2>
           <div className="flex gap-3 items-center">
-            {/* 🔥 Yahan PC view ke liye button hai 🔥 */}
             <Button variant="ghost" size="icon" onClick={toggleAdminTheme} className="mr-2 hover:bg-slate-500/10 border border-slate-500/20" title="Toggle Admin Theme">
                {isAdminDark ? <Sun className="w-5 h-5 text-yellow-500" /> : <Moon className="w-5 h-5 text-slate-700" />}
             </Button>
@@ -1353,7 +1275,7 @@ export default function AdminDashboard() {
                   </CardContent>
                 </Card>
 
-                {/* THEME */}
+                {/* THEME (🔥🔥 NAYE COLORS YAHAN HAI 🔥🔥) */}
                 <Card className="glass-strong mb-8 border-[#00FFFF]/30">
                   <CardContent className="p-6 sm:p-8 space-y-6">
                     <div className="flex items-center gap-3 border-b border-[#00FFFF]/30 pb-4"><Palette className="w-6 h-6 text-[#00FFFF]" /><h3 className="text-xl font-black uppercase">Website Theme Colors</h3></div>
@@ -1362,6 +1284,12 @@ export default function AdminDashboard() {
                       <div className="space-y-2"><Label className="text-xs uppercase font-bold text-muted-foreground">Main Text Color</Label><div className="flex gap-3 items-center"><input type="color" value={themeColorData.text_color} onChange={(e) => setThemeColorData({...themeColorData, text_color: e.target.value})} className="w-12 h-12 rounded cursor-pointer border-0 bg-transparent" /><Input value={themeColorData.text_color} onChange={(e) => setThemeColorData({...themeColorData, text_color: e.target.value})} className="font-mono uppercase bg-transparent border-slate-500/30" /></div></div>
                       <div className="space-y-2"><Label className="text-xs uppercase font-bold text-muted-foreground">Primary Accent (Icons/Lines)</Label><div className="flex gap-3 items-center"><input type="color" value={themeColorData.primary_color} onChange={(e) => setThemeColorData({...themeColorData, primary_color: e.target.value})} className="w-12 h-12 rounded cursor-pointer border-0 bg-transparent" /><Input value={themeColorData.primary_color} onChange={(e) => setThemeColorData({...themeColorData, primary_color: e.target.value})} className="font-mono uppercase bg-transparent border-slate-500/30" /></div></div>
                       <div className="space-y-2"><Label className="text-xs uppercase font-bold text-muted-foreground">Button Color</Label><div className="flex gap-3 items-center"><input type="color" value={themeColorData.button_color} onChange={(e) => setThemeColorData({...themeColorData, button_color: e.target.value})} className="w-12 h-12 rounded cursor-pointer border-0 bg-transparent" /><Input value={themeColorData.button_color} onChange={(e) => setThemeColorData({...themeColorData, button_color: e.target.value})} className="font-mono uppercase bg-transparent border-slate-500/30" /></div></div>
+                      
+                      {/* NEW COLORS ADDED */}
+                      <div className="space-y-2"><Label className="text-xs uppercase font-bold text-muted-foreground">Price Color (e.g. ₹150)</Label><div className="flex gap-3 items-center"><input type="color" value={themeColorData.price_color} onChange={(e) => setThemeColorData({...themeColorData, price_color: e.target.value})} className="w-12 h-12 rounded cursor-pointer border-0 bg-transparent" /><Input value={themeColorData.price_color} onChange={(e) => setThemeColorData({...themeColorData, price_color: e.target.value})} className="font-mono uppercase bg-transparent border-slate-500/30" /></div></div>
+                      <div className="space-y-2"><Label className="text-xs uppercase font-bold text-muted-foreground">Product/Category Title Color</Label><div className="flex gap-3 items-center"><input type="color" value={themeColorData.title_color} onChange={(e) => setThemeColorData({...themeColorData, title_color: e.target.value})} className="w-12 h-12 rounded cursor-pointer border-0 bg-transparent" /><Input value={themeColorData.title_color} onChange={(e) => setThemeColorData({...themeColorData, title_color: e.target.value})} className="font-mono uppercase bg-transparent border-slate-500/30" /></div></div>
+                      <div className="space-y-2"><Label className="text-xs uppercase font-bold text-muted-foreground">Accent Color (Badges/Icons)</Label><div className="flex gap-3 items-center"><input type="color" value={themeColorData.accent_color} onChange={(e) => setThemeColorData({...themeColorData, accent_color: e.target.value})} className="w-12 h-12 rounded cursor-pointer border-0 bg-transparent" /><Input value={themeColorData.accent_color} onChange={(e) => setThemeColorData({...themeColorData, accent_color: e.target.value})} className="font-mono uppercase bg-transparent border-slate-500/30" /></div></div>
+                      <div className="space-y-2"><Label className="text-xs uppercase font-bold text-muted-foreground">Discount Color (MRP/Cancelled)</Label><div className="flex gap-3 items-center"><input type="color" value={themeColorData.discount_color} onChange={(e) => setThemeColorData({...themeColorData, discount_color: e.target.value})} className="w-12 h-12 rounded cursor-pointer border-0 bg-transparent" /><Input value={themeColorData.discount_color} onChange={(e) => setThemeColorData({...themeColorData, discount_color: e.target.value})} className="font-mono uppercase bg-transparent border-slate-500/30" /></div></div>
                     </div>
                     <div className="flex justify-end pt-4 border-t border-[#00FFFF]/20"><Button onClick={handleSaveTheme} disabled={isThemeSaving} className="h-12 bg-[#00FFFF] text-black hover:bg-[#00FFFF]/80 font-black uppercase tracking-widest px-8 rounded-full disabled:opacity-50">{isThemeSaving ? 'Saving...' : 'Update Colors'}</Button></div>
                   </CardContent>
