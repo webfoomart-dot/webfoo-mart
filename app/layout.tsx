@@ -6,6 +6,9 @@ import SplashScreen from "@/components/SplashScreen" // 🔥 YAHAN NAYA SPLASH S
 import { Analytics } from "@vercel/analytics/react" 
 import { createClient } from '@supabase/supabase-js' 
 
+// 🔥 NAYA: THEME PROVIDER IMPORT KIYA
+import { ThemeProvider } from "@/components/ThemeProvider"
+
 const inter = Inter({ subsets: ["latin"] })
 
 // 🔥 Ye line zaroori hai taaki Next.js har baar naya color database se fetch kare
@@ -41,8 +44,8 @@ export default async function RootLayout({
   children: React.ReactNode
 }) {
   // 🔥 DATABASE SE COLORS FETCH KARNE KA LOGIC
-  let themeBg = "#050505"; // Tera default background
-  let themeText = "#ffffff"; // Tera default text color
+  let themeBg = "#050505"; 
+  let themeText = "#ffffff"; 
   let themePrimary = "#00FFFF";
   let themeBtn = "#CCFF00";
 
@@ -64,28 +67,33 @@ export default async function RootLayout({
   }
 
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       {/* pb-24 add kiya hai taaki niche scroll karne pe content capsule ke piche na chhupe */}
       <body 
         className={`${inter.className} antialiased selection:bg-[#00FFFF]/30 pb-24`}
         style={{ 
-          backgroundColor: themeBg, 
-          color: themeText, 
+          /* Inline bg hataya taaki ThemeToggle kaam kare, vars preserve kiye hain */
+          '--db-bg': themeBg, 
+          '--db-text': themeText, 
           '--primary-color': themePrimary,
           '--btn-color': themeBtn 
-        } as React.CSSProperties} // 🔥 YAHAN SE PURI WEBSITE KA COLOR CONTROL HOGA
+        } as React.CSSProperties} 
       >
-        
-        {/* 🔥 YAHAN LAGA DIYA PREMIUM SPLASH SCREEN 🔥 */}
-        <SplashScreen />
+        {/* 🔥 THEME PROVIDER SE POORI APP KO WRAP KIYA 🔥 */}
+        <ThemeProvider attribute="class" defaultTheme="dark" enableSystem disableTransitionOnChange>
+          
+          {/* 🔥 YAHAN LAGA DIYA PREMIUM SPLASH SCREEN 🔥 */}
+          <SplashScreen />
 
-        {children}
-        
-        {/* 🔥 YAHAN ADD KIYA HAI MAGIC CAPSULE */}
-        <FloatingCart />
+          {children}
+          
+          {/* 🔥 YAHAN ADD KIYA HAI MAGIC CAPSULE */}
+          <FloatingCart />
 
-        {/* 🔥 YAHAN ADD KIYA HAI VERCEL TRACKING */}
-        <Analytics />
+          {/* 🔥 YAHAN ADD KIYA HAI VERCEL TRACKING */}
+          <Analytics />
+          
+        </ThemeProvider>
       </body>
     </html>
   )
