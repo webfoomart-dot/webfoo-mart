@@ -196,39 +196,39 @@ export default function CheckoutPage() {
   if (!isMounted) return null
 
   return (
-    <div className="min-h-screen bg-background text-foreground font-sans">
+    <div className="min-h-screen bg-background text-foreground font-sans transition-colors duration-300">
       <Header />
 
       <main className="container mx-auto pb-40 pt-24 px-4 max-w-2xl">
         {!isSuccess ? (
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-8">
             <div className="flex items-center gap-4">
-              <Link href="/cart"><Button variant="ghost" size="icon" className="rounded-full hover:bg-white/10 text-[#00FFFF]"><ArrowLeft className="h-6 w-6" /></Button></Link>
-              <h1 className="text-3xl font-black uppercase tracking-tighter">Secure <span className="text-[#00FFFF]">Checkout</span></h1>
+              <Link href="/cart"><Button variant="ghost" size="icon" className="rounded-full hover:bg-black/10 dark:hover:bg-white/10 text-primary"><ArrowLeft className="h-6 w-6" /></Button></Link>
+              <h1 className="text-3xl font-black uppercase tracking-tighter">Secure <span className="text-primary">Checkout</span></h1>
             </div>
 
             {/* 🔥 CONDITIONAL USER PROFILE OR GUEST FORM 🔥 */}
             {user ? (
-              <div className="flex items-center justify-between p-4 rounded-2xl bg-white/5 border border-white/10 glass-strong">
+              <div className="flex items-center justify-between p-4 rounded-2xl bg-card border border-border glass-strong">
                 <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-xl bg-[#00FFFF]/10 border border-[#00FFFF]/30 flex items-center justify-center text-[#00FFFF]">
+                  <div className="w-12 h-12 rounded-xl bg-primary/10 border border-primary/30 flex items-center justify-center text-primary">
                     <User className="w-6 h-6" />
                   </div>
                   <div>
                     <p className="text-[10px] text-muted-foreground uppercase font-black tracking-widest">Ordering as</p>
-                    <h3 className="font-bold text-white">{user.name}</h3>
+                    <h3 className="font-bold text-foreground">{user.name}</h3>
                   </div>
                 </div>
                 <div className="text-right">
                   <p className="text-[10px] text-muted-foreground uppercase font-black tracking-widest">Phone</p>
-                  <p className="font-mono font-bold text-[#CCFF00]">{user.phone}</p>
+                  <p className="font-mono font-bold text-secondary">{user.phone}</p>
                 </div>
               </div>
             ) : (
-              <div className="p-5 rounded-2xl bg-[#00FFFF]/5 border border-[#00FFFF]/20 glass-strong space-y-4">
-                <div className="flex items-center gap-2 border-b border-[#00FFFF]/20 pb-3">
-                  <User className="w-5 h-5 text-[#00FFFF]" />
-                  <h3 className="font-black text-[#00FFFF] uppercase tracking-widest text-sm">Guest Details</h3>
+              <div className="p-5 rounded-2xl bg-primary/5 border border-primary/20 glass-strong space-y-4">
+                <div className="flex items-center gap-2 border-b border-primary/20 pb-3">
+                  <User className="w-5 h-5 text-primary" />
+                  <h3 className="font-black text-primary uppercase tracking-widest text-sm">Guest Details</h3>
                 </div>
                 <div className="space-y-4">
                   <div className="space-y-2">
@@ -238,7 +238,7 @@ export default function CheckoutPage() {
                       placeholder="e.g. Rahul Kumar" 
                       value={guestName} 
                       onChange={e => setGuestName(e.target.value)} 
-                      className="bg-black/50 h-12 border-white/20 focus-visible:border-[#00FFFF] font-bold text-white" 
+                      className="bg-background dark:bg-black/50 h-12 border-border focus-visible:border-primary font-bold text-foreground" 
                     />
                   </div>
                   <div className="space-y-2">
@@ -249,7 +249,7 @@ export default function CheckoutPage() {
                       placeholder="10-digit mobile number" 
                       value={guestPhone} 
                       onChange={e => setGuestPhone(e.target.value)} 
-                      className="bg-black/50 h-12 border-white/20 focus-visible:border-[#00FFFF] font-bold font-mono text-[#CCFF00]" 
+                      className="bg-background dark:bg-black/50 h-12 border-border focus-visible:border-primary font-bold font-mono text-secondary" 
                     />
                   </div>
                 </div>
@@ -258,21 +258,21 @@ export default function CheckoutPage() {
 
             <form onSubmit={handleConfirmOrder} className="space-y-6">
               
-              <Card className="glass-strong border-white/10 rounded-2xl overflow-hidden relative">
-                <div className="bg-[#CCFF00]/10 px-6 py-3 border-b border-[#CCFF00]/20"><h3 className="font-black text-[#CCFF00] uppercase tracking-widest text-sm flex items-center gap-2"><MapPin className="w-4 h-4" /> Drop Coordinates</h3></div>
-                <CardContent className="p-6 space-y-6">
+              <Card className="glass-strong border-border rounded-2xl overflow-hidden relative bg-transparent">
+                <div className="bg-secondary/10 px-6 py-3 border-b border-secondary/20"><h3 className="font-black text-secondary uppercase tracking-widest text-sm flex items-center gap-2"><MapPin className="w-4 h-4" /> Drop Coordinates</h3></div>
+                <CardContent className="p-6 space-y-6 bg-card/50 dark:bg-transparent">
                   
                   {activeZones.length > 0 && (
-                    <div className="space-y-3 pb-6 border-b border-white/10 relative z-30">
-                      <Label className="text-xs uppercase tracking-widest text-[#00FFFF] font-black flex items-center gap-2"><Truck className="w-4 h-4" /> Select Delivery Area</Label>
+                    <div className="space-y-3 pb-6 border-b border-border relative z-30">
+                      <Label className="text-xs uppercase tracking-widest text-primary font-black flex items-center gap-2"><Truck className="w-4 h-4" /> Select Delivery Area</Label>
                       
                       <div className="relative">
                         <div 
                           onClick={() => setIsZoneDropdownOpen(!isZoneDropdownOpen)}
-                          className="w-full bg-black/50 border border-white/20 text-white h-14 rounded-xl px-4 font-bold flex items-center justify-between uppercase text-sm tracking-wider cursor-pointer hover:border-[#00FFFF]/50 transition-colors"
+                          className="w-full bg-background dark:bg-black/50 border border-border text-foreground h-14 rounded-xl px-4 font-bold flex items-center justify-between uppercase text-sm tracking-wider cursor-pointer hover:border-primary/50 transition-colors"
                         >
-                          <span className={selectedZoneId ? "text-white" : "text-white/50"}>{displayZoneName}</span>
-                          <ChevronDown className={`w-5 h-5 transition-transform ${isZoneDropdownOpen ? "rotate-180 text-[#00FFFF]" : "text-white/50"}`} />
+                          <span className={selectedZoneId ? "text-foreground" : "text-muted-foreground"}>{displayZoneName}</span>
+                          <ChevronDown className={`w-5 h-5 transition-transform ${isZoneDropdownOpen ? "rotate-180 text-primary" : "text-muted-foreground"}`} />
                         </div>
                         
                         <AnimatePresence>
@@ -282,7 +282,7 @@ export default function CheckoutPage() {
                               animate={{ opacity: 1, y: 0 }} 
                               exit={{ opacity: 0, y: -10 }}
                               transition={{ duration: 0.2 }}
-                              className="absolute top-full left-0 w-full mt-2 p-2 bg-black/90 backdrop-blur-2xl border border-[#00FFFF]/30 rounded-xl shadow-[0_10px_30px_rgba(0,255,255,0.15)] max-h-60 overflow-y-auto z-50 glass-strong"
+                              className="absolute top-full left-0 w-full mt-2 p-2 bg-popover/95 backdrop-blur-2xl border border-primary/30 rounded-xl shadow-[0_10px_30px_rgba(0,139,139,0.15)] dark:shadow-[0_10px_30px_rgba(0,255,255,0.15)] max-h-60 overflow-y-auto z-50 glass-strong"
                             >
                               {activeZones.map((zone: any) => (
                                 <div
@@ -291,7 +291,7 @@ export default function CheckoutPage() {
                                     setSelectedZoneId(zone.id);
                                     setIsZoneDropdownOpen(false);
                                   }}
-                                  className={`p-3 rounded-lg cursor-pointer uppercase text-sm font-bold tracking-wider transition-colors ${String(selectedZoneId) === String(zone.id) ? 'bg-[#00FFFF]/20 text-[#00FFFF]' : 'text-white hover:bg-white/10'}`}
+                                  className={`p-3 rounded-lg cursor-pointer uppercase text-sm font-bold tracking-wider transition-colors ${String(selectedZoneId) === String(zone.id) ? 'bg-primary/20 text-primary' : 'text-foreground hover:bg-black/5 dark:hover:bg-white/10'}`}
                                 >
                                   {zone.areaName}
                                 </div>
@@ -304,30 +304,30 @@ export default function CheckoutPage() {
                   )}
 
                   {savedAddressState && (
-                    <div onClick={() => setAddressMode('saved')} className={`p-4 rounded-xl border-2 cursor-pointer transition-all ${addressMode === 'saved' ? 'border-[#CCFF00] bg-[#CCFF00]/10 shadow-[0_0_15px_rgba(204,255,0,0.1)]' : 'border-white/10 hover:border-white/30'}`}>
+                    <div onClick={() => setAddressMode('saved')} className={`p-4 rounded-xl border-2 cursor-pointer transition-all ${addressMode === 'saved' ? 'border-secondary bg-secondary/10 shadow-[0_0_15px_rgba(153,204,0,0.1)] dark:shadow-[0_0_15px_rgba(204,255,0,0.1)]' : 'border-border hover:border-muted-foreground'}`}>
                       <div className="flex items-center gap-3">
-                        <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${addressMode === 'saved' ? 'border-[#CCFF00]' : 'border-muted-foreground'}`}>
-                          {addressMode === 'saved' && <div className="w-2 h-2 bg-[#CCFF00] rounded-full" />}
+                        <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${addressMode === 'saved' ? 'border-secondary' : 'border-muted-foreground'}`}>
+                          {addressMode === 'saved' && <div className="w-2 h-2 bg-secondary rounded-full" />}
                         </div>
                         <div>
-                          <p className="font-bold text-sm text-white uppercase">Use Saved Address</p>
+                          <p className="font-bold text-sm text-foreground uppercase">Use Saved Address</p>
                           <p className="text-xs text-muted-foreground mt-1">{savedAddressState}</p>
                         </div>
                       </div>
                     </div>
                   )}
 
-                  <div onClick={() => setAddressMode('new')} className={`p-4 rounded-xl border-2 cursor-pointer transition-all ${addressMode === 'new' ? 'border-[#00FFFF] bg-[#00FFFF]/10 shadow-[0_0_15px_rgba(0,255,255,0.05)]' : 'border-white/10 hover:border-white/30'}`}>
+                  <div onClick={() => setAddressMode('new')} className={`p-4 rounded-xl border-2 cursor-pointer transition-all ${addressMode === 'new' ? 'border-primary bg-primary/10 shadow-[0_0_15px_rgba(0,139,139,0.05)] dark:shadow-[0_0_15px_rgba(0,255,255,0.05)]' : 'border-border hover:border-muted-foreground'}`}>
                     <div className="flex items-center gap-3">
-                      <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${addressMode === 'new' ? 'border-[#00FFFF]' : 'border-muted-foreground'}`}>
-                        {addressMode === 'new' && <div className="w-2 h-2 bg-[#00FFFF] rounded-full" />}
+                      <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${addressMode === 'new' ? 'border-primary' : 'border-muted-foreground'}`}>
+                        {addressMode === 'new' && <div className="w-2 h-2 bg-primary rounded-full" />}
                       </div>
-                      <p className="font-bold text-sm text-white flex items-center gap-2 uppercase"><Plus className="w-4 h-4" /> Ship to New Address</p>
+                      <p className="font-bold text-sm text-foreground flex items-center gap-2 uppercase"><Plus className="w-4 h-4" /> Ship to New Address</p>
                     </div>
                     <AnimatePresence>
                       {addressMode === 'new' && (
                         <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="mt-4 pl-7">
-                          <Input required={addressMode === 'new'} placeholder="Enter building/street details..." value={newAddress} onChange={e => setNewAddress(e.target.value)} className="bg-black/50 h-12 border-white/20 focus-visible:border-[#00FFFF] font-bold" />
+                          <Input required={addressMode === 'new'} placeholder="Enter building/street details..." value={newAddress} onChange={e => setNewAddress(e.target.value)} className="bg-background dark:bg-black/50 h-12 border-border focus-visible:border-primary font-bold text-foreground" />
                         </motion.div>
                       )}
                     </AnimatePresence>
@@ -336,66 +336,66 @@ export default function CheckoutPage() {
               </Card>
 
               <div className="space-y-2 relative z-10">
-                <Label className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground flex items-center gap-2 ml-1 font-black"><FileText className="w-4 h-4 text-[#00FFFF]" /> Special Note</Label>
-                <textarea placeholder="Any delivery instructions..." value={specialNote} onChange={e => setSpecialNote(e.target.value)} className="w-full bg-black/50 border border-white/10 rounded-xl p-4 text-sm text-white focus:outline-none focus:border-[#00FFFF] h-24 glass-strong resize-none" />
+                <Label className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground flex items-center gap-2 ml-1 font-black"><FileText className="w-4 h-4 text-primary" /> Special Note</Label>
+                <textarea placeholder="Any delivery instructions..." value={specialNote} onChange={e => setSpecialNote(e.target.value)} className="w-full bg-background dark:bg-black/50 border border-border rounded-xl p-4 text-sm text-foreground focus:outline-none focus:border-primary h-24 glass-strong resize-none" />
               </div>
 
-              <div className="p-4 rounded-xl border border-white/10 bg-white/5 flex items-start gap-4 relative z-10">
-                <Banknote className="w-6 h-6 text-[#CCFF00]" />
-                <div><h4 className="font-black uppercase tracking-wider text-sm text-white">Cash On Delivery</h4><p className="text-xs text-muted-foreground mt-1">Payment will be collected at your door.</p></div>
+              <div className="p-4 rounded-xl border border-border bg-card flex items-start gap-4 relative z-10">
+                <Banknote className="w-6 h-6 text-secondary" />
+                <div><h4 className="font-black uppercase tracking-wider text-sm text-foreground">Cash On Delivery</h4><p className="text-xs text-muted-foreground mt-1">Payment will be collected at your door.</p></div>
               </div>
 
-              <div className="pt-6 mt-6 border-t border-white/10 space-y-3 relative z-10">
-                <div className="flex justify-between items-center px-2 font-bold uppercase tracking-widest text-[10px] text-muted-foreground"><span>Subtotal</span><span className="text-sm font-mono text-white">₹{totalAmount}</span></div>
-                {appliedPromo && <div className="flex justify-between items-center px-2 font-bold uppercase tracking-widest text-[10px] text-[#CCFF00]"><span>Discount</span><span className="text-sm font-mono">-₹{discountAmt}</span></div>}
-                {deliveryFee > 0 && <div className="flex justify-between items-center px-2 font-bold uppercase tracking-widest text-[10px] text-[#00FFFF]"><span>Delivery Fee</span><span className="text-sm font-mono">+₹{deliveryFee}</span></div>}
+              <div className="pt-6 mt-6 border-t border-border space-y-3 relative z-10">
+                <div className="flex justify-between items-center px-2 font-bold uppercase tracking-widest text-[10px] text-muted-foreground"><span>Subtotal</span><span className="text-sm font-mono text-foreground">₹{totalAmount}</span></div>
+                {appliedPromo && <div className="flex justify-between items-center px-2 font-bold uppercase tracking-widest text-[10px] text-secondary"><span>Discount</span><span className="text-sm font-mono">-₹{discountAmt}</span></div>}
+                {deliveryFee > 0 && <div className="flex justify-between items-center px-2 font-bold uppercase tracking-widest text-[10px] text-primary"><span>Delivery Fee</span><span className="text-sm font-mono">+₹{deliveryFee}</span></div>}
 
-                <div className="flex justify-between items-center pb-2 px-2 pt-4 border-t border-white/10"><span className="text-white font-black uppercase tracking-tighter text-xl">Final Total</span><span className="text-3xl font-black text-[#00FFFF] font-mono shadow-[0_0_20px_rgba(0,255,255,0.2)]">₹{finalTotal}</span></div>
-                <Button type="submit" className="w-full h-16 rounded-2xl bg-[#00FFFF] text-black font-black text-xl hover:bg-[#00FFFF]/90 shadow-[0_0_20px_rgba(0,255,255,0.4)] transition-all uppercase tracking-tighter mt-4">CONFIRM ORDER</Button>
+                <div className="flex justify-between items-center pb-2 px-2 pt-4 border-t border-border"><span className="text-foreground font-black uppercase tracking-tighter text-xl">Final Total</span><span className="text-3xl font-black text-primary font-mono shadow-[0_0_20px_rgba(0,139,139,0.2)] dark:shadow-[0_0_20px_rgba(0,255,255,0.2)]">₹{finalTotal}</span></div>
+                <Button type="submit" className="w-full h-16 rounded-2xl bg-primary text-primary-foreground dark:text-black font-black text-xl hover:bg-primary/90 shadow-[0_0_20px_rgba(0,139,139,0.4)] dark:shadow-[0_0_20px_rgba(0,255,255,0.4)] transition-all uppercase tracking-tighter mt-4">CONFIRM ORDER</Button>
               </div>
             </form>
           </motion.div>
         ) : (
           <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="flex flex-col items-center justify-center text-center space-y-6 mt-10 font-sans">
-            <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: "spring" as const, stiffness: 200, damping: 10, delay: 0.2 }}><CheckCircle className="w-32 h-32 text-[#CCFF00] drop-shadow-[0_0_30px_rgba(204,255,0,0.6)]" /></motion.div>
-            <h2 className="text-3xl font-black uppercase text-white">Order <span className="text-[#CCFF00]">Confirmed!</span></h2>
-            <p className="text-[#00FFFF] font-bold text-lg bg-[#00FFFF]/10 px-6 py-2 rounded-full border border-[#00FFFF]/30 shadow-[0_0_15px_rgba(0,255,255,0.1)] uppercase">Arriving Soon</p>
+            <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: "spring" as const, stiffness: 200, damping: 10, delay: 0.2 }}><CheckCircle className="w-32 h-32 text-secondary drop-shadow-[0_0_30px_rgba(153,204,0,0.6)] dark:drop-shadow-[0_0_30px_rgba(204,255,0,0.6)]" /></motion.div>
+            <h2 className="text-3xl font-black uppercase text-foreground">Order <span className="text-secondary">Confirmed!</span></h2>
+            <p className="text-primary font-bold text-lg bg-primary/10 px-6 py-2 rounded-full border border-primary/30 shadow-[0_0_15px_rgba(0,139,139,0.1)] dark:shadow-[0_0_15px_rgba(0,255,255,0.1)] uppercase">Arriving Soon</p>
 
             {placedOrderDetails && (
-              <Card className="w-full glass-strong border-white/10 mt-8 text-left">
-                <CardContent className="p-6">
-                  <h3 className="font-black text-[#00FFFF] uppercase tracking-widest text-xs border-b border-white/10 pb-4 mb-4 flex items-center gap-2"><Package className="w-5 h-5" /> Summary</h3>
+              <Card className="w-full glass-strong border-border mt-8 text-left bg-transparent">
+                <CardContent className="p-6 bg-card/50 dark:bg-transparent rounded-xl">
+                  <h3 className="font-black text-primary uppercase tracking-widest text-xs border-b border-border pb-4 mb-4 flex items-center gap-2"><Package className="w-5 h-5" /> Summary</h3>
                   <div className="space-y-4 max-h-[300px] overflow-y-auto pr-2">
                     {placedOrderDetails.items.map((item: any, idx: number) => (
                       <div key={idx} className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
-                          <div className="relative w-12 h-12 rounded-lg overflow-hidden bg-white/5 border border-white/10">
+                          <div className="relative w-12 h-12 rounded-lg overflow-hidden bg-muted border border-border">
                             <img src={item.image || "/placeholder.jpg"} alt={item.name} className="object-cover w-full h-full" />
                           </div>
-                          <div><p className="font-bold text-sm text-white">{item.name}</p><p className="text-[10px] text-muted-foreground uppercase font-black tracking-tighter">Qty: {item.quantity}</p></div>
+                          <div><p className="font-bold text-sm text-foreground">{item.name}</p><p className="text-[10px] text-muted-foreground uppercase font-black tracking-tighter">Qty: {item.quantity}</p></div>
                         </div>
-                        <p className="font-mono font-bold text-[#00FFFF]">₹{item.price * item.quantity}</p>
+                        <p className="font-mono font-bold text-primary">₹{item.price * item.quantity}</p>
                       </div>
                     ))}
                   </div>
                   
-                  <div className="mt-6 pt-4 border-t border-white/10 space-y-2">
+                  <div className="mt-6 pt-4 border-t border-border space-y-2">
                     <div className="flex justify-between items-center text-[10px] text-muted-foreground uppercase font-bold">
                       <span>Subtotal</span><span>₹{placedOrderDetails.subtotal}</span>
                     </div>
                     {placedOrderDetails.discount > 0 && (
-                      <div className="flex justify-between items-center text-[10px] text-[#CCFF00] uppercase font-bold">
+                      <div className="flex justify-between items-center text-[10px] text-secondary uppercase font-bold">
                         <span>Discount</span><span>-₹{placedOrderDetails.discount}</span>
                       </div>
                     )}
                     {placedOrderDetails.deliveryFee > 0 && (
-                      <div className="flex justify-between items-center text-[10px] text-[#00FFFF] uppercase font-bold">
+                      <div className="flex justify-between items-center text-[10px] text-primary uppercase font-bold">
                         <span>Delivery Fee</span><span>+₹{placedOrderDetails.deliveryFee}</span>
                       </div>
                     )}
-                    <div className="flex justify-between items-center pt-2 border-t border-white/5 mt-2">
-                      <span className="font-black text-white uppercase text-xs tracking-widest">Final Paid</span>
-                      <span className="text-2xl font-black text-[#CCFF00] font-mono">₹{placedOrderDetails.total}</span>
+                    <div className="flex justify-between items-center pt-2 border-t border-border mt-2">
+                      <span className="font-black text-foreground uppercase text-xs tracking-widest">Final Paid</span>
+                      <span className="text-2xl font-black text-secondary font-mono">₹{placedOrderDetails.total}</span>
                     </div>
                   </div>
                 </CardContent>
@@ -403,7 +403,7 @@ export default function CheckoutPage() {
             )}
             
             <div className="w-full pt-4">
-              <Button onClick={() => router.push('/')} className="w-full h-14 bg-white/5 text-white hover:bg-white/10 border border-white/10 font-black uppercase tracking-widest rounded-xl transition-all">Back to Home</Button>
+              <Button onClick={() => router.push('/')} className="w-full h-14 bg-card text-foreground hover:bg-muted border border-border font-black uppercase tracking-widest rounded-xl transition-all">Back to Home</Button>
             </div>
           </motion.div>
         )}
