@@ -113,7 +113,6 @@ export default function AdminDashboard() {
   const [isSettingsSaving, setIsSettingsSaving] = React.useState(false)
   const [globalMinOrder, setGlobalMinOrder] = React.useState(0)
 
-  // Web Theme Colors Config (Only for front-end control)
   const [activeThemeTab, setActiveThemeTab] = React.useState('dark_mode')
   const [themeColorData, setThemeColorData] = React.useState({
     primary_color: '#00FFFF', background_color: '#050505', text_color: '#ffffff', button_color: '#CCFF00',
@@ -196,6 +195,8 @@ export default function AdminDashboard() {
     }
   }, [displayCategories, formData.category, editingId, selectedCategoryView])
 
+  // --- 🔥 ANALYTICS & BILLING CALCULATIONS RESTORED 🔥 ---
+
   const filteredAnalyticsOrders = React.useMemo(() => {
     if (analyticsFilter === 'all') return orders;
     const getLocalYYYYMMDD = (d: Date) => { const offset = d.getTimezoneOffset() * 60000; return new Date(d.getTime() - offset).toISOString().split('T')[0]; }
@@ -227,6 +228,56 @@ export default function AdminDashboard() {
       if (historyFilter === 'today') return orderDateStr === todayStr; if (historyFilter === 'yesterday') return orderDateStr === yesterdayStr; if (historyFilter === 'custom') return orderDateStr === historyCustomDate; return true;
     });
   }, [orders, historyFilter, historyCustomDate]);
+
+  // Analytics Metrics
+  const analyticsDelivered = filteredAnalyticsOrders.filter((o: any) => o.status === 'Delivered');
+  const analyticsPending = filteredAnalyticsOrders.filter((o: any) => o.status === 'Pending' || o.status === 'Preparing' || o.status === 'In Transit');
+  const analyticsCancelled = filteredAnalyticsOrders.filter((o: any) => o.status === 'Cancelled');
+  
+  const totalOrdersCount = filteredAnalyticsOrders.length;
+  const totalRevenue = analyticsDelivered.reduce((sum: number, order: any) => sum + (Number(order.amount) || 0), 0);
+  const avgOrderValue = analyticsDelivered.length > 0 ? Math.round(totalRevenue / analyticsDelivered.length) : 0;
+  const uniqueCustomersInAnalytics = new Set(filteredAnalyticsOrders.map((o: any) => o.phone)).size;
+
+  const productSalesMap = new Map();
+  analyticsDelivered.forEach((order: any) => {
+    if(!order.items) return;
+    order.items.forEach((item: any) => {
+      if (!productSalesMap.has(item.name)) productSalesMap.set(item.name, { qty: 0, revenue: 0 });
+      const stat = productSalesMap.get(item.name);
+      stat.qty += item.quantity || 1;
+      stat.revenue += (item.price || 0) * (item.quantity || 1);
+    });
+  });
+  const topProducts = Array.from(productSalesMap.entries()).map(([name, stat]) => ({ name, ...stat })).sort((a, b) => b.qty - a.qty).slice(0, 5);
+
+  // Billing Metrics
+  let totalBilledRevenue = 0;
+  let totalSupplierCost = 0;
+  const billedItemsMap = new Map();
+
+  filteredBillingOrders.forEach((order: any) => {
+    totalBilledRevenue += (Number(order.amount) || 0);
+    if(!order.items) return;
+    order.items.forEach((item: any) => {
+      const dbProduct = products.find((p: any) => p.name === item.name);
+      const buyRate = dbProduct?.cost_price ? Number(dbProduct.cost_price) : 0;
+      const qty = item.quantity || 1;
+      const itemCost = buyRate * qty;
+      totalSupplierCost += itemCost;
+
+      if (!billedItemsMap.has(item.name)) {
+        billedItemsMap.set(item.name, { name: item.name, qty: 0, costRate: buyRate, totalCost: 0 });
+      }
+      const stat = billedItemsMap.get(item.name);
+      stat.qty += qty;
+      stat.totalCost += itemCost;
+    });
+  });
+  const totalBilledProfit = totalBilledRevenue - totalSupplierCost;
+  const billedItemsArray = Array.from(billedItemsMap.values()).sort((a, b) => b.qty - a.qty);
+
+  // --- 🔥 END CALCULATIONS 🔥 ---
 
   React.useEffect(() => {
     if (isMounted && isAuthorized) {
@@ -376,6 +427,32 @@ export default function AdminDashboard() {
   const viewCategoryObject = categories?.find((c: any) => c.name === selectedCategoryView); const viewSubcategories = viewCategoryObject?.subcategories || [];
 
   const displayedProducts = products.filter((p:any) => { if (p.category !== selectedCategoryView) return false; if (selectedSubcategoryFilter) { return p.subcategory === selectedSubcategoryFilter; } else { if (subcatViewMode === 'folders' && viewSubcategories.length > 0) { return !p.subcategory || p.subcategory.trim() === ''; } else { return true; } } });
+
+  // Authentication Lock UI
+  if (!isAuthorized) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen bg-[#050505] text-white p-4">
+        <div className="w-full max-w-md bg-[#111] border border-[#222] p-8 rounded-3xl text-center space-y-6">
+          <ShieldAlert className="w-16 h-16 text-emerald-500 mx-auto" />
+          <div>
+            <h1 className="text-3xl font-black italic uppercase tracking-widest text-white">WebFoo <span className="text-emerald-500">Admin</span></h1>
+            <p className="text-zinc-500 mt-2 text-sm uppercase font-bold tracking-widest">Restricted Access</p>
+          </div>
+          <form onSubmit={handleAdminAccess} className="space-y-4">
+            <div className="relative">
+              <LockKeyhole className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-500" />
+              <Input type="password" placeholder="ENTER SYSTEM PASSCODE" value={passcode} onChange={(e) => setPasscode(e.target.value)} className="w-full h-14 bg-[#1a1a1a] border-[#333] pl-12 text-center text-lg font-black tracking-[0.5em] focus-visible:ring-emerald-500 focus-visible:border-emerald-500 placeholder:tracking-widest" />
+            </div>
+            {authError && <p className="text-rose-500 text-xs font-black tracking-widest uppercase">{authError}</p>}
+            <Button type="submit" className="w-full h-14 bg-emerald-500 hover:bg-emerald-600 text-black font-black text-lg tracking-widest uppercase">Unlock System</Button>
+          </form>
+          <div className="pt-6 border-t border-[#222]">
+            <Link href="/" className="text-xs font-bold text-zinc-500 hover:text-white transition-colors uppercase tracking-widest">&larr; Return to Store</Link>
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   const SidebarNav = () => (
     <div className="flex flex-col h-full bg-background border-r border-border">
@@ -637,10 +714,10 @@ export default function AdminDashboard() {
                                   )})}
                                 </div>
                                 <div className="mt-4 pt-4 border-t border-border space-y-2">
-                                 {order.discount > 0 && (
-                                   <><div className="flex justify-between items-center text-[10px] uppercase font-bold text-muted-foreground"><span>Subtotal</span><span>₹{order.subtotal}</span></div><div className="flex justify-between items-center text-[10px] uppercase font-bold text-emerald-600 dark:text-emerald-400"><span>Discount ({order.promoCode})</span><span>-₹{order.discount}</span></div></>
-                                 )}
-                                 <div className="flex justify-between items-center pt-2 border-t border-border mt-2"><span className="text-xs font-bold uppercase tracking-widest text-foreground">Final Paid</span><span className="font-mono font-black text-lg text-foreground">₹{order.amount}</span></div>
+                                  {order.discount > 0 && (
+                                    <><div className="flex justify-between items-center text-[10px] uppercase font-bold text-muted-foreground"><span>Subtotal</span><span>₹{order.subtotal}</span></div><div className="flex justify-between items-center text-[10px] uppercase font-bold text-emerald-600 dark:text-emerald-400"><span>Discount ({order.promoCode})</span><span>-₹{order.discount}</span></div></>
+                                  )}
+                                  <div className="flex justify-between items-center pt-2 border-t border-border mt-2"><span className="text-xs font-bold uppercase tracking-widest text-foreground">Final Paid</span><span className="font-mono font-black text-lg text-foreground">₹{order.amount}</span></div>
                                 </div>
                               </div>
                               <div className="p-4 sm:p-6"><div className="flex gap-3"><MapPin className="w-5 h-5 text-foreground" /><div><p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Drop Details</p><p className="text-sm mt-1 text-foreground">{order.landmark}</p></div></div></div>
@@ -693,58 +770,58 @@ export default function AdminDashboard() {
 
                  {customersList.length === 0 ? (
                   <Empty className="py-20 mt-6 max-w-md mx-auto border-border bg-card shadow-sm"><EmptyContent><Search className="w-12 h-12 mb-4 text-muted-foreground opacity-50" /><EmptyTitle className="text-xl uppercase tracking-tighter text-foreground">No Matches Found</EmptyTitle></EmptyContent></Empty>
-                ) : (
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                    {customersList.map((cust: any, idx) => {
-                      const meta = customerMeta[cust.phone] || {}; const isVip = meta.isVip; const isBlocked = meta.isBlocked;
-                      return (
-                        <Card key={idx} className={`overflow-hidden transition-all bg-card border-border shadow-sm hover:shadow-md ${isBlocked ? 'opacity-50 grayscale' : ''}`}>
-                          <div className="p-5 flex flex-col sm:flex-row justify-between gap-4">
-                            <div className="space-y-3 flex-1">
-                              <div className="flex items-center gap-3"><h3 className="text-xl font-black uppercase tracking-tight text-foreground">{cust.name}</h3>{isVip && <Badge className="text-black bg-amber-400 hover:bg-amber-500 font-black uppercase tracking-widest text-[10px]">VIP</Badge>}{isBlocked && <Badge variant="destructive" className="font-black uppercase tracking-widest text-[10px]">BLOCKED</Badge>}</div>
-                              <div className="grid grid-cols-2 gap-4"><div><p className="text-[10px] uppercase tracking-widest text-muted-foreground">Total Spent</p><p className="font-mono text-xl font-black text-foreground">₹{cust.totalSpent}</p></div><div><p className="text-[10px] uppercase tracking-widest text-muted-foreground">Total Orders</p><p className={`font-mono text-xl font-black ${cust.totalOrders > 0 ? 'text-foreground' : 'text-orange-500'}`}>{cust.totalOrders}</p></div></div>
-                            </div>
-                            <div className="flex flex-row sm:flex-col gap-2 shrink-0">
-                              <a href={`https://wa.me/91${cust.phone.replace(/\D/g, '')}`} target="_blank" rel="noreferrer" className="flex-1 sm:flex-none"><Button className="w-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500 hover:text-white border border-emerald-500/20"><MessageCircle className="w-4 h-4 mr-2" /> WhatsApp</Button></a>
-                              <a href={`tel:${cust.phone}`} className="flex-1 sm:flex-none"><Button className="w-full bg-blue-500/10 text-blue-600 dark:text-blue-400 hover:bg-blue-500 hover:text-white border border-blue-500/20"><Phone className="w-4 h-4 mr-2" /> Call</Button></a>
-                              <Sheet>
-                                <SheetTrigger asChild><Button variant="outline" className="w-full flex-1 sm:flex-none hover:bg-muted border-border text-foreground"><FileText className="w-4 h-4 mr-2" /> Details</Button></SheetTrigger>
-                                <SheetContent className="border-l border-border w-full sm:max-w-md overflow-y-auto bg-background text-foreground">
-                                  <SheetHeader className="text-left mb-6 mt-6"><SheetTitle className="text-2xl font-black italic uppercase text-foreground">Customer Details</SheetTitle></SheetHeader>
-                                  <div className="space-y-6">
-                                    <div className="p-4 rounded-xl space-y-2 border border-border bg-card shadow-sm"><div><p className="font-bold text-lg leading-tight">{cust.name}</p><p className="font-mono text-sm text-muted-foreground">{cust.phone}</p></div><div className="flex gap-2 items-start bg-muted p-3 rounded-lg border border-border"><MapPin className="w-4 h-4 shrink-0 mt-0.5 text-foreground" /><p className="text-sm leading-relaxed text-foreground">{cust.address}</p></div></div>
-                                    <div className="flex gap-2">
-                                      <Button onClick={() => updateCustomerMeta(cust.phone, { isVip: !isVip })} className={`flex-1 border`} style={isVip ? { backgroundColor: 'var(--muted)', borderColor: 'var(--border)' } : { backgroundColor: 'rgba(251,191,36,0.1)', color: '#d97706', borderColor: 'rgba(251,191,36,0.3)' }}><Star className="w-4 h-4 mr-2" /> {isVip ? 'Remove VIP' : 'Mark as VIP'}</Button>
-                                      <Button onClick={() => updateCustomerMeta(cust.phone, { isBlocked: !isBlocked })} className={`flex-1 border ${isBlocked ? 'bg-muted border-border text-foreground' : 'bg-rose-500/10 text-rose-600 dark:text-rose-400 hover:bg-rose-500 hover:text-white border-rose-500/30'}`}><Ban className="w-4 h-4 mr-2" /> {isBlocked ? 'Unblock' : 'Block'}</Button>
-                                    </div>
-                                    <div className="pt-2 border-t border-border">
-                                      <Button onClick={() => handleDeleteCustomerWipe(cust.phone)} variant="outline" className="w-full bg-rose-500/5 text-rose-600 dark:text-rose-400 border-rose-500/30 hover:bg-rose-500 hover:text-white">
-                                        <Trash2 className="w-4 h-4 mr-2" /> Delete Customer Data
-                                      </Button>
-                                      <p className="text-[9px] mt-2 text-center uppercase tracking-widest leading-tight text-muted-foreground">Note: This removes data from CRM. To delete their Auth Login, use Supabase Dashboard.</p>
-                                    </div>
-                                    <div>
-                                      <h4 className="text-xs font-black uppercase tracking-widest mb-3 border-b border-border pb-2 text-muted-foreground">Order History</h4>
-                                      {cust.totalOrders === 0 ? (
-                                        <div className="bg-orange-500/10 p-4 rounded-lg border border-orange-500/20 text-center"><p className="text-orange-600 dark:text-orange-400 text-xs font-bold uppercase tracking-widest">Registered but no orders placed</p></div>
-                                      ) : (
-                                        <div className="space-y-3">
-                                          {cust.ordersList.slice().reverse().map((o: any, i: number) => (
-                                            <div key={i} className="bg-muted/50 p-3 rounded-lg border border-border flex justify-between items-center"><div><p className="text-[10px] text-muted-foreground">{o.time}</p><p className="font-bold text-sm text-foreground">{o.items.length} Items</p></div><div className="text-right"><p className="font-mono font-black text-foreground">₹{o.amount}</p><span className={`text-[10px] px-2 py-0.5 rounded uppercase tracking-widest font-black ${getStatusColor(o.status)}`}>{o.status}</span></div></div>
-                                          ))}
-                                        </div>
-                                      )}
-                                    </div>
-                                  </div>
-                                </SheetContent>
-                              </Sheet>
-                            </div>
-                          </div>
-                        </Card>
-                      )
-                    })}
-                  </div>
-                )}
+                 ) : (
+                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                     {customersList.map((cust: any, idx) => {
+                       const meta = customerMeta[cust.phone] || {}; const isVip = meta.isVip; const isBlocked = meta.isBlocked;
+                       return (
+                         <Card key={idx} className={`overflow-hidden transition-all bg-card border-border shadow-sm hover:shadow-md ${isBlocked ? 'opacity-50 grayscale' : ''}`}>
+                           <div className="p-5 flex flex-col sm:flex-row justify-between gap-4">
+                             <div className="space-y-3 flex-1">
+                               <div className="flex items-center gap-3"><h3 className="text-xl font-black uppercase tracking-tight text-foreground">{cust.name}</h3>{isVip && <Badge className="text-black bg-amber-400 hover:bg-amber-500 font-black uppercase tracking-widest text-[10px]">VIP</Badge>}{isBlocked && <Badge variant="destructive" className="font-black uppercase tracking-widest text-[10px]">BLOCKED</Badge>}</div>
+                               <div className="grid grid-cols-2 gap-4"><div><p className="text-[10px] uppercase tracking-widest text-muted-foreground">Total Spent</p><p className="font-mono text-xl font-black text-foreground">₹{cust.totalSpent}</p></div><div><p className="text-[10px] uppercase tracking-widest text-muted-foreground">Total Orders</p><p className={`font-mono text-xl font-black ${cust.totalOrders > 0 ? 'text-foreground' : 'text-orange-500'}`}>{cust.totalOrders}</p></div></div>
+                             </div>
+                             <div className="flex flex-row sm:flex-col gap-2 shrink-0">
+                               <a href={`https://wa.me/91${cust.phone.replace(/\D/g, '')}`} target="_blank" rel="noreferrer" className="flex-1 sm:flex-none"><Button className="w-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500 hover:text-white border border-emerald-500/20"><MessageCircle className="w-4 h-4 mr-2" /> WhatsApp</Button></a>
+                               <a href={`tel:${cust.phone}`} className="flex-1 sm:flex-none"><Button className="w-full bg-blue-500/10 text-blue-600 dark:text-blue-400 hover:bg-blue-500 hover:text-white border border-blue-500/20"><Phone className="w-4 h-4 mr-2" /> Call</Button></a>
+                               <Sheet>
+                                 <SheetTrigger asChild><Button variant="outline" className="w-full flex-1 sm:flex-none hover:bg-muted border-border text-foreground"><FileText className="w-4 h-4 mr-2" /> Details</Button></SheetTrigger>
+                                 <SheetContent className="border-l border-border w-full sm:max-w-md overflow-y-auto bg-background text-foreground">
+                                   <SheetHeader className="text-left mb-6 mt-6"><SheetTitle className="text-2xl font-black italic uppercase text-foreground">Customer Details</SheetTitle></SheetHeader>
+                                   <div className="space-y-6">
+                                     <div className="p-4 rounded-xl space-y-2 border border-border bg-card shadow-sm"><div><p className="font-bold text-lg leading-tight">{cust.name}</p><p className="font-mono text-sm text-muted-foreground">{cust.phone}</p></div><div className="flex gap-2 items-start bg-muted p-3 rounded-lg border border-border"><MapPin className="w-4 h-4 shrink-0 mt-0.5 text-foreground" /><p className="text-sm leading-relaxed text-foreground">{cust.address}</p></div></div>
+                                     <div className="flex gap-2">
+                                       <Button onClick={() => updateCustomerMeta(cust.phone, { isVip: !isVip })} className={`flex-1 border`} style={isVip ? { backgroundColor: 'var(--muted)', borderColor: 'var(--border)' } : { backgroundColor: 'rgba(251,191,36,0.1)', color: '#d97706', borderColor: 'rgba(251,191,36,0.3)' }}><Star className="w-4 h-4 mr-2" /> {isVip ? 'Remove VIP' : 'Mark as VIP'}</Button>
+                                       <Button onClick={() => updateCustomerMeta(cust.phone, { isBlocked: !isBlocked })} className={`flex-1 border ${isBlocked ? 'bg-muted border-border text-foreground' : 'bg-rose-500/10 text-rose-600 dark:text-rose-400 hover:bg-rose-500 hover:text-white border-rose-500/30'}`}><Ban className="w-4 h-4 mr-2" /> {isBlocked ? 'Unblock' : 'Block'}</Button>
+                                     </div>
+                                     <div className="pt-2 border-t border-border">
+                                       <Button onClick={() => handleDeleteCustomerWipe(cust.phone)} variant="outline" className="w-full bg-rose-500/5 text-rose-600 dark:text-rose-400 border-rose-500/30 hover:bg-rose-500 hover:text-white">
+                                         <Trash2 className="w-4 h-4 mr-2" /> Delete Customer Data
+                                       </Button>
+                                       <p className="text-[9px] mt-2 text-center uppercase tracking-widest leading-tight text-muted-foreground">Note: This removes data from CRM. To delete their Auth Login, use Supabase Dashboard.</p>
+                                     </div>
+                                     <div>
+                                       <h4 className="text-xs font-black uppercase tracking-widest mb-3 border-b border-border pb-2 text-muted-foreground">Order History</h4>
+                                       {cust.totalOrders === 0 ? (
+                                         <div className="bg-orange-500/10 p-4 rounded-lg border border-orange-500/20 text-center"><p className="text-orange-600 dark:text-orange-400 text-xs font-bold uppercase tracking-widest">Registered but no orders placed</p></div>
+                                       ) : (
+                                         <div className="space-y-3">
+                                           {cust.ordersList.slice().reverse().map((o: any, i: number) => (
+                                             <div key={i} className="bg-muted/50 p-3 rounded-lg border border-border flex justify-between items-center"><div><p className="text-[10px] text-muted-foreground">{o.time}</p><p className="font-bold text-sm text-foreground">{o.items.length} Items</p></div><div className="text-right"><p className="font-mono font-black text-foreground">₹{o.amount}</p><span className={`text-[10px] px-2 py-0.5 rounded uppercase tracking-widest font-black ${getStatusColor(o.status)}`}>{o.status}</span></div></div>
+                                           ))}
+                                         </div>
+                                       )}
+                                     </div>
+                                   </div>
+                                 </SheetContent>
+                               </Sheet>
+                             </div>
+                           </div>
+                         </Card>
+                       )
+                     })}
+                   </div>
+                 )}
                </motion.div>
             )}
 
@@ -1039,7 +1116,7 @@ export default function AdminDashboard() {
             {/* SETTINGS (🔥 GOD MODE FRONTEND THEME + STORE OP 🔥) */}
             {activeTab === 'settings' && (
                <motion.div key="settings" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="space-y-6 max-w-3xl">
-                  
+                 
                   {/* 🔥 THEME COLOR PICKER GOD MODE (FOR FRONTEND ONLY) 🔥 */}
                   <Card className="mb-8 border border-border bg-card shadow-sm">
                     <CardContent className="p-6 sm:p-8 space-y-6">
