@@ -24,7 +24,7 @@ export const viewport: Viewport = {
 // 🌐 METADATA & PWA TAGS (WITH GOOGLE VERIFICATION)
 export const metadata: Metadata = {
   title: "WebFoo Mart",
-  description: "Teleporting Flavors to You",
+  description: "Delivering desires at your door step",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
