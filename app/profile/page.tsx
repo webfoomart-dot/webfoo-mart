@@ -5,8 +5,9 @@ import * as React from "react"
 import Link from "next/link"
 import Image from "next/image"
 import { useRouter } from "next/navigation"
+import { useTheme } from "next-themes"
 import { motion, AnimatePresence } from "framer-motion"
-import { ArrowLeft, User, Phone, MapPin, Save, Camera, CheckCircle2, LogOut, Headphones, Lock, Zap } from "lucide-react"
+import { ArrowLeft, User, Phone, MapPin, Save, Camera, CheckCircle2, LogOut, Headphones, Lock, Zap, Sun, Moon } from "lucide-react"
 
 import { Header } from "@/components/header"
 import { BottomNav } from "@/components/bottom-nav"
@@ -18,6 +19,7 @@ import { useAppStore } from "@/lib/store"
 
 export default function ProfilePage() {
   const router = useRouter()
+  const { theme, setTheme } = useTheme()
   const [isMounted, setIsMounted] = React.useState(false)
   const [isSaved, setIsSaved] = React.useState(false)
   
@@ -187,6 +189,26 @@ export default function ProfilePage() {
               </form>
 
               <div className="mt-10 pt-8 border-t border-border flex flex-col gap-4">
+                {/* 🔥 NAYA THEME TOGGLE BUTTON YAHAN HAI 🔥 */}
+                <button 
+                  type="button"
+                  onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+                  className="w-full flex items-center justify-between p-4 bg-card border border-border rounded-xl shadow-sm hover:border-foreground/30 transition-all active:scale-[0.98]"
+                >
+                  <div className="flex items-center gap-4">
+                    <div className="bg-muted p-2 rounded-lg">
+                      {theme === 'dark' ? <Moon className="w-5 h-5 text-emerald-500" /> : <Sun className="w-5 h-5 text-amber-500" />}
+                    </div>
+                    <div className="text-left">
+                      <p className="font-bold text-sm uppercase tracking-widest text-foreground">App Theme</p>
+                      <p className="text-[10px] text-muted-foreground uppercase">{theme === 'dark' ? 'Dark Mode Active' : 'Light Mode Active'}</p>
+                    </div>
+                  </div>
+                  <div className="bg-muted px-3 py-1.5 rounded-md text-[10px] font-black uppercase tracking-widest text-foreground border border-border">
+                    Switch
+                  </div>
+                </button>
+
                 <Button type="button" variant="outline" onClick={handleSupport} className="w-full h-12 rounded-xl border-border text-foreground hover:bg-muted flex items-center justify-center gap-2">
                   <Headphones className="w-5 h-5 text-primary" /> HELP & SUPPORT
                 </Button>
