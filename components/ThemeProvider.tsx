@@ -18,7 +18,6 @@ export function ThemeProvider({ children, ...props }: ThemeProviderProps) {
         const { data, error } = await supabase.from('theme_settings').select('*').eq('id', 1).single()
         
         if (data && !error) {
-          // 🔥 MAGIC HAPPPENS HERE: Light aur Dark dono mode ke variables inject ho rahe hain 🔥
           const styleString = `
             :root {
               --theme-bg: ${data.light_background_color || '#ffffff'};
@@ -51,7 +50,11 @@ export function ThemeProvider({ children, ...props }: ThemeProviderProps) {
   }, [])
 
   return (
-    <NextThemesProvider {...props}>
+    <NextThemesProvider 
+      {...props} 
+      defaultTheme="light" 
+      enableSystem={false}
+    >
       {cssVars && <style dangerouslySetInnerHTML={{ __html: cssVars }} />}
       {children}
     </NextThemesProvider>
