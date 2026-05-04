@@ -60,7 +60,7 @@ export function Header() {
           <div className="flex items-center gap-3">
             
             {/* 🔥 YAHAN FIT KIYA HAI LIGHT/DARK MODE BUTTON 🔥 */}
-            <ThemeToggle />
+           
 
             {user && (
               <>
